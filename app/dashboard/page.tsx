@@ -29,6 +29,7 @@ import {
   User,
   GripVertical,
   Folder,
+  Bug,
   Code,
   FileText,
   Lightbulb,
@@ -3010,6 +3011,19 @@ These repositories best demonstrate the skills recruiters look for in ${jobTitle
           </div>
         )}
 
+      </div>
+
+      {/* Bug Report Button - Fixed at bottom */}
+      <div className="fixed bottom-6 right-6 z-40">
+        <Button
+          onClick={() => router.push('/bug-report')}
+          variant="outline"
+          size="sm"
+          className="bg-background/95 backdrop-blur-sm border-border/50 shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2"
+        >
+          <Bug className="w-4 h-4 text-red-500" />
+          <span className="text-sm">Report Bug</span>
+        </Button>
       </div>
     </div>
   );
