@@ -69,9 +69,17 @@ export async function middleware(req: NextRequest) {
     } = await supabase.auth.getSession()
 
     if (error) {
-      console.error('Supabase session error:', error)
+      console.error('🚨 MIDDLEWARE: Supabase session error:', error)
       // Continue without session if there's an error
     }
+
+    // Log session status for debugging
+    console.log('🔍 MIDDLEWARE: Session check:', {
+      hasSession: !!session,
+      userId: session?.user?.id,
+      path: req.nextUrl.pathname,
+      cookies: req.cookies.getAll().map(c => c.name).join(', ')
+    })
 
     // Protected routes that require authentication
     const protectedRoutes = ['/dashboard', '/profile']

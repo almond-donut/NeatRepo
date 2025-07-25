@@ -175,7 +175,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const sessionTimeout = setTimeout(() => {
           console.warn('⏰ AUTH: Session initialization timeout - using fallback');
           setUser(null);
-        }, 8000); // Reduced to 8 seconds
+          setLoading(false);
+        }, 15000); // Increased to 15 seconds for OAuth flows
 
         const { data: { session }, error } = await supabase.auth.getSession();
         console.log('🔍 Session check:', { session: !!session, user: !!session?.user, error });

@@ -75,10 +75,20 @@ export async function GET(request: NextRequest) {
       userId: data.user?.id,
       email: data.user?.email,
       provider: data.user?.app_metadata?.provider,
+      sessionId: data.session?.id,
     })
+
+    // Log cookies being set
+    console.log("🍪 Setting auth cookies for session:", data.session?.id)
 
     // Successful authentication - redirect to dashboard
     response = NextResponse.redirect(`${origin}/dashboard`)
+
+    // Add cache control headers to prevent caching of auth responses
+    response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')
+    response.headers.set('Pragma', 'no-cache')
+    response.headers.set('Expires', '0')
+
     return response
   } catch (error) {
     console.error("❌ Callback processing error:", error)
