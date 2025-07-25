@@ -835,29 +835,133 @@ ${successCount > 0 ? 'Your portfolio is now cleaner and more professional! 🚀'
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatMessages]);
 
-  // YouTube-style: NO visibility-based refetching - data persists across tab switches
+  // 🎯 YOUTUBE-STYLE: Long-term stability with smart recovery
   useEffect(() => {
-    console.log('🎯 YouTube-style persistence: No tab-switch reloading');
-    setIsPageVisible(true); // Always consider page "visible" for UX
+    console.log('🎯 YouTube-style persistence: Long-term stability enabled');
+    setIsPageVisible(true);
 
-    // Add visibility change handler to reset loading state if stuck
+    // Enhanced visibility change handler for long-term scenarios
     const handleVisibilityChange = () => {
       if (!document.hidden) {
-        console.log('👁️ Tab became visible - checking loading state');
-        // If we've been loading for more than 30 seconds, reset the state
-        const loadingTooLong = isLoadingRepos && (Date.now() - lastVisibilityChange) > 30000;
-        if (loadingTooLong) {
-          console.warn('⚠️ Loading state stuck - resetting');
-          setIsLoadingRepos(false);
-          setError('Loading took too long. Please try refreshing.');
+        const now = Date.now();
+        const timeSinceLastChange = now - lastVisibilityChange;
+        
+        console.log(`👁️ Tab became visible after ${Math.round(timeSinceLastChange/1000)}s`);
+        
+        // Handle different scenarios based on how long user was away
+        if (timeSinceLastChange > 7200000) { // 2+ hours
+          console.log('🕐 LONG ABSENCE: User was away for 2+ hours, performing health check...');
+          performLongAbsenceRecovery();
+        } else if (timeSinceLastChange > 3600000) { // 1+ hour  
+          console.log('🕐 MEDIUM ABSENCE: User was away for 1+ hour, checking session...');
+          performMediumAbsenceRecovery();
+        } else if (timeSinceLastChange > 1800000) { // 30+ minutes
+          console.log('🕐 SHORT ABSENCE: User was away for 30+ minutes, refreshing data...');
+          performShortAbsenceRecovery();
         }
-        setLastVisibilityChange(Date.now());
+        
+        // Reset stuck loading states
+        if (isLoadingRepos && timeSinceLastChange > 30000) {
+          console.warn('⚠️ Loading state stuck after absence - resetting');
+          setIsLoadingRepos(false);
+          setError('Session recovered. Please refresh if needed.');
+        }
+        
+        setLastVisibilityChange(now);
       }
     };
 
+    // Long-term health monitoring (every 10 minutes when active)
+    const healthMonitor = setInterval(() => {
+      if (!document.hidden && user) {
+        console.log('💓 HEALTH: Performing routine health check...');
+        checkSystemHealth();
+      }
+    }, 600000); // 10 minutes
+
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [isLoadingRepos, lastVisibilityChange]);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      clearInterval(healthMonitor);
+    };
+  }, [isLoadingRepos, lastVisibilityChange, user]);
+
+  // 🚀 RECOVERY FUNCTIONS for different absence scenarios
+  const performLongAbsenceRecovery = async () => {
+    console.log('🔄 LONG RECOVERY: Starting comprehensive recovery...');
+    setError('Welcome back! Checking system status...');
+    
+    try {
+      // Check if auth is still valid
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setError('Session expired. Please log in again.');
+        return;
+      }
+      
+      // Force refresh all data
+      const token = currentProfile?.github_token;
+      if (token) {
+        setIsLoadingRepos(true);
+        await repositoryManager.fetchRepositories(token, true);
+        setError(null);
+      }
+    } catch (error) {
+      console.error('❌ LONG RECOVERY failed:', error);
+      setError('Recovery failed. Please refresh the page.');
+    }
+  };
+
+  const performMediumAbsenceRecovery = async () => {
+    console.log('🔄 MEDIUM RECOVERY: Checking session and refreshing data...');
+    
+    try {
+      const token = currentProfile?.github_token;
+      if (token) {
+        // Background sync without showing loading
+        await repositoryManager.backgroundSync(token);
+      }
+    } catch (error) {
+      console.error('❌ MEDIUM RECOVERY failed:', error);
+    }
+  };
+
+  const performShortAbsenceRecovery = async () => {
+    console.log('🔄 SHORT RECOVERY: Light refresh...');
+    
+    try {
+      const token = currentProfile?.github_token;
+      if (token) {
+        await repositoryManager.backgroundSync(token);
+      }
+    } catch (error) {
+      console.error('❌ SHORT RECOVERY failed:', error);
+    }
+  };
+
+  const checkSystemHealth = async () => {
+    try {
+      // Test GitHub API connectivity
+      const token = currentProfile?.github_token;
+      if (token) {
+        const response = await fetch("https://api.github.com/user", {
+          headers: { Authorization: `token ${token}` },
+        });
+        
+        if (!response.ok) {
+          console.warn('⚠️ HEALTH: GitHub API issue detected');
+          if (response.status === 401) {
+            setError('GitHub token expired. Please refresh your token.');
+          }
+        } else {
+          console.log('✅ HEALTH: System healthy');
+        }
+      }
+    } catch (error) {
+      console.warn('⚠️ HEALTH: Health check failed:', error);
+    }
+  };
 
   // 🚀 KEYBOARD SHORTCUTS for flexible drag operations
   useEffect(() => {

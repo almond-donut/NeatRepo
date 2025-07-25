@@ -35,6 +35,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [showTokenPopupState, setShowTokenPopupState] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [lastActivity, setLastActivity] = useState(Date.now());
+  const [sessionHealth, setSessionHealth] = useState<'healthy' | 'warning' | 'expired'>('healthy');
 
   const fetchProfile = async (userId: string) => {
     try {
@@ -99,11 +101,72 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // 🎯 YOUTUBE-STYLE: Long-term session health monitoring
+  useEffect(() => {
+    const checkSessionHealth = async () => {
+      if (!user) return;
+      
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        const now = Date.now();
+        const timeSinceActivity = now - lastActivity;
+        
+        if (error || !session) {
+          console.warn('⚠️ SESSION: Session expired or invalid');
+          setSessionHealth('expired');
+          return;
+        }
+        
+        // Check if session is close to expiring (within 10 minutes)
+        const expiresAt = session.expires_at ? session.expires_at * 1000 : 0;
+        const timeUntilExpiry = expiresAt - now;
+        
+        if (timeUntilExpiry < 600000) { // 10 minutes
+          console.warn('⚠️ SESSION: Session expiring soon, refreshing...');
+          setSessionHealth('warning');
+          await supabase.auth.refreshSession();
+          setSessionHealth('healthy');
+        } else if (timeSinceActivity > 7200000) { // 2 hours inactive
+          console.log('💤 SESSION: Long inactivity detected, validating session...');
+          setSessionHealth('warning');
+          // Validate session is still good
+          const { error: testError } = await supabase.from('user_profiles').select('id').limit(1);
+          if (testError) {
+            setSessionHealth('expired');
+          } else {
+            setSessionHealth('healthy');
+          }
+        }
+      } catch (error) {
+        console.error('❌ SESSION: Health check failed:', error);
+        setSessionHealth('expired');
+      }
+    };
+
+    // Check session health every 5 minutes
+    const healthCheckInterval = setInterval(checkSessionHealth, 300000);
+    
+    // Also check on visibility change (when user returns to tab)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        setLastActivity(Date.now());
+        checkSessionHealth();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      clearInterval(healthCheckInterval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [user, lastActivity]);
+
   useEffect(() => {
     const initializeSession = async () => {
       try {
         console.log('🚀 AUTH: Starting session initialization...');
-        
+
         // Add timeout protection for session initialization
         const sessionTimeout = setTimeout(() => {
           console.warn('⏰ AUTH: Session initialization timeout - forcing completion');
@@ -116,7 +179,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (session?.user) {
           console.log('✅ Setting user from session:', session.user.id);
           setUser(session.user);
-          
+          setLastActivity(Date.now()); // Track initial activity
+
           console.log('✅ User found, fetching profile...');
           const fetchedProfile = await fetchProfile(session.user.id);
           if (!fetchedProfile?.github_token) {
@@ -126,7 +190,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.log('❌ No user in session');
           setUser(null);
         }
-        
+
         clearTimeout(sessionTimeout);
         setLoading(false);
         console.log('✅ AUTH: Session initialization completed');
@@ -145,7 +209,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (event === 'SIGNED_IN' && session?.user) {
           setLoading(true);
-          
+
           // Add timeout protection for sign-in process
           const signInTimeout = setTimeout(() => {
             console.warn('⏰ AUTH: Sign-in process timeout - forcing completion');
@@ -175,7 +239,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 setShowTokenPopupState(true);
               }
             }
-            
+
             clearTimeout(signInTimeout);
             setLoading(false);
             console.log("✅ AUTH: Sign-in process completed");

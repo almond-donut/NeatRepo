@@ -199,15 +199,56 @@ class RepositoryManager {
     return this.lastFetch;
   }
 
-  // Background sync method
+  // 🎯 YOUTUBE-STYLE: Enhanced background sync with long-term resilience
   async backgroundSync(token: string): Promise<void> {
-    if (!this.isDataAvailable()) return;
-    
     console.log('🔄 SINGLETON: Background sync starting...');
+    
     try {
-      await this.fetchRepositories(token, true);
+      // Test token validity first before attempting sync
+      const tokenTest = await fetch("https://api.github.com/user", {
+        headers: {
+          Authorization: `token ${token}`,
+          Accept: "application/vnd.github.v3+json",
+        },
+      });
+
+      if (!tokenTest.ok) {
+        if (tokenTest.status === 401) {
+          console.error('🔑 SINGLETON: GitHub token expired or invalid');
+          // Clear cached data if token is invalid
+          this.clearCache();
+          throw new Error('GitHub token expired');
+        }
+        throw new Error(`GitHub API error: ${tokenTest.status}`);
+      }
+
+      // If we have stale data (older than 1 hour), force refresh
+      const timeSinceLastFetch = Date.now() - this.lastFetch;
+      const forceRefresh = timeSinceLastFetch > 3600000; // 1 hour
+      
+      if (forceRefresh) {
+        console.log('🔄 SINGLETON: Data is very stale (>1h), forcing refresh...');
+      }
+
+      await this.fetchRepositories(token, forceRefresh);
+      console.log('✅ SINGLETON: Background sync completed successfully');
     } catch (error) {
-      console.log('⚠️ SINGLETON: Background sync failed:', error);
+      console.error('❌ SINGLETON: Background sync failed:', error);
+      
+      // If sync fails but we have cached data, keep using it
+      if (this.repositories.length > 0) {
+        console.log('🔄 SINGLETON: Using cached data due to sync failure');
+        this.notifyListeners();
+      }
+    }
+  }
+
+  // Clear cache method for token expiry scenarios
+  private clearCache(): void {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('github_repositories');
+      localStorage.removeItem('github_repositories_time');
+      console.log('🗑️ SINGLETON: Cache cleared due to token issues');
     }
   }
 }
