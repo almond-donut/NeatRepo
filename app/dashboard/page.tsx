@@ -988,7 +988,7 @@ ${successCount > 0 ? 'Your portfolio is now cleaner and more professional! 🚀'
 
   // OLD fetchRepositories function removed - using SINGLETON pattern only
 
-  // 🔄 RESET INITIALIZATION ON PAGE NAVIGATION
+  // 🔄 ENHANCED BROWSER NAVIGATION HANDLING
   useEffect(() => {
     // Reset initialization when page loads/navigates to ensure auto-fetch always works
     console.log('🔄 PAGE NAVIGATION: Resetting initialization state for reliable auto-fetch');
@@ -999,7 +999,36 @@ ${successCount > 0 ? 'Your portfolio is now cleaner and more professional! 🚀'
       console.log('🔄 PAGE NAVIGATION: Found cached repositories, stopping loading state');
       setIsLoadingRepos(false);
     }
-  }, []); // Run once on page mount/navigation
+
+    // Handle browser navigation events (back/forward)
+    const handlePopState = (event: PopStateEvent) => {
+      console.log('🔄 BROWSER: Back/Forward navigation detected');
+      // Refresh data if user navigates back/forward
+      if (currentProfile?.github_token) {
+        setIsLoadingRepos(true);
+        repositoryManager.fetchRepositories(currentProfile.github_token, false)
+          .then(() => setIsLoadingRepos(false))
+          .catch(() => setIsLoadingRepos(false));
+      }
+    };
+
+    // Handle page visibility change (tab switching, minimize/restore)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && currentProfile?.github_token) {
+        console.log('🔄 VISIBILITY: Page became visible, checking for updates');
+        // Soft refresh when user returns to tab
+        repositoryManager.fetchRepositories(currentProfile.github_token, false);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [currentProfile?.github_token]); // Depend on token to re-setup listeners
 
   // 🚀 INSTANT LOADING: Optimized auto-fetch with cache-first approach
   useEffect(() => {

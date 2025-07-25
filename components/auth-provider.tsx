@@ -187,21 +187,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
           // 🚀 PARALLEL: Fetch profile in background without blocking UI
           fetchProfile(session.user.id).then((fetchedProfile) => {
+            // Only show popup if user truly has no token AND hasn't dismissed it recently
             if (!fetchedProfile?.github_token) {
-              setShowTokenPopupState(true);
+              const lastDismissed = localStorage.getItem(`token_popup_dismissed_${session.user.id}`);
+              const now = Date.now();
+              const dismissedTime = lastDismissed ? parseInt(lastDismissed) : 0;
+
+              // Show popup if never dismissed or dismissed more than 1 hour ago
+              if (!lastDismissed || (now - dismissedTime) > 3600000) {
+                setShowTokenPopupState(true);
+              }
             }
             console.log('✅ Profile loaded in background');
           }).catch((error) => {
             console.error('❌ Background profile fetch failed:', error);
-            // Create basic profile as fallback - ALWAYS show popup for new users
+            // Create basic profile as fallback - only show popup for truly new users
             const basicProfile = {
               id: session.user.id,
               github_username: session.user.user_metadata?.user_name || 'user',
               github_token: null // Always null to force popup
             };
             setProfile(basicProfile);
-            // FORCE popup for new users even on profile fetch failure
-            setShowTokenPopupState(true);
+
+            // Only show popup for new users (not returning users with fetch errors)
+            const lastDismissed = localStorage.getItem(`token_popup_dismissed_${session.user.id}`);
+            if (!lastDismissed) {
+              setShowTokenPopupState(true);
+            }
           });
         } else {
           console.log('❌ No user in session');
@@ -248,13 +260,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             if (upsertError) {
               console.error("❌ AUTH: Error upserting profile:", upsertError);
-              // Even on upsert error, show popup for new users
-              setShowTokenPopupState(true);
+              // Only show popup for truly new users, not on every error
+              const lastDismissed = localStorage.getItem(`token_popup_dismissed_${session.user.id}`);
+              if (!lastDismissed) {
+                setShowTokenPopupState(true);
+              }
             } else {
               console.log("✅ AUTH: Profile upserted successfully");
               const fetchedProfile = await fetchProfile(session.user.id);
               if (!fetchedProfile?.github_token) {
-                setShowTokenPopupState(true);
+                const lastDismissed = localStorage.getItem(`token_popup_dismissed_${session.user.id}`);
+                const now = Date.now();
+                const dismissedTime = lastDismissed ? parseInt(lastDismissed) : 0;
+
+                // Show popup if never dismissed or dismissed more than 1 hour ago
+                if (!lastDismissed || (now - dismissedTime) > 3600000) {
+                  setShowTokenPopupState(true);
+                }
               }
             }
 
@@ -279,6 +301,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signOut = async () => {
+    // Clear dismiss tracking on sign out so popup shows for next login
+    if (user) {
+      localStorage.removeItem(`token_popup_dismissed_${user.id}`);
+    }
     setProfile(null);
     await supabase.auth.signOut();
   };
@@ -296,11 +322,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       setProfile(prev => (prev ? { ...prev, github_token: token } : null));
       setShowTokenPopupState(false);
+
+      // Mark that user has provided token - don't show popup again unless they sign out
+      localStorage.removeItem(`token_popup_dismissed_${user.id}`);
     } catch (error) {
       console.error('Error saving GitHub token:', error);
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleTokenPopupClose = () => {
+    if (user) {
+      // Track that user dismissed popup - don't show again for 1 hour
+      localStorage.setItem(`token_popup_dismissed_${user.id}`, Date.now().toString());
+    }
+    setShowTokenPopupState(false);
   };
 
   const value = {
@@ -317,7 +354,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         <GitHubTokenPopup
           onTokenSubmit={handleTokenSubmit}
           isSubmitting={isSubmitting}
-          onClose={() => setShowTokenPopupState(false)}
+          onClose={handleTokenPopupClose}
         />
       )}
       {children}

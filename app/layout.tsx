@@ -4,6 +4,7 @@ import { JetBrains_Mono } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "@/components/auth-provider"
+import { NavigationErrorBoundary } from "@/components/navigation-error-boundary"
 
 const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
@@ -26,9 +27,11 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${jetbrainsMono.variable} font-mono`}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
-          <AuthProvider>
-            {children}
-          </AuthProvider>
+          <NavigationErrorBoundary>
+            <AuthProvider>
+              {children}
+            </AuthProvider>
+          </NavigationErrorBoundary>
         </ThemeProvider>
       </body>
     </html>
