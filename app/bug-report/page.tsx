@@ -1,17 +1,21 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
-import { Upload, Send, ArrowLeft, Bug, Camera, AlertCircle } from 'lucide-react'
+import { Upload, Send, ArrowLeft, Bug, Camera, AlertCircle, Mail, Github } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { useAuth } from '@/components/auth-provider'
+import AuthForms from '@/components/auth-forms'
 
 export default function BugReportPage() {
   const router = useRouter()
+  const { user, loading } = useAuth()
+  const [showAuthForms, setShowAuthForms] = useState(false)
   const [formData, setFormData] = useState({
     userEmail: '',
     bugTitle: '',
@@ -25,12 +29,28 @@ export default function BugReportPage() {
   const [screenshots, setScreenshots] = useState<File[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle')
+  const [authError, setAuthError] = useState<string | null>(null)
 
-  // Auto-detect browser info
-  React.useEffect(() => {
+  // Auto-detect browser info and handle user email
+  useEffect(() => {
     const browserInfo = `${navigator.userAgent} | Screen: ${screen.width}x${screen.height} | Viewport: ${window.innerWidth}x${window.innerHeight}`
     setFormData(prev => ({ ...prev, browserInfo }))
   }, [])
+
+  // Handle user authentication and email detection
+  useEffect(() => {
+    if (user) {
+      // Check if user has email (email login) or only OAuth
+      if (user.email && !user.email.includes('github')) {
+        // User logged in with email - use that email
+        setFormData(prev => ({ ...prev, userEmail: user.email || '' }))
+        setAuthError(null)
+      } else {
+        // User logged in with GitHub OAuth - need email login
+        setAuthError('Please sign in with your email account to submit bug reports')
+      }
+    }
+  }, [user])
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
@@ -88,6 +108,50 @@ export default function BugReportPage() {
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  // Show auth forms modal if needed
+  if (showAuthForms) {
+    return <AuthForms onClose={() => setShowAuthForms(false)} />
+  }
+
+  // Show OAuth user needs email login
+  if (authError && user) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6 text-center">
+            <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Mail className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+            </div>
+            <h2 className="text-xl font-semibold mb-2">Email Account Required</h2>
+            <p className="text-muted-foreground mb-4">
+              To submit bug reports, please sign in with your email account instead of GitHub OAuth.
+            </p>
+            <div className="flex items-center justify-center gap-2 mb-4 text-sm text-muted-foreground">
+              <Github className="w-4 h-4" />
+              <span>Currently signed in with GitHub</span>
+            </div>
+            <div className="space-y-3">
+              <Button
+                onClick={() => setShowAuthForms(true)}
+                className="w-full"
+              >
+                <Mail className="w-4 h-4 mr-2" />
+                Sign In with Email
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => router.push('/dashboard')}
+                className="w-full"
+              >
+                Back to Dashboard
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   if (submitStatus === 'success') {
