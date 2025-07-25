@@ -45,7 +45,7 @@ export default function AuthForms({ onClose }: AuthFormsProps) {
         email: signUpData.email,
         password: signUpData.password,
         options: {
-          emailRedirectTo: `${window.location.origin}/dashboard`
+          emailRedirectTo: `${window.location.origin}/api/auth/callback`
         }
       })
       

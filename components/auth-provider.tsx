@@ -167,9 +167,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         console.log('🚀 AUTH: INSTANT LOADING - Starting optimized initialization...');
 
-        // 🚀 INSTANT: Set loading to false immediately for better UX
-        // We'll handle auth in background while showing UI
-        setLoading(false);
+        // 🚀 OPTIMIZED: Keep loading true initially to prevent hydration mismatch
+        // We'll set loading false after session check to ensure consistency
 
         // Add timeout protection for session initialization
         const sessionTimeout = setTimeout(() => {
@@ -189,7 +188,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // 🚀 PARALLEL: Fetch profile in background without blocking UI
           fetchProfile(session.user.id).then((fetchedProfile) => {
             // Only show popup if user truly has no token AND hasn't dismissed it recently
-            if (!fetchedProfile?.github_token) {
+            if (!fetchedProfile?.github_token && typeof window !== 'undefined') {
               const lastDismissed = localStorage.getItem(`token_popup_dismissed_${session.user.id}`);
               const now = Date.now();
               const dismissedTime = lastDismissed ? parseInt(lastDismissed) : 0;
@@ -211,9 +210,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setProfile(basicProfile);
 
             // Only show popup for new users (not returning users with fetch errors)
-            const lastDismissed = localStorage.getItem(`token_popup_dismissed_${session.user.id}`);
-            if (!lastDismissed) {
-              setShowTokenPopupState(true);
+            if (typeof window !== 'undefined') {
+              const lastDismissed = localStorage.getItem(`token_popup_dismissed_${session.user.id}`);
+              if (!lastDismissed) {
+                setShowTokenPopupState(true);
+              }
             }
           });
         } else {
@@ -222,10 +223,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         clearTimeout(sessionTimeout);
+        setLoading(false); // Set loading false after session check to prevent hydration mismatch
         console.log('✅ AUTH: INSTANT initialization completed - UI ready!');
       } catch (err) {
         console.error('❌ AUTH: Session initialization error:', err);
         setUser(null); // Fallback to no user
+        setLoading(false); // Ensure loading is false even on error
       }
     };
 
@@ -334,7 +337,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setShowTokenPopupState(false);
 
       // Mark that user has provided token - don't show popup again unless they sign out
-      localStorage.removeItem(`token_popup_dismissed_${user.id}`);
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(`token_popup_dismissed_${user.id}`);
+      }
     } catch (error) {
       console.error('Error saving GitHub token:', error);
       // Show error to user but don't close popup
@@ -345,7 +350,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const handleSkipToken = () => {
-    if (user) {
+    if (user && typeof window !== 'undefined') {
       // Mark that user skipped token setup
       localStorage.setItem(`token_popup_dismissed_${user.id}`, Date.now().toString());
     }
@@ -353,7 +358,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const handleTokenPopupClose = () => {
-    if (user) {
+    if (user && typeof window !== 'undefined') {
       // Track that user dismissed popup - don't show again for 1 hour
       localStorage.setItem(`token_popup_dismissed_${user.id}`, Date.now().toString());
     }
