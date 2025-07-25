@@ -307,6 +307,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     setProfile(null);
     await supabase.auth.signOut();
+
+    // Force redirect to homepage to ensure clean state
+    window.location.href = '/';
   };
 
   const handleTokenSubmit = async (token: string) => {

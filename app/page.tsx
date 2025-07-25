@@ -7,7 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { supabase } from "@/lib/supabase"
+import AuthForms from "@/components/auth-forms"
+import { useAuth } from "@/components/auth-provider"
 import {
   Github,
   Star,
@@ -24,11 +25,18 @@ import {
 } from "lucide-react"
 
 export default function HomePage() {
-  const [isConnecting, setIsConnecting] = useState(false)
+  const { user, loading } = useAuth()
+  const [showAuthForms, setShowAuthForms] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [debugInfo, setDebugInfo] = useState<any>(null)
-  const [isRedirecting, setIsRedirecting] = useState(false)
   const searchParams = useSearchParams()
+
+  // Redirect to dashboard if user is already authenticated
+  useEffect(() => {
+    if (user && !loading) {
+      window.location.href = '/dashboard'
+    }
+  }, [user, loading])
 
   const initializeDebugInfo = useCallback(() => {
     if (typeof window !== "undefined") {
@@ -36,7 +44,6 @@ export default function HomePage() {
         currentUrl: window.location.href,
         origin: window.location.origin,
         clientId: process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID,
-        callbackUrl: `${window.location.origin}/api/github/callback`,
         userAgent: navigator.userAgent,
         timestamp: new Date().toISOString(),
       }
@@ -46,78 +53,17 @@ export default function HomePage() {
 
   useEffect(() => {
     const oauthError = searchParams.get("oauth_error")
-    const oauthSuccess = searchParams.get("oauth_success")
-
     if (oauthError) {
       setError(`OAuth Error: ${decodeURIComponent(oauthError)}`)
       console.error("OAuth Error from URL:", oauthError)
     }
 
-    if (oauthSuccess && !isRedirecting) {
-      console.log("OAuth Success detected, redirecting to dashboard...")
-      setIsRedirecting(true)
-      const timer = setTimeout(() => {
-        window.location.href = "/dashboard"
-      }, 1500)
-
-      return () => clearTimeout(timer)
-    }
-
     if (!debugInfo) {
       setDebugInfo(initializeDebugInfo())
     }
-  }, [searchParams, isRedirecting, debugInfo, initializeDebugInfo])
+  }, [searchParams, debugInfo, initializeDebugInfo])
 
-  const handleGitHubConnect = useCallback(async () => {
-    if (isConnecting) return
 
-    setIsConnecting(true)
-    setError(null)
-
-    try {
-      console.log("🚀 === STARTING SUPABASE GITHUB OAUTH FLOW ===")
-
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'github',
-        options: {
-          redirectTo: `${window.location.origin}/dashboard`,
-          scopes: 'repo user'
-        }
-      })
-
-      if (error) {
-        console.error("❌ Supabase OAuth error:", error)
-        throw error
-      }
-
-      console.log("✅ OAuth initiated successfully:", data)
-      
-      // The redirect will happen automatically
-      setIsRedirecting(true)
-    } catch (error) {
-      console.error("❌ OAuth initiation failed:", error)
-      setError(`Failed to start OAuth: ${error instanceof Error ? error.message : "Unknown error"}`)
-      setIsConnecting(false)
-    }
-  }, [isConnecting])
-
-  const dismissError = useCallback(() => {
-    setError(null)
-    const url = new URL(window.location.href)
-    url.searchParams.delete("oauth_error")
-    url.searchParams.delete("oauth_success")
-    window.history.replaceState({}, document.title, url.pathname)
-  }, [])
-
-  const testCallback = useCallback(() => {
-    const testUrl = `${window.location.origin}/api/github/callback?test=true`
-    console.log("🧪 Testing callback URL:", testUrl)
-    window.open(testUrl, "_blank")
-  }, [])
-
-  const openDebugPage = useCallback(() => {
-    window.open("/debug", "_blank")
-  }, [])
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -128,7 +74,7 @@ export default function HomePage() {
             <AlertCircle className="h-4 w-4" />
             <AlertDescription className="pr-8">{error}</AlertDescription>
             <button
-              onClick={dismissError}
+              onClick={() => setError(null)}
               className="absolute top-2 right-2 text-destructive hover:text-destructive/80"
             >
               <X className="h-4 w-4" />
@@ -137,19 +83,9 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Success Alert */}
-      {isRedirecting && (
-        <div className="fixed top-4 right-4 z-50 max-w-md">
-          <Alert className="bg-green-500/20 border-green-500 text-green-500 dark:bg-green-900/20 dark:border-green-700 dark:text-green-400">
-            <CheckCircle className="h-4 w-4" />
-            <AlertDescription>
-              <div className="flex items-center gap-2">
-                <RefreshCw className="h-4 w-4 animate-spin" />
-                OAuth successful! Redirecting to dashboard...
-              </div>
-            </AlertDescription>
-          </Alert>
-        </div>
+      {/* Auth Forms Modal */}
+      {showAuthForms && (
+        <AuthForms onClose={() => setShowAuthForms(false)} />
       )}
 
       {/* Navigation */}
@@ -162,17 +98,29 @@ export default function HomePage() {
               Production Ready
             </Badge>
           </div>
-          <div className="flex items-center space-x-6">
+          <div className="flex items-center space-x-4">
             <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">
               Features
             </a>
             <a href="#demo" className="text-muted-foreground hover:text-foreground transition-colors">
               Demo
             </a>
-            <a href="/debug" className="text-muted-foreground hover:text-foreground transition-colors">
-              Debug
-            </a>
             <ThemeToggle />
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="ghost"
+                onClick={() => setShowAuthForms(true)}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                Sign In
+              </Button>
+              <Button
+                onClick={() => setShowAuthForms(true)}
+                className="bg-primary hover:bg-primary/90 text-primary-foreground"
+              >
+                Sign Up
+              </Button>
+            </div>
           </div>
         </div>
       </nav>
@@ -195,12 +143,11 @@ export default function HomePage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
             <Button
               size="lg"
-              onClick={handleGitHubConnect}
-              disabled={isConnecting || isRedirecting}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-4 text-lg font-semibold disabled:opacity-50"
+              onClick={() => setShowAuthForms(true)}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-4 text-lg font-semibold"
             >
               <Github className="h-5 w-5 mr-2" />
-              {isConnecting ? "Connecting..." : isRedirecting ? "Redirecting..." : "Connect GitHub"}
+              Get Started
             </Button>
             <Button size="lg" variant="outline" className="px-8 py-4 text-lg bg-transparent">
               Watch Demo
@@ -208,45 +155,7 @@ export default function HomePage() {
             </Button>
           </div>
 
-          {/* Debug Section - Only show in development */}
-          {process.env.NODE_ENV === "development" && debugInfo && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">🔧 Debug Information</CardTitle>
-              </CardHeader>
-              <CardContent className="text-left">
-                <div className="grid md:grid-cols-2 gap-4 text-sm space-y-2">
-                  <div>
-                    <strong>GitHub Client ID:</strong>{" "}
-                    <span
-                      className={
-                        debugInfo.clientId ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
-                      }
-                    >
-                      {debugInfo.clientId ? "✅ Set" : "❌ Missing"}
-                    </span>
-                  </div>
-                  <div>
-                    <strong>Current URL:</strong> <code className="text-xs break-all">{debugInfo.currentUrl}</code>
-                  </div>
-                  <div>
-                    <strong>Callback URL:</strong> <code className="text-xs break-all">{debugInfo.callbackUrl}</code>
-                  </div>
-                  <div>
-                    <strong>Environment:</strong> {process.env.NODE_ENV}
-                  </div>
-                </div>
-                <div className="mt-4 flex gap-2">
-                  <Button size="sm" onClick={testCallback} variant="outline" className="text-xs bg-transparent">
-                    Test Callback URL
-                  </Button>
-                  <Button size="sm" onClick={openDebugPage} variant="outline" className="text-xs bg-transparent">
-                    Open Debug Page
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+
 
           {/* Social Proof */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-2xl mx-auto">
@@ -427,12 +336,11 @@ export default function HomePage() {
           </p>
           <Button
             size="lg"
-            onClick={handleGitHubConnect}
-            disabled={isConnecting || isRedirecting}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground px-12 py-4 text-xl font-semibold disabled:opacity-50"
+            onClick={() => setShowAuthForms(true)}
+            className="bg-primary hover:bg-primary/90 text-primary-foreground px-12 py-4 text-xl font-semibold"
           >
             <Github className="h-6 w-6 mr-3" />
-            {isConnecting ? "Connecting..." : isRedirecting ? "Redirecting..." : "Start Free Today"}
+            Start Free Today
           </Button>
         </div>
       </section>
