@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { supabase } from "@/lib/supabase"
+import { createServerClient } from '@supabase/ssr'
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
@@ -17,13 +17,43 @@ export async function GET(request: NextRequest) {
   // Handle OAuth errors
   if (error) {
     console.error("❌ OAuth error:", { error, error_description })
-    return NextResponse.redirect(`${origin}/dashboard?error=${encodeURIComponent(error_description || error)}`)
+    return NextResponse.redirect(`${origin}/?error=${encodeURIComponent(error_description || error)}`)
   }
 
   if (!code) {
     console.error("❌ No authorization code received")
-    return NextResponse.redirect(`${origin}/dashboard?error=no_authorization_code`)
+    return NextResponse.redirect(`${origin}/?error=no_authorization_code`)
   }
+
+  // Create response to handle cookies
+  let response = NextResponse.redirect(`${origin}/dashboard`)
+
+  // Create server-side Supabase client
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return request.cookies.get(name)?.value
+        },
+        set(name: string, value: string, options: any) {
+          response.cookies.set({
+            name,
+            value,
+            ...options,
+          })
+        },
+        remove(name: string, options: any) {
+          response.cookies.set({
+            name,
+            value: '',
+            ...options,
+          })
+        },
+      },
+    }
+  )
 
   try {
     // Exchange code for session
@@ -31,12 +61,14 @@ export async function GET(request: NextRequest) {
 
     if (exchangeError) {
       console.error("❌ Code exchange error:", exchangeError)
-      return NextResponse.redirect(`${origin}/dashboard?error=${encodeURIComponent(exchangeError.message)}`)
+      response = NextResponse.redirect(`${origin}/?error=${encodeURIComponent(exchangeError.message)}`)
+      return response
     }
 
     if (!data.session) {
       console.error("❌ No session created")
-      return NextResponse.redirect(`${origin}/dashboard?error=no_session_created`)
+      response = NextResponse.redirect(`${origin}/?error=no_session_created`)
+      return response
     }
 
     console.log("✅ Authentication successful:", {
@@ -45,12 +77,14 @@ export async function GET(request: NextRequest) {
       provider: data.user?.app_metadata?.provider,
     })
 
-    // Successful authentication
-    return NextResponse.redirect(`${origin}/dashboard?success=authenticated`)
+    // Successful authentication - redirect to dashboard
+    response = NextResponse.redirect(`${origin}/dashboard`)
+    return response
   } catch (error) {
     console.error("❌ Callback processing error:", error)
-    return NextResponse.redirect(
-      `${origin}/dashboard?error=${encodeURIComponent(error instanceof Error ? error.message : "authentication_failed")}`,
+    response = NextResponse.redirect(
+      `${origin}/?error=${encodeURIComponent(error instanceof Error ? error.message : "authentication_failed")}`,
     )
+    return response
   }
 }

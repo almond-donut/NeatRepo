@@ -245,6 +245,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }, 8000); // 8 second timeout
 
           try {
+            // Check if user signed in with GitHub OAuth
+            const isGitHubOAuth = session.user.app_metadata?.provider === 'github';
             const githubId = session.user.user_metadata?.provider_id || session.user.identities?.find(i => i.provider === 'github')?.id;
 
             const { error: upsertError } = await supabase
@@ -260,15 +262,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             if (upsertError) {
               console.error("❌ AUTH: Error upserting profile:", upsertError);
-              // Only show popup for truly new users, not on every error
-              const lastDismissed = localStorage.getItem(`token_popup_dismissed_${session.user.id}`);
-              if (!lastDismissed) {
-                setShowTokenPopupState(true);
+              // Only show popup for GitHub OAuth users, not Google/email users
+              if (isGitHubOAuth) {
+                const lastDismissed = localStorage.getItem(`token_popup_dismissed_${session.user.id}`);
+                if (!lastDismissed) {
+                  setShowTokenPopupState(true);
+                }
               }
             } else {
               console.log("✅ AUTH: Profile upserted successfully");
               const fetchedProfile = await fetchProfile(session.user.id);
-              if (!fetchedProfile?.github_token) {
+
+              // Only show GitHub token popup for GitHub OAuth users who don't have a token
+              if (isGitHubOAuth && !fetchedProfile?.github_token) {
                 const lastDismissed = localStorage.getItem(`token_popup_dismissed_${session.user.id}`);
                 const now = Date.now();
                 const dismissedTime = lastDismissed ? parseInt(lastDismissed) : 0;
