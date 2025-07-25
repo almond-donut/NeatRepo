@@ -179,10 +179,15 @@ class RepositoryManager {
       if (this.repositories.length > 0) {
         console.log('🔄 SINGLETON: Using cached data as fallback');
         this.notifyListeners();
+      } else {
+        // If no cached data, ensure listeners are still notified with empty array
+        console.log('🔄 SINGLETON: No cached data available, notifying with empty state');
+        this.notifyListeners();
       }
       throw error;
     } finally {
       this.isFetching = false;
+      console.log('🔄 SINGLETON: Fetch operation completed, isFetching reset to false');
     }
   }
 

@@ -839,7 +839,25 @@ ${successCount > 0 ? 'Your portfolio is now cleaner and more professional! 🚀'
   useEffect(() => {
     console.log('🎯 YouTube-style persistence: No tab-switch reloading');
     setIsPageVisible(true); // Always consider page "visible" for UX
-  }, []);
+
+    // Add visibility change handler to reset loading state if stuck
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        console.log('👁️ Tab became visible - checking loading state');
+        // If we've been loading for more than 30 seconds, reset the state
+        const loadingTooLong = isLoadingRepos && (Date.now() - lastVisibilityChange) > 30000;
+        if (loadingTooLong) {
+          console.warn('⚠️ Loading state stuck - resetting');
+          setIsLoadingRepos(false);
+          setError('Loading took too long. Please try refreshing.');
+        }
+        setLastVisibilityChange(Date.now());
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [isLoadingRepos, lastVisibilityChange]);
 
   // 🚀 KEYBOARD SHORTCUTS for flexible drag operations
   useEffect(() => {
@@ -897,12 +915,24 @@ ${successCount > 0 ? 'Your portfolio is now cleaner and more professional! 🚀'
     aiAssistant.initializeGitHub(currentProfile.github_token, username);
     console.log('🔧 AI Assistant GitHub API initialized');
 
-    // 🚀 FETCH REPOSITORIES IMMEDIATELY
-    repositoryManager.fetchRepositories(currentProfile.github_token, true).catch((error) => {
-      console.error('❌ Auto-fetch failed:', error);
+    // 🚀 FETCH REPOSITORIES IMMEDIATELY with timeout protection
+    const fetchTimeout = setTimeout(() => {
+      console.warn('⏰ Fetch timeout - resetting loading state');
       setIsLoadingRepos(false);
-      setError('Failed to load repositories automatically. Please click refresh.');
-    });
+      setError('Request timed out. Please try refreshing.');
+    }, 15000); // 15 second timeout
+
+    repositoryManager.fetchRepositories(currentProfile.github_token, true)
+      .then(() => {
+        clearTimeout(fetchTimeout);
+        setError(null); // Clear any previous errors
+      })
+      .catch((error) => {
+        clearTimeout(fetchTimeout);
+        console.error('❌ Auto-fetch failed:', error);
+        setIsLoadingRepos(false);
+        setError('Failed to load repositories automatically. Please click refresh.');
+      });
 
     setIsInitialized(true);
   }, [user, currentProfile?.github_token, isInitialized]); // Depend on user and token availability
@@ -1735,7 +1765,25 @@ These repositories best demonstrate the skills recruiters look for in ${jobTitle
                     const token = currentProfile?.github_token || effectiveProfile.github_token;
                     if (token) {
                       setIsLoadingRepos(true);
-                      await repositoryManager.fetchRepositories(token, true);
+                      setError(null); // Clear any previous errors
+                      
+                      // Add timeout protection for manual refresh too
+                      const refreshTimeout = setTimeout(() => {
+                        console.warn('⏰ Manual refresh timeout - resetting loading state');
+                        setIsLoadingRepos(false);
+                        setError('Refresh timed out. Please try again.');
+                      }, 15000);
+
+                      try {
+                        await repositoryManager.fetchRepositories(token, true);
+                        clearTimeout(refreshTimeout);
+                        console.log('✅ Manual refresh completed successfully');
+                      } catch (error) {
+                        clearTimeout(refreshTimeout);
+                        console.error('❌ Manual refresh failed:', error);
+                        setIsLoadingRepos(false);
+                        setError('Failed to refresh repositories. Please try again.');
+                      }
                     }
                   }}
                   className="flex items-center gap-2"
