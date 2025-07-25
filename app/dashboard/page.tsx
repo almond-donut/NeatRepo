@@ -13,6 +13,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 // import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useAuth } from "@/components/auth-provider";
+import TokenWarningBadge from "@/components/token-warning-badge";
 import { supabase } from "@/lib/supabase";
 import { repositoryManager } from "@/lib/repository-manager";
 import { aiAssistant } from "@/lib/ai-assistant";
@@ -1826,6 +1827,9 @@ These repositories best demonstrate the skills recruiters look for in ${jobTitle
       <div className="container mx-auto px-6 py-8">
         <div className="grid grid-cols-3 gap-8">
           <div className="col-span-2">
+            {/* Token Warning Badge */}
+            <TokenWarningBadge />
+
             {error && (
               <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
                 <strong className="font-bold">Error: </strong>

@@ -5,9 +5,10 @@ interface GitHubTokenPopupProps {
   onTokenSubmit: (token: string) => void;
   isSubmitting: boolean;
   onClose: () => void;
+  onSkip: () => void;
 }
 
-export default function GitHubTokenPopup({ onTokenSubmit, isSubmitting, onClose }: GitHubTokenPopupProps) {
+export default function GitHubTokenPopup({ onTokenSubmit, isSubmitting, onClose, onSkip }: GitHubTokenPopupProps) {
   const [token, setToken] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -57,7 +58,7 @@ export default function GitHubTokenPopup({ onTokenSubmit, isSubmitting, onClose 
 
             <ol className="list-decimal list-inside space-y-2 text-xs bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
               <li><strong>Click the button below</strong> → Opens GitHub token page</li>
-              <li><strong>Name your token</strong> → Type "GitHub Tailored AI" in the Note field</li>
+              <li><strong>Name your token</strong> → Type "NeatRepo" in the Note field</li>
               <li><strong>⚠️ CRITICAL:</strong> Check ALL 4 scopes above (repo, delete_repo, admin:org, user)</li>
               <li><strong>Generate token</strong> → Click green "Generate token" button</li>
               <li><strong>Copy & paste</strong> → Copy the token and paste it below</li>
@@ -80,20 +81,31 @@ export default function GitHubTokenPopup({ onTokenSubmit, isSubmitting, onClose 
               />
             </div>
             <a
-              href="https://github.com/settings/tokens/new?scopes=repo,delete_repo,admin:org,user&description=GitHub%20Tailored%20AI%20-%20Full%20Access"
+              href="https://github.com/settings/tokens/new?scopes=repo,delete_repo,admin:org,user&description=NeatRepo%20-%20Full%20Access"
               target="_blank"
               rel="noopener noreferrer"
               className="w-full bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-md font-medium text-center block mb-4 transition-colors"
             >
               🚀 Open GitHub & Auto-Select Scopes
             </a>
-            <button
-              type="submit"
-              disabled={isSubmitting || !token.trim()}
-              className="w-full bg-primary text-primary-foreground py-2 px-4 rounded-md hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSubmitting ? 'Saving...' : 'Save and Continue'}
-            </button>
+            <div className="space-y-2">
+              <button
+                type="submit"
+                disabled={isSubmitting || !token.trim()}
+                className="w-full bg-primary text-primary-foreground py-2 px-4 rounded-md hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSubmitting ? 'Saving...' : 'Save and Continue'}
+              </button>
+
+              <button
+                type="button"
+                onClick={onSkip}
+                disabled={isSubmitting}
+                className="w-full bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-md disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+              >
+                Skip for now (Limited functionality)
+              </button>
+            </div>
           </form>
         </div>
       </div>

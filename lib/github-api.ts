@@ -60,7 +60,7 @@ export class GitHubAPIService {
 
       const response = await this.octokit.request('POST /user/repos', {
         name: params.name,
-        description: params.description || `Repository created by GitHub Tailored AI`,
+        description: params.description || `Repository created by NeatRepo`,
         private: params.private || false,
         auto_init: params.auto_init || true,
         gitignore_template: params.gitignore_template,

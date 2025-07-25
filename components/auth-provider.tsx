@@ -327,9 +327,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.removeItem(`token_popup_dismissed_${user.id}`);
     } catch (error) {
       console.error('Error saving GitHub token:', error);
+      // Show error to user but don't close popup
+      alert('Failed to save token. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleSkipToken = () => {
+    if (user) {
+      // Mark that user skipped token setup
+      localStorage.setItem(`token_popup_dismissed_${user.id}`, Date.now().toString());
+    }
+    setShowTokenPopupState(false);
   };
 
   const handleTokenPopupClose = () => {
@@ -346,6 +356,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loading,
     signOut,
     showTokenPopup: () => setShowTokenPopupState(true),
+    hasToken: !!profile?.github_token,
   };
 
   return (
@@ -355,6 +366,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           onTokenSubmit={handleTokenSubmit}
           isSubmitting={isSubmitting}
           onClose={handleTokenPopupClose}
+          onSkip={handleSkipToken}
         />
       )}
       {children}
