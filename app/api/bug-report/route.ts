@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
           const fileName = `bug-reports/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
 
           const { data, error } = await supabase.storage
-            .from('generated-files') // Using existing bucket
+            .from('bug-reports') // Using dedicated bug-reports bucket
             .upload(fileName, value, {
               contentType: value.type,
               upsert: false
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
           } else {
             // Get public URL
             const { data: { publicUrl } } = supabase.storage
-              .from('generated-files')
+              .from('bug-reports')
               .getPublicUrl(fileName)
 
             screenshotUrls.push(publicUrl)
