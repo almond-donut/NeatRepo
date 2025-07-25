@@ -102,63 +102,90 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const initializeSession = async () => {
       try {
+        console.log('🚀 AUTH: Starting session initialization...');
+        
+        // Add timeout protection for session initialization
+        const sessionTimeout = setTimeout(() => {
+          console.warn('⏰ AUTH: Session initialization timeout - forcing completion');
+          setLoading(false);
+        }, 10000); // 10 second timeout
+
         const { data: { session }, error } = await supabase.auth.getSession();
         console.log('🔍 Session check:', { session: !!session, user: !!session?.user, error });
 
         if (session?.user) {
           console.log('✅ Setting user from session:', session.user.id);
           setUser(session.user);
-        } else {
-          console.log('❌ No user in session');
-          setUser(null);
-        }
-        if (session?.user) {
+          
           console.log('✅ User found, fetching profile...');
           const fetchedProfile = await fetchProfile(session.user.id);
           if (!fetchedProfile?.github_token) {
             setShowTokenPopupState(true);
           }
         } else {
-          console.log('❌ No user session found');
+          console.log('❌ No user in session');
+          setUser(null);
         }
+        
+        clearTimeout(sessionTimeout);
+        setLoading(false);
+        console.log('✅ AUTH: Session initialization completed');
       } catch (err) {
-        console.error('Session initialization error:', err);
+        console.error('❌ AUTH: Session initialization error:', err);
+        setLoading(false); // Always stop loading on error
       }
-      setLoading(false);
     };
 
     initializeSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log(" Auth state changed:", event);
+        console.log("🔄 AUTH: Auth state changed:", event);
         setUser(session?.user ?? null);
 
         if (event === 'SIGNED_IN' && session?.user) {
           setLoading(true);
-          const githubId = session.user.user_metadata?.provider_id || session.user.identities?.find(i => i.provider === 'github')?.id;
+          
+          // Add timeout protection for sign-in process
+          const signInTimeout = setTimeout(() => {
+            console.warn('⏰ AUTH: Sign-in process timeout - forcing completion');
+            setLoading(false);
+          }, 8000); // 8 second timeout
 
-          const { error: upsertError } = await supabase
-            .from('user_profiles')
-            .upsert({
-                            id: session.user.id,
-              github_id: githubId,
-              github_username: session.user.user_metadata?.user_name,
-              display_name: session.user.user_metadata?.full_name,
-              avatar_url: session.user.user_metadata?.avatar_url,
-              updated_at: new Date().toISOString(),
-            }, { onConflict: 'id' });
+          try {
+            const githubId = session.user.user_metadata?.provider_id || session.user.identities?.find(i => i.provider === 'github')?.id;
 
-          if (upsertError) {
-            console.error("Error upserting profile:", upsertError);
-          } else {
-            const fetchedProfile = await fetchProfile(session.user.id);
-            if (!fetchedProfile?.github_token) {
-              setShowTokenPopupState(true);
+            const { error: upsertError } = await supabase
+              .from('user_profiles')
+              .upsert({
+                id: session.user.id,
+                github_id: githubId,
+                github_username: session.user.user_metadata?.user_name,
+                display_name: session.user.user_metadata?.full_name,
+                avatar_url: session.user.user_metadata?.avatar_url,
+                updated_at: new Date().toISOString(),
+              }, { onConflict: 'id' });
+
+            if (upsertError) {
+              console.error("❌ AUTH: Error upserting profile:", upsertError);
+            } else {
+              console.log("✅ AUTH: Profile upserted successfully");
+              const fetchedProfile = await fetchProfile(session.user.id);
+              if (!fetchedProfile?.github_token) {
+                setShowTokenPopupState(true);
+              }
             }
+            
+            clearTimeout(signInTimeout);
+            setLoading(false);
+            console.log("✅ AUTH: Sign-in process completed");
+          } catch (error) {
+            clearTimeout(signInTimeout);
+            console.error("❌ AUTH: Sign-in process error:", error);
+            setLoading(false);
           }
-          setLoading(false);
         } else if (event === 'SIGNED_OUT') {
+          console.log("👋 AUTH: User signed out");
           setProfile(null);
         }
       }

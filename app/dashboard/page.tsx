@@ -1561,13 +1561,37 @@ These repositories best demonstrate the skills recruiters look for in ${jobTitle
     );
   }
 
-  // Show loading while auth is initializing
+  // Show loading while auth is initializing with emergency recovery
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">Loading...</h1>
-          <p className="text-muted-foreground">Initializing your dashboard...</p>
+          <p className="text-muted-foreground mb-6">Initializing your dashboard...</p>
+          
+          {/* Emergency recovery button after 10 seconds */}
+          <div className="mt-8">
+            <button
+              onClick={() => {
+                console.log('🚨 EMERGENCY: Force reloading page');
+                window.location.reload();
+              }}
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md text-sm transition-colors"
+              style={{ 
+                animation: 'fadeIn 1s ease-in-out 10s both',
+                opacity: 0
+              }}
+            >
+              🚨 Taking too long? Click to reload
+            </button>
+          </div>
+          
+          <style jsx>{`
+            @keyframes fadeIn {
+              from { opacity: 0; }
+              to { opacity: 1; }
+            }
+          `}</style>
         </div>
       </div>
     );
