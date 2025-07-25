@@ -38,6 +38,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Check if email configuration is available
+    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+      console.error('Email configuration missing')
+      return NextResponse.json(
+        { error: 'Email service not configured' },
+        { status: 503 }
+      )
+    }
+
     // Create email transporter
     const transporter = nodemailer.createTransporter({
       service: 'gmail',
