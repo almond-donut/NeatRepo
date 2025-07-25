@@ -871,6 +871,12 @@ ${successCount > 0 ? 'Your portfolio is now cleaner and more professional! 🚀'
     // Reset initialization when page loads/navigates to ensure auto-fetch always works
     console.log('🔄 PAGE NAVIGATION: Resetting initialization state for reliable auto-fetch');
     setIsInitialized(false);
+
+    // Also reset loading state to prevent stuck loading screens
+    if (repositories.length > 0) {
+      console.log('🔄 PAGE NAVIGATION: Found cached repositories, stopping loading state');
+      setIsLoadingRepos(false);
+    }
   }, []); // Run once on page mount/navigation
 
   // 🚀 SIMPLE & RELIABLE AUTO-FETCH - TRIGGERS WHEN USER & PROFILE ARE READY
