@@ -54,7 +54,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const newProfile = {
             id: userId,
             github_username: user?.user_metadata?.user_name || 'user',
-            github_token: process.env.NEXT_PUBLIC_GITHUB_TOKEN || null,
+            github_token: null, // Always null for new users to force popup
             display_name: user?.user_metadata?.full_name || user?.user_metadata?.name,
             avatar_url: user?.user_metadata?.avatar_url
           };
@@ -76,11 +76,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         }
 
-        // For other errors, create basic profile
+        // For other errors, create basic profile - always null token to force popup
         const basicProfile = {
           id: userId,
           github_username: user?.user_metadata?.user_name || 'user',
-          github_token: process.env.NEXT_PUBLIC_GITHUB_TOKEN || null
+          github_token: null // Always null to force popup
         };
         setProfile(basicProfile);
         return basicProfile;
@@ -193,13 +193,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             console.log('✅ Profile loaded in background');
           }).catch((error) => {
             console.error('❌ Background profile fetch failed:', error);
-            // Create basic profile as fallback
+            // Create basic profile as fallback - ALWAYS show popup for new users
             const basicProfile = {
               id: session.user.id,
               github_username: session.user.user_metadata?.user_name || 'user',
-              github_token: process.env.NEXT_PUBLIC_GITHUB_TOKEN || null
+              github_token: null // Always null to force popup
             };
             setProfile(basicProfile);
+            // FORCE popup for new users even on profile fetch failure
+            setShowTokenPopupState(true);
           });
         } else {
           console.log('❌ No user in session');
@@ -246,6 +248,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             if (upsertError) {
               console.error("❌ AUTH: Error upserting profile:", upsertError);
+              // Even on upsert error, show popup for new users
+              setShowTokenPopupState(true);
             } else {
               console.log("✅ AUTH: Profile upserted successfully");
               const fetchedProfile = await fetchProfile(session.user.id);
