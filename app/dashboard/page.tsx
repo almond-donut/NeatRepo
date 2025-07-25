@@ -1001,45 +1001,62 @@ ${successCount > 0 ? 'Your portfolio is now cleaner and more professional! 🚀'
     }
   }, []); // Run once on page mount/navigation
 
-  // 🚀 SIMPLE & RELIABLE AUTO-FETCH - TRIGGERS WHEN USER & PROFILE ARE READY
+  // 🚀 INSTANT LOADING: Optimized auto-fetch with cache-first approach
   useEffect(() => {
     // Only run when we have user and profile with token
     if (!user || !currentProfile?.github_token || isInitialized) {
       return;
     }
 
-    console.log('🚀 AUTO-FETCH: User and profile ready, fetching repositories...');
-    setIsLoadingRepos(true);
-
+    console.log('🚀 INSTANT AUTO-FETCH: User and profile ready, checking cache first...');
+    
     // Store token for background sync
     localStorage.setItem('github_token', currentProfile.github_token);
 
-    // 🔧 Initialize AI Assistant with GitHub API
+    // 🔧 Initialize AI Assistant with GitHub API (non-blocking)
     const username = currentProfile.github_username || 'user';
     aiAssistant.initializeGitHub(currentProfile.github_token, username);
     console.log('🔧 AI Assistant GitHub API initialized');
 
-    // 🚀 FETCH REPOSITORIES IMMEDIATELY with timeout protection
-    const fetchTimeout = setTimeout(() => {
-      console.warn('⏰ Fetch timeout - resetting loading state');
-      setIsLoadingRepos(false);
-      setError('Request timed out. Please try refreshing.');
-    }, 15000); // 15 second timeout
+    // 🚀 CACHE-FIRST: Check if we have recent cached data
+    const cachedRepos = localStorage.getItem('github_repositories');
+    const cacheTime = localStorage.getItem('github_repositories_time');
+    
+    if (cachedRepos && cacheTime) {
+      const timeSinceCache = Date.now() - parseInt(cacheTime);
+      if (timeSinceCache < 300000) { // 5 minutes
+        console.log('⚡ INSTANT: Using cached data for immediate display');
+        try {
+          const repos = JSON.parse(cachedRepos);
+          setRepositories(repos);
+          setOriginalRepositories(repos);
+          // Don't show loading for cached data
+        } catch (error) {
+          console.error('❌ Cache parse error:', error);
+        }
+      }
+    }
 
-    repositoryManager.fetchRepositories(currentProfile.github_token, true)
-      .then(() => {
-        clearTimeout(fetchTimeout);
-        setError(null); // Clear any previous errors
-      })
-      .catch((error) => {
-        clearTimeout(fetchTimeout);
-        console.error('❌ Auto-fetch failed:', error);
-        setIsLoadingRepos(false);
-        setError('Failed to load repositories automatically. Please click refresh.');
-      });
+    // 🔄 BACKGROUND FETCH: Update data in background (non-blocking)
+    const backgroundFetch = async () => {
+      try {
+        console.log('🔄 BACKGROUND: Fetching fresh data...');
+        await repositoryManager.fetchRepositories(currentProfile.github_token, false);
+        setError(null);
+        console.log('✅ BACKGROUND: Fresh data loaded');
+      } catch (error) {
+        console.error('❌ Background fetch failed:', error);
+        // Only show error if we don't have cached data
+        if (!cachedRepos) {
+          setError('Failed to load repositories. Please try refreshing.');
+        }
+      }
+    };
 
+    // Start background fetch without blocking UI
+    backgroundFetch();
     setIsInitialized(true);
-  }, [user, currentProfile?.github_token, isInitialized]); // Depend on user and token availability
+  }, [user, currentProfile?.github_token, isInitialized]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -1665,37 +1682,16 @@ These repositories best demonstrate the skills recruiters look for in ${jobTitle
     );
   }
 
-  // Show loading while auth is initializing with emergency recovery
+  // 🚀 INSTANT LOADING: Skip loading screen for better UX
+  // Show dashboard immediately and load data progressively
   if (loading) {
+    // Only show loading for very brief moment (auth check)
+    // Most of the time this won't even be visible
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Loading...</h1>
-          <p className="text-muted-foreground mb-6">Initializing your dashboard...</p>
-          
-          {/* Emergency recovery button after 10 seconds */}
-          <div className="mt-8">
-            <button
-              onClick={() => {
-                console.log('🚨 EMERGENCY: Force reloading page');
-                window.location.reload();
-              }}
-              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md text-sm transition-colors"
-              style={{ 
-                animation: 'fadeIn 1s ease-in-out 10s both',
-                opacity: 0
-              }}
-            >
-              🚨 Taking too long? Click to reload
-            </button>
-          </div>
-          
-          <style jsx>{`
-            @keyframes fadeIn {
-              from { opacity: 0; }
-              to { opacity: 1; }
-            }
-          `}</style>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Getting ready...</p>
         </div>
       </div>
     );

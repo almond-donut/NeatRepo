@@ -105,22 +105,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const checkSessionHealth = async () => {
       if (!user) return;
-      
+
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
         const now = Date.now();
         const timeSinceActivity = now - lastActivity;
-        
+
         if (error || !session) {
           console.warn('⚠️ SESSION: Session expired or invalid');
           setSessionHealth('expired');
           return;
         }
-        
+
         // Check if session is close to expiring (within 10 minutes)
         const expiresAt = session.expires_at ? session.expires_at * 1000 : 0;
         const timeUntilExpiry = expiresAt - now;
-        
+
         if (timeUntilExpiry < 600000) { // 10 minutes
           console.warn('⚠️ SESSION: Session expiring soon, refreshing...');
           setSessionHealth('warning');
@@ -145,7 +145,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Check session health every 5 minutes
     const healthCheckInterval = setInterval(checkSessionHealth, 300000);
-    
+
     // Also check on visibility change (when user returns to tab)
     const handleVisibilityChange = () => {
       if (!document.hidden) {
@@ -153,9 +153,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         checkSessionHealth();
       }
     };
-    
+
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    
+
     return () => {
       clearInterval(healthCheckInterval);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
@@ -165,13 +165,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const initializeSession = async () => {
       try {
-        console.log('🚀 AUTH: Starting session initialization...');
+        console.log('🚀 AUTH: INSTANT LOADING - Starting optimized initialization...');
+
+        // 🚀 INSTANT: Set loading to false immediately for better UX
+        // We'll handle auth in background while showing UI
+        setLoading(false);
 
         // Add timeout protection for session initialization
         const sessionTimeout = setTimeout(() => {
-          console.warn('⏰ AUTH: Session initialization timeout - forcing completion');
-          setLoading(false);
-        }, 10000); // 10 second timeout
+          console.warn('⏰ AUTH: Session initialization timeout - using fallback');
+          setUser(null);
+        }, 8000); // Reduced to 8 seconds
 
         const { data: { session }, error } = await supabase.auth.getSession();
         console.log('🔍 Session check:', { session: !!session, user: !!session?.user, error });
@@ -179,24 +183,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (session?.user) {
           console.log('✅ Setting user from session:', session.user.id);
           setUser(session.user);
-          setLastActivity(Date.now()); // Track initial activity
+          setLastActivity(Date.now());
 
-          console.log('✅ User found, fetching profile...');
-          const fetchedProfile = await fetchProfile(session.user.id);
-          if (!fetchedProfile?.github_token) {
-            setShowTokenPopupState(true);
-          }
+          // 🚀 PARALLEL: Fetch profile in background without blocking UI
+          fetchProfile(session.user.id).then((fetchedProfile) => {
+            if (!fetchedProfile?.github_token) {
+              setShowTokenPopupState(true);
+            }
+            console.log('✅ Profile loaded in background');
+          }).catch((error) => {
+            console.error('❌ Background profile fetch failed:', error);
+            // Create basic profile as fallback
+            const basicProfile = {
+              id: session.user.id,
+              github_username: session.user.user_metadata?.user_name || 'user',
+              github_token: process.env.NEXT_PUBLIC_GITHUB_TOKEN || null
+            };
+            setProfile(basicProfile);
+          });
         } else {
           console.log('❌ No user in session');
           setUser(null);
         }
 
         clearTimeout(sessionTimeout);
-        setLoading(false);
-        console.log('✅ AUTH: Session initialization completed');
+        console.log('✅ AUTH: INSTANT initialization completed - UI ready!');
       } catch (err) {
         console.error('❌ AUTH: Session initialization error:', err);
-        setLoading(false); // Always stop loading on error
+        setUser(null); // Fallback to no user
       }
     };
 
