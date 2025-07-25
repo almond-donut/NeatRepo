@@ -17,8 +17,8 @@ NEXT_PUBLIC_GITHUB_CLIENT_ID=Ov23liaOcBS8zuFJCGyG
 
 ### 3. Email Configuration (Bug Reports)
 ```
-SMTP_USER=[YOUR_GMAIL_ADDRESS]
-SMTP_PASS=[YOUR_GMAIL_APP_PASSWORD]
+SMTP_USER=prada.abdul.07@gmail.com
+SMTP_PASS=Acount22
 ```
 
 ### 4. Additional Required Variables
@@ -26,19 +26,59 @@ SMTP_PASS=[YOUR_GMAIL_APP_PASSWORD]
 NODE_ENV=production
 ```
 
-## Setup Instructions
+## STEP-BY-STEP SETUP INSTRUCTIONS
 
-1. Go to Vercel Dashboard → Your Project → Settings → Environment Variables
-2. Add each variable above with their respective values
-3. Make sure to set them for "Production", "Preview", and "Development" environments
-4. Redeploy the project after adding all variables
+### Step 1: Access Environment Variables
+1. You're already in the right place! (Vercel Dashboard → Settings → Environment Variables)
+2. Click the "Add Another" button to start adding variables
 
-## Missing Variables Needed
+### Step 2: Add Each Variable One by One
+For each variable below, click "Add Another" and enter:
 
-Please provide:
-1. **Supabase Service Role Key** (if needed for server-side operations)
-2. **Gmail address** for bug report emails
-3. **Gmail App Password** for the above email
+**Variable 1:**
+- Key: `NEXT_PUBLIC_SUPABASE_URL`
+- Value: `https://qhoqcuvdgueeisqhkqio.supabase.co`
+- Environments: Check all (Production, Preview, Development)
+
+**Variable 2:**
+- Key: `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- Value: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFob3FjdXZkZ3VlZWlzcWhrcWlvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMxMDkxMTksImV4cCI6MjA2ODY4NTExOX0.e5ibUs6zWfPQ1et1BCWx22KWdw5Q1hhAyiLnCxQchzI`
+- Environments: Check all (Production, Preview, Development)
+
+**Variable 3:**
+- Key: `GITHUB_CLIENT_ID`
+- Value: `Ov23liaOcBS8zuFJCGyG`
+- Environments: Check all (Production, Preview, Development)
+
+**Variable 4:**
+- Key: `GITHUB_CLIENT_SECRET`
+- Value: `7966dc1935a2cf8fd7f26c40cd2ce15feacc5faa0b224a4fb497ce18cf3d3b16`
+- Environments: Check all (Production, Preview, Development)
+
+**Variable 5:**
+- Key: `NEXT_PUBLIC_GITHUB_CLIENT_ID`
+- Value: `Ov23liaOcBS8zuFJCGyG`
+- Environments: Check all (Production, Preview, Development)
+
+**Variable 6:**
+- Key: `SMTP_USER`
+- Value: `prada.abdul.07@gmail.com`
+- Environments: Check all (Production, Preview, Development)
+
+**Variable 7:**
+- Key: `SMTP_PASS`
+- Value: `Acount22`
+- Environments: Check all (Production, Preview, Development)
+
+**Variable 8:**
+- Key: `NODE_ENV`
+- Value: `production`
+- Environments: Check only Production
+
+### Step 3: Save and Deploy
+1. Click "Save" after adding all variables
+2. Vercel will automatically redeploy your project
+3. Wait for deployment to complete (usually 1-2 minutes)
 
 ## Verification
 
