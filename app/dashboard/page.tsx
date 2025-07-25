@@ -866,6 +866,13 @@ ${successCount > 0 ? 'Your portfolio is now cleaner and more professional! 🚀'
 
   // OLD fetchRepositories function removed - using SINGLETON pattern only
 
+  // 🔄 RESET INITIALIZATION ON PAGE NAVIGATION
+  useEffect(() => {
+    // Reset initialization when page loads/navigates to ensure auto-fetch always works
+    console.log('🔄 PAGE NAVIGATION: Resetting initialization state for reliable auto-fetch');
+    setIsInitialized(false);
+  }, []); // Run once on page mount/navigation
+
   // 🚀 SIMPLE & RELIABLE AUTO-FETCH - TRIGGERS WHEN USER & PROFILE ARE READY
   useEffect(() => {
     // Only run when we have user and profile with token
