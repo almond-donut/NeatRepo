@@ -192,20 +192,29 @@ function HomePageContent({ handleError }: { handleError: (error: string) => void
             <ThemeToggle />
             <div className="flex items-center space-x-2">
               {user ? (
-                // Show logout button when user is authenticated
-                <Button
-                  onClick={handleLogout}
-                  disabled={isLoading}
-                  variant="outline"
-                  className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                >
-                  {isLoading ? (
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <LogOut className="h-4 w-4 mr-2" />
-                  )}
-                  {isLoading ? 'Signing out...' : 'Sign Out'}
-                </Button>
+                // Show dashboard and logout buttons when user is authenticated
+                <>
+                  <Button
+                    onClick={() => window.location.href = '/dashboard'}
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                  >
+                    <ArrowRight className="h-4 w-4 mr-2" />
+                    Continue to Dashboard
+                  </Button>
+                  <Button
+                    onClick={handleLogout}
+                    disabled={isLoading}
+                    variant="outline"
+                    className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                  >
+                    {isLoading ? (
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <LogOut className="h-4 w-4 mr-2" />
+                    )}
+                    {isLoading ? 'Signing out...' : 'Sign Out'}
+                  </Button>
+                </>
               ) : (
                 // Show GitHub auth button when user is not authenticated
                 <Button
