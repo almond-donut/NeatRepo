@@ -186,6 +186,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(session.user);
           setLastActivity(Date.now());
 
+          // 🚀 MANDATORY GITHUB CONNECTION CHECK:
+          // All users must be connected to GitHub regardless of initial signup method
+          const provider = session.user.app_metadata?.provider;
+          const hasGitHubConnection = provider === 'github' || session.provider_token;
+          
+          console.log('🔍 AUTH: Provider check:', { provider, hasGitHubConnection });
+          
+          // If user is not connected to GitHub, force GitHub OAuth connection
+          if (!hasGitHubConnection) {
+            console.log('⚠️ AUTH: User not connected to GitHub, redirecting to GitHub OAuth...');
+            // Clear current session and redirect to GitHub OAuth
+            await supabase.auth.signOut();
+            
+            // Redirect to GitHub OAuth with current URL as redirect target
+            const currentUrl = window.location.href;
+            const { error } = await supabase.auth.signInWithOAuth({
+              provider: 'github',
+              options: {
+                redirectTo: currentUrl,
+                scopes: 'repo read:user user:email'
+              }
+            });
+            
+            if (error) {
+              console.error('❌ AUTH: GitHub OAuth redirect failed:', error);
+              // Fallback: redirect to home with error message
+              window.location.href = '/?error=github_connection_required';
+            }
+            return; // Stop further processing
+          }
+
           // 🚀 PARALLEL: Fetch profile in background without blocking UI
           fetchProfile(session.user.id).then((fetchedProfile) => {
             // Only show popup if user truly has no token AND hasn't permanently skipped
@@ -313,12 +344,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Clear dismiss tracking on sign out so popup shows for next login
     if (user) {
       localStorage.removeItem(`token_popup_dismissed_${user.id}`);
+      localStorage.removeItem(`token_popup_skipped_permanently_${user.id}`);
     }
+    
+    // Clear local state first
     setProfile(null);
+    
+    // Sign out from Supabase
     await supabase.auth.signOut();
-
-    // Force redirect to homepage to ensure clean state
-    window.location.href = '/';
+    
+    // 🚀 FACEBOOK-STYLE MULTI-ACCOUNT SUPPORT:
+    // Also sign out from GitHub to allow switching accounts
+    // This prevents the "sticky session" problem where users can't switch GitHub accounts
+    const currentUrl = window.location.origin;
+    const githubLogoutUrl = `https://github.com/logout`;
+    
+    // Create a form to POST to GitHub logout (required by GitHub)
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = githubLogoutUrl;
+    form.style.display = 'none';
+    
+    // Add authenticity token if we can get it (GitHub CSRF protection)
+    // For now, we'll try the simpler approach of just redirecting
+    document.body.appendChild(form);
+    
+    // Alternative approach: Direct redirect to GitHub logout with return URL
+    // GitHub will handle the logout and redirect back
+    window.location.href = `https://github.com/logout?return_to=${encodeURIComponent(currentUrl)}`;
   };
 
   const handleTokenSubmit = async (token: string) => {
