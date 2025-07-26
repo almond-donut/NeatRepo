@@ -99,7 +99,7 @@ interface ChatMessage {
 }
 
 export default function DashboardPage() {
-  const { user, profile, loading, signOut, showTokenPopup } = useAuth();
+  const { user, profile, loading, signOut, showTokenPopup, getEffectiveToken } = useAuth();
   const router = useRouter();
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
@@ -1035,20 +1035,12 @@ ${successCount > 0 ? 'Your portfolio is now cleaner and more professional! 🚀'
 
   // 🚀 INSTANT LOADING: Optimized auto-fetch with cache-first approach
   useEffect(() => {
-    // Only run when we have user and profile with token
-    if (!user || !currentProfile?.github_token || isInitialized) {
+    // Only run when we have user and profile (token optional for OAuth fallback)
+    if (!user || !currentProfile || isInitialized) {
       return;
     }
 
     console.log('🚀 INSTANT AUTO-FETCH: User and profile ready, checking cache first...');
-    
-    // Store token for background sync
-    localStorage.setItem('github_token', currentProfile.github_token);
-
-    // 🔧 Initialize AI Assistant with GitHub API (non-blocking)
-    const username = currentProfile.github_username || 'user';
-    aiAssistant.initializeGitHub(currentProfile.github_token, username);
-    console.log('🔧 AI Assistant GitHub API initialized');
 
     // 🚀 CACHE-FIRST: Check if we have recent cached data
     const cachedRepos = localStorage.getItem('github_repositories');
@@ -1072,15 +1064,38 @@ ${successCount > 0 ? 'Your portfolio is now cleaner and more professional! 🚀'
     // 🔄 BACKGROUND FETCH: Update data in background (non-blocking)
     const backgroundFetch = async () => {
       try {
-        console.log('🔄 BACKGROUND: Fetching fresh data...');
-        await repositoryManager.fetchRepositories(currentProfile.github_token, false);
+        console.log('🔄 BACKGROUND: Getting effective token...');
+        const effectiveToken = await getEffectiveToken();
+
+        if (!effectiveToken) {
+          console.log('⚠️ No token available (PAT or OAuth), skipping repository fetch');
+          // Only show error if we don't have cached data
+          if (!cachedRepos) {
+            setError('No GitHub token available. Please setup your GitHub token to view repositories.');
+          }
+          return;
+        }
+
+        console.log('🔄 BACKGROUND: Fetching fresh data with effective token...');
+        await repositoryManager.fetchRepositories(effectiveToken, false);
         setError(null);
         console.log('✅ BACKGROUND: Fresh data loaded');
+
+        // Store token for background sync and AI Assistant
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('github_token', effectiveToken);
+        }
+
+        // 🔧 Initialize AI Assistant with GitHub API (non-blocking)
+        const username = currentProfile.github_username || 'user';
+        aiAssistant.initializeGitHub(effectiveToken, username);
+        console.log('🔧 AI Assistant GitHub API initialized');
+
       } catch (error) {
         console.error('❌ Background fetch failed:', error);
         // Only show error if we don't have cached data
         if (!cachedRepos) {
-          setError('Failed to load repositories. Please try refreshing.');
+          setError('Failed to load repositories. Please check your GitHub token or connection.');
         }
       }
     };
@@ -1088,7 +1103,7 @@ ${successCount > 0 ? 'Your portfolio is now cleaner and more professional! 🚀'
     // Start background fetch without blocking UI
     backgroundFetch();
     setIsInitialized(true);
-  }, [user, currentProfile?.github_token, isInitialized]);
+  }, [user, currentProfile, isInitialized, getEffectiveToken]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -1926,8 +1941,8 @@ These repositories best demonstrate the skills recruiters look for in ${jobTitle
                   variant="outline"
                   size="sm"
                   onClick={async () => {
-                    const token = currentProfile?.github_token || effectiveProfile.github_token;
-                    if (token) {
+                    const effectiveToken = await getEffectiveToken();
+                    if (effectiveToken) {
                       setIsLoadingRepos(true);
                       setError(null); // Clear any previous errors
                       
@@ -1939,7 +1954,7 @@ These repositories best demonstrate the skills recruiters look for in ${jobTitle
                       }, 15000);
 
                       try {
-                        await repositoryManager.fetchRepositories(token, true);
+                        await repositoryManager.fetchRepositories(effectiveToken, true);
                         clearTimeout(refreshTimeout);
                         console.log('✅ Manual refresh completed successfully');
                       } catch (error) {
@@ -1948,6 +1963,8 @@ These repositories best demonstrate the skills recruiters look for in ${jobTitle
                         setIsLoadingRepos(false);
                         setError('Failed to refresh repositories. Please try again.');
                       }
+                    } else {
+                      setError('No GitHub token available. Please setup your GitHub token.');
                     }
                   }}
                   className="flex items-center gap-2"
@@ -2217,10 +2234,10 @@ These repositories best demonstrate the skills recruiters look for in ${jobTitle
                             variant="outline"
                             size="sm"
                             onClick={async () => {
-                              const token = currentProfile?.github_token || effectiveProfile.github_token;
-                              if (token) {
+                              const effectiveToken = await getEffectiveToken();
+                              if (effectiveToken) {
                                 setIsLoadingRepos(true);
-                                await repositoryManager.fetchRepositories(token, true);
+                                await repositoryManager.fetchRepositories(effectiveToken, true);
                               }
                             }}
                             className="flex items-center gap-2"

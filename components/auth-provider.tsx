@@ -17,6 +17,7 @@ interface AuthContextType {
   loading: boolean;
   signOut: () => Promise<void>;
   showTokenPopup: () => void;
+  getEffectiveToken: () => Promise<string | null>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -364,6 +365,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setShowTokenPopupState(false);
   };
 
+  // Get effective token: PAT if available, otherwise OAuth token
+  const getEffectiveToken = async (): Promise<string | null> => {
+    // First priority: Personal Access Token from profile
+    if (profile?.github_token) {
+      return profile.github_token;
+    }
+
+    // Second priority: OAuth token from session (for GitHub OAuth users)
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.provider_token && session?.user?.app_metadata?.provider === 'github') {
+        console.log('🔑 Using OAuth token as fallback for repository access');
+        return session.provider_token;
+      }
+    } catch (error) {
+      console.error('❌ Failed to get OAuth token:', error);
+    }
+
+    return null;
+  };
+
   const value = {
     user,
     profile,
@@ -371,6 +393,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signOut,
     showTokenPopup: () => setShowTokenPopupState(true),
     hasToken: !!profile?.github_token,
+    getEffectiveToken,
   };
 
   return (
