@@ -187,33 +187,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setLastActivity(Date.now());
 
           // 🚀 MANDATORY GITHUB CONNECTION CHECK:
-          // All users must be connected to GitHub regardless of initial signup method
-          const provider = session.user.app_metadata?.provider;
-          const hasGitHubConnection = provider === 'github' || session.provider_token;
-          
-          console.log('🔍 AUTH: Provider check:', { provider, hasGitHubConnection });
-          
-          // If user is not connected to GitHub, force GitHub OAuth connection
-          if (!hasGitHubConnection) {
-            console.log('⚠️ AUTH: User not connected to GitHub, redirecting to GitHub OAuth...');
-            // Directly redirect to GitHub OAuth. The new session will overwrite the old one.
+          // Check if user has GitHub connection by looking at their profile
+          // We need to fetch profile first to see if they have github_username
+          try {
+            const userProfile = await fetchProfile(session.user.id);
+            const hasGitHubConnection = userProfile?.github_username || session.user.app_metadata?.provider === 'github';
             
-            // Redirect to GitHub OAuth with current URL as redirect target
-            const currentUrl = window.location.href;
-            const { error } = await supabase.auth.signInWithOAuth({
-              provider: 'github',
-              options: {
-                redirectTo: currentUrl,
-                scopes: 'repo read:user user:email'
-              }
+            console.log('🔍 AUTH: GitHub connection check:', { 
+              provider: session.user.app_metadata?.provider,
+              hasGitHubUsername: !!userProfile?.github_username,
+              hasGitHubConnection 
             });
             
-            if (error) {
-              console.error('❌ AUTH: GitHub OAuth redirect failed:', error);
-              // Fallback: redirect to home with error message
-              window.location.href = '/?error=github_connection_required';
+            // If user doesn't have GitHub connection, redirect to GitHub OAuth
+            if (!hasGitHubConnection) {
+              console.log('⚠️ AUTH: User not connected to GitHub, redirecting to GitHub OAuth...');
+              
+              // Redirect to GitHub OAuth with current URL as redirect target
+              const currentUrl = window.location.href;
+              const { error } = await supabase.auth.signInWithOAuth({
+                provider: 'github',
+                options: {
+                  redirectTo: currentUrl,
+                  scopes: 'repo read:user user:email'
+                }
+              });
+              
+              if (error) {
+                console.error('❌ AUTH: GitHub OAuth redirect failed:', error);
+                // Fallback: redirect to home with error message
+                window.location.href = '/?error=github_connection_required';
+              }
+              return; // Stop further processing since we're redirecting
             }
-            return; // Stop further processing
+          } catch (profileError) {
+            console.error('❌ AUTH: Failed to check GitHub connection:', profileError);
+            // Continue with normal flow if profile check fails
           }
 
           // 🚀 PARALLEL: Fetch profile in background without blocking UI
