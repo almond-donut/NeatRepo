@@ -248,11 +248,20 @@ function HomePageContent({ handleError }: { handleError: (error: string) => void
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
             <Button
               size="lg"
-              onClick={() => setShowGitHubAuth(true)}
+              onClick={user ? () => window.location.href = '/dashboard' : () => setShowGitHubAuth(true)}
               className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-4 text-lg font-semibold"
             >
-              <Github className="h-5 w-5 mr-2" />
-              Get Started
+              {user ? (
+                <>
+                  <ArrowRight className="h-5 w-5 mr-2" />
+                  Go to Dashboard
+                </>
+              ) : (
+                <>
+                  <Github className="h-5 w-5 mr-2" />
+                  Get Started
+                </>
+              )}
             </Button>
             <Button size="lg" variant="outline" className="px-8 py-4 text-lg bg-transparent">
               Watch Demo
