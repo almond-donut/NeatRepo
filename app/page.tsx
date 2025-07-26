@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -24,13 +24,27 @@ import {
   RefreshCw,
 } from "lucide-react"
 
-export default function HomePage() {
+// Separate component for search params logic to avoid hydration issues
+function SearchParamsHandler({ onError }: { onError: (error: string) => void }) {
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    const oauthError = searchParams.get("oauth_error")
+    if (oauthError) {
+      onError(`OAuth Error: ${decodeURIComponent(oauthError)}`)
+      console.error("OAuth Error from URL:", oauthError)
+    }
+  }, [searchParams, onError])
+
+  return null
+}
+
+function HomePageContent() {
   const { user, loading } = useAuth()
   const [showAuthForms, setShowAuthForms] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [debugInfo, setDebugInfo] = useState<any>(null)
   const [isRedirecting, setIsRedirecting] = useState(false)
-  const searchParams = useSearchParams()
 
   // Redirect to dashboard if user is already authenticated
   useEffect(() => {
@@ -72,16 +86,14 @@ export default function HomePage() {
   }, [])
 
   useEffect(() => {
-    const oauthError = searchParams.get("oauth_error")
-    if (oauthError) {
-      setError(`OAuth Error: ${decodeURIComponent(oauthError)}`)
-      console.error("OAuth Error from URL:", oauthError)
-    }
-
     if (!debugInfo) {
       setDebugInfo(initializeDebugInfo())
     }
-  }, [searchParams, debugInfo, initializeDebugInfo])
+  }, [debugInfo, initializeDebugInfo])
+
+  const handleError = useCallback((errorMessage: string) => {
+    setError(errorMessage)
+  }, [])
 
 
 
@@ -365,6 +377,11 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Search Params Handler */}
+      <Suspense fallback={null}>
+        <SearchParamsHandler onError={handleError} />
+      </Suspense>
+
       {/* Footer */}
       <footer className="border-t border-border bg-card">
         <div className="container mx-auto px-4 py-12">
@@ -460,5 +477,20 @@ export default function HomePage() {
         </div>
       </footer>
     </div>
+  )
+}
+
+export default function HomePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    }>
+      <HomePageContent />
+    </Suspense>
   )
 }
