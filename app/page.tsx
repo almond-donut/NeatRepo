@@ -10,6 +10,7 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import GitHubAuth from "@/components/github-auth"
 import { useAuth } from "@/components/auth-provider"
 import GitHubConnectPopup from "@/components/github-connect-popup"
+import { supabase } from "@/lib/supabase"
 import {
   Github,
   Star,
@@ -23,6 +24,7 @@ import {
   AlertCircle,
   X,
   RefreshCw,
+  LogOut,
 } from "lucide-react"
 
 // Separate component for search params logic to avoid hydration issues
@@ -113,8 +115,35 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 }
 
 function HomePageContent({ handleError }: { handleError: (error: string) => void }) {
+  const { user, loading, signOut } = useAuth()
   const [showGitHubAuth, setShowGitHubAuth] = useState(false)
   const [debugInfo, setDebugInfo] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(false)
+
+  // Handle logout with proper cleanup (local only, no GitHub redirect)
+  const handleLogout = async () => {
+    try {
+      setIsLoading(true)
+
+      // Clear all localStorage data including account switcher data
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('neatrepo_accounts')
+        localStorage.clear()
+        sessionStorage.clear()
+      }
+
+      // Sign out from Supabase only (no GitHub redirect)
+      await supabase.auth.signOut()
+
+      // Force page reload to ensure clean state
+      window.location.reload()
+    } catch (error) {
+      console.error('Logout error:', error)
+      handleError('Failed to log out. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const initializeDebugInfo = useCallback(() => {
     if (typeof window !== "undefined") {
@@ -162,13 +191,31 @@ function HomePageContent({ handleError }: { handleError: (error: string) => void
             </a>
             <ThemeToggle />
             <div className="flex items-center space-x-2">
-              <Button
-                onClick={() => setShowGitHubAuth(true)}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground"
-              >
-                <Github className="h-4 w-4 mr-2" />
-                Continue with GitHub
-              </Button>
+              {user ? (
+                // Show logout button when user is authenticated
+                <Button
+                  onClick={handleLogout}
+                  disabled={isLoading}
+                  variant="outline"
+                  className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                >
+                  {isLoading ? (
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <LogOut className="h-4 w-4 mr-2" />
+                  )}
+                  {isLoading ? 'Signing out...' : 'Sign Out'}
+                </Button>
+              ) : (
+                // Show GitHub auth button when user is not authenticated
+                <Button
+                  onClick={() => setShowGitHubAuth(true)}
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                >
+                  <Github className="h-4 w-4 mr-2" />
+                  Continue with GitHub
+                </Button>
+              )}
             </div>
           </div>
         </div>
