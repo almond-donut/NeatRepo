@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { ThemeToggle } from "@/components/theme-toggle"
-import AuthForms from "@/components/auth-forms"
+import GitHubAuth from "@/components/github-auth"
 import { useAuth } from "@/components/auth-provider"
 import GitHubConnectPopup from "@/components/github-connect-popup"
 import {
@@ -113,7 +113,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 }
 
 function HomePageContent({ handleError }: { handleError: (error: string) => void }) {
-  const [showAuthForms, setShowAuthForms] = useState(false)
+  const [showGitHubAuth, setShowGitHubAuth] = useState(false)
   const [debugInfo, setDebugInfo] = useState<any>(null)
 
   const initializeDebugInfo = useCallback(() => {
@@ -138,9 +138,9 @@ function HomePageContent({ handleError }: { handleError: (error: string) => void
   return (
     <div className="min-h-screen bg-background text-foreground">
 
-      {/* Auth Forms Modal */}
-      {showAuthForms && (
-        <AuthForms onClose={() => setShowAuthForms(false)} />
+      {/* GitHub Auth Modal */}
+      {showGitHubAuth && (
+        <GitHubAuth onClose={() => setShowGitHubAuth(false)} />
       )}
 
       {/* Navigation */}
@@ -163,17 +163,11 @@ function HomePageContent({ handleError }: { handleError: (error: string) => void
             <ThemeToggle />
             <div className="flex items-center space-x-2">
               <Button
-                variant="ghost"
-                onClick={() => setShowAuthForms(true)}
-                className="text-muted-foreground hover:text-foreground"
-              >
-                Sign In
-              </Button>
-              <Button
-                onClick={() => setShowAuthForms(true)}
+                onClick={() => setShowGitHubAuth(true)}
                 className="bg-primary hover:bg-primary/90 text-primary-foreground"
               >
-                Sign Up
+                <Github className="h-4 w-4 mr-2" />
+                Continue with GitHub
               </Button>
             </div>
           </div>
@@ -198,7 +192,7 @@ function HomePageContent({ handleError }: { handleError: (error: string) => void
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
             <Button
               size="lg"
-              onClick={() => setShowAuthForms(true)}
+              onClick={() => setShowGitHubAuth(true)}
               className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-4 text-lg font-semibold"
             >
               <Github className="h-5 w-5 mr-2" />
@@ -391,7 +385,7 @@ function HomePageContent({ handleError }: { handleError: (error: string) => void
           </p>
           <Button
             size="lg"
-            onClick={() => setShowAuthForms(true)}
+            onClick={() => setShowGitHubAuth(true)}
             className="bg-primary hover:bg-primary/90 text-primary-foreground px-12 py-4 text-xl font-semibold"
           >
             <Github className="h-6 w-6 mr-3" />
