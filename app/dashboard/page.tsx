@@ -18,6 +18,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { useAuth } from "@/components/auth-provider";
 import TokenWarningBadge from "@/components/token-warning-badge";
 import GitHubTokenWarning from "@/components/github-token-warning";
+import DashboardHeader from "@/components/dashboard-header";
 import { supabase } from "@/lib/supabase";
 import { repositoryManager } from "@/lib/repository-manager";
 import { aiAssistant } from "@/lib/ai-assistant";
@@ -1796,89 +1797,10 @@ These repositories best demonstrate the skills recruiters look for in ${jobTitle
       data-loading={loading.toString()}
       data-repos-count={repositories.length}
     >
-      <header className="border-b border-border bg-card">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <Github className="h-6 w-6" />
-                <span className="text-lg font-semibold">NeatRepo</span>
-              </div>
-              <nav className="flex items-center space-x-6">
-                <span className="font-medium">Dashboard</span>
-              </nav>
-            </div>
+      {/* 🚀 ENHANCED DASHBOARD HEADER WITH MULTI-ACCOUNT SUPPORT */}
+      <DashboardHeader />
 
-            <div className="flex items-center space-x-4">
-              <ThemeToggle />
 
-              {/* User Profile Dropdown */}
-              <div className="relative" ref={profileDropdownRef}>
-                <Button
-                  variant="ghost"
-                  className="flex items-center space-x-2 h-auto p-2"
-                  onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                >
-                  <Avatar className="h-9 w-9">
-                    <AvatarImage src={currentUser?.user_metadata?.avatar_url} alt={currentUser?.user_metadata?.name} />
-                    <AvatarFallback>{currentUser?.user_metadata?.name?.[0] || 'U'}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex flex-col text-left">
-                    <span className="font-semibold text-sm">{currentUser?.user_metadata?.name || 'User'}</span>
-                    <span className="text-xs text-muted-foreground">
-                      @{currentUser?.user_metadata?.login || 'unknown'}
-                    </span>
-                  </div>
-                </Button>
-
-                {/* Dropdown Menu */}
-                {showProfileDropdown && (
-                  <div className="absolute right-0 mt-2 w-56 bg-card border border-border rounded-md shadow-lg z-50">
-                    <div className="py-1">
-                      <div className="px-4 py-2 text-sm font-medium border-b border-border">My Account</div>
-
-                      <button
-                        onClick={() => {
-                          router.push('/profile');
-                          setShowProfileDropdown(false);
-                        }}
-                        className="w-full flex items-center px-4 py-2 text-sm hover:bg-muted transition-colors"
-                      >
-                        <User className="mr-2 h-4 w-4" />
-                        <span>Profile Settings</span>
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          router.push('/profile');
-                          setShowProfileDropdown(false);
-                        }}
-                        className="w-full flex items-center px-4 py-2 text-sm hover:bg-muted transition-colors"
-                      >
-                        <Settings className="mr-2 h-4 w-4" />
-                        <span>Manage Tokens</span>
-                      </button>
-
-                      <div className="border-t border-border my-1"></div>
-
-                      <button
-                        onClick={() => {
-                          handleSignOut();
-                          setShowProfileDropdown(false);
-                        }}
-                        className="w-full flex items-center px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-muted transition-colors"
-                      >
-                        <LogOut className="mr-2 h-4 w-4" />
-                        <span>Sign Out</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
 
       <div className="container mx-auto px-6 py-8">
         <div className="grid grid-cols-3 gap-8">
