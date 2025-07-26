@@ -196,8 +196,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // If user is not connected to GitHub, force GitHub OAuth connection
           if (!hasGitHubConnection) {
             console.log('⚠️ AUTH: User not connected to GitHub, redirecting to GitHub OAuth...');
-            // Clear current session and redirect to GitHub OAuth
-            await supabase.auth.signOut();
+            // Directly redirect to GitHub OAuth. The new session will overwrite the old one.
             
             // Redirect to GitHub OAuth with current URL as redirect target
             const currentUrl = window.location.href;
