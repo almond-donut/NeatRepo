@@ -2732,23 +2732,14 @@ These repositories best demonstrate the skills recruiters look for in ${jobTitle
                                     onClick={() => {
                                       sendDirectMessage("start interview for personalized portfolio README");
                                     }}
-                                    disabled={isAiThinking || isInterviewMode}
+                                    disabled={isAiThinking || repositories.length === 0 || isInterviewMode}
                                   >
                                     <MessageCircle className="h-3 w-3 mr-1.5" />
-                                    {isInterviewMode ? 'Interview Active...' : 'Start Interview'}
+                                    {isInterviewMode ? 'Interview Active...' : 'Generate Portfolio README'}
                                   </Button>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="w-full justify-start bg-transparent text-xs px-2 py-1 h-8"
-                                    onClick={() => {
-                                      sendDirectMessage("generate portfolio README based on all my repositories");
-                                    }}
-                                    disabled={isAiThinking || repositories.length === 0}
-                                  >
-                                    <FileText className="h-3 w-3 mr-1.5" />
-                                    Quick Portfolio README
-                                  </Button>
+                                  <div className="text-xs text-muted-foreground/70 px-1">
+                                    ✨ AI will interview you for a personalized README
+                                  </div>
                                 </div>
                               </div>
                             </div>
