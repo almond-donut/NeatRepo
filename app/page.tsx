@@ -42,7 +42,6 @@ function SearchParamsHandler({ onError }: { onError: (error: string) => void }) 
 function HomePageContent() {
   const { user, loading } = useAuth()
   const [showAuthForms, setShowAuthForms] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [debugInfo, setDebugInfo] = useState<any>(null)
   const [isRedirecting, setIsRedirecting] = useState(false)
 
@@ -91,29 +90,8 @@ function HomePageContent() {
     }
   }, [debugInfo, initializeDebugInfo])
 
-  const handleError = useCallback((errorMessage: string) => {
-    setError(errorMessage)
-  }, [])
-
-
-
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Error Alert */}
-      {error && (
-        <div className="fixed top-4 right-4 z-50 max-w-md">
-          <Alert className="bg-destructive/20 border-destructive text-destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription className="pr-8">{error}</AlertDescription>
-            <button
-              onClick={() => setError(null)}
-              className="absolute top-2 right-2 text-destructive hover:text-destructive/80"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </Alert>
-        </div>
-      )}
 
       {/* Auth Forms Modal */}
       {showAuthForms && (
@@ -480,6 +458,36 @@ function HomePageContent() {
   )
 }
 
+function HomePageWrapper() {
+  const [error, setError] = useState<string | null>(null)
+
+  const handleError = useCallback((errorMessage: string) => {
+    setError(errorMessage)
+  }, [])
+
+  return (
+    <>
+      <SearchParamsHandler onError={handleError} />
+      {/* Error Alert */}
+      {error && (
+        <div className="fixed top-4 right-4 z-50 max-w-md">
+          <Alert className="bg-destructive/20 border-destructive text-destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription className="pr-8">{error}</AlertDescription>
+            <button
+              onClick={() => setError(null)}
+              className="absolute top-2 right-2 text-destructive hover:text-destructive/80"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </Alert>
+        </div>
+      )}
+      <HomePageContent />
+    </>
+  )
+}
+
 export default function HomePage() {
   return (
     <Suspense fallback={
@@ -490,7 +498,7 @@ export default function HomePage() {
         </div>
       </div>
     }>
-      <HomePageContent />
+      <HomePageWrapper />
     </Suspense>
   )
 }
