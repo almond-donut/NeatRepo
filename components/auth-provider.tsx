@@ -174,9 +174,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Add timeout protection for session initialization
         const sessionTimeout = setTimeout(() => {
           console.warn('⏰ AUTH: Session initialization timeout - using fallback');
-          setUser(null);
+          // Don't clear user state if we already have a session
+          if (!user) {
+            setUser(null);
+          }
           setLoading(false);
-        }, 15000); // Increased to 15 seconds for OAuth flows
+        }, 30000); // Increased to 30 seconds for OAuth flows
 
         const { data: { session }, error } = await supabase.auth.getSession();
         console.log('🔍 Session check:', { session: !!session, user: !!session?.user, error });
@@ -248,7 +251,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const signInTimeout = setTimeout(() => {
             console.warn('⏰ AUTH: Sign-in process timeout - forcing completion');
             setLoading(false);
-          }, 8000); // 8 second timeout
+          }, 20000); // 20 second timeout for OAuth flows
 
           try {
             // Check if user signed in with GitHub OAuth

@@ -120,6 +120,11 @@ function HomePageContent({ handleError }: { handleError: (error: string) => void
   const [debugInfo, setDebugInfo] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(false)
 
+  // Debug authentication state
+  useEffect(() => {
+    console.log('🔍 Homepage auth state:', { user: !!user, loading, userId: user?.id })
+  }, [user, loading])
+
   // Handle logout with proper cleanup (local only, no GitHub redirect)
   const handleLogout = async () => {
     try {
@@ -191,7 +196,13 @@ function HomePageContent({ handleError }: { handleError: (error: string) => void
             </a>
             <ThemeToggle />
             <div className="flex items-center space-x-2">
-              {user ? (
+              {loading ? (
+                // Show loading state
+                <Button disabled className="bg-primary/50 text-primary-foreground">
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Loading...
+                </Button>
+              ) : user ? (
                 // Show dashboard and logout buttons when user is authenticated
                 <>
                   <Button
@@ -248,10 +259,16 @@ function HomePageContent({ handleError }: { handleError: (error: string) => void
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
             <Button
               size="lg"
-              onClick={user ? () => window.location.href = '/dashboard' : () => setShowGitHubAuth(true)}
+              onClick={loading ? undefined : (user ? () => window.location.href = '/dashboard' : () => setShowGitHubAuth(true))}
+              disabled={loading}
               className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-4 text-lg font-semibold"
             >
-              {user ? (
+              {loading ? (
+                <>
+                  <RefreshCw className="h-5 w-5 mr-2 animate-spin" />
+                  Loading...
+                </>
+              ) : user ? (
                 <>
                   <ArrowRight className="h-5 w-5 mr-2" />
                   Go to Dashboard
