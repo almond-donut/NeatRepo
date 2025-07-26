@@ -29,6 +29,18 @@ export class NavigationErrorBoundary extends React.Component<
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('🚨 Navigation Error Boundary caught an error:', error, errorInfo)
+    
+    // Send error details to console for debugging
+    console.error('🔍 Error Details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      componentStack: errorInfo.componentStack,
+      errorBoundary: errorInfo.errorBoundary,
+      timestamp: new Date().toISOString(),
+      userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'server',
+      url: typeof window !== 'undefined' ? window.location.href : 'unknown'
+    })
   }
 
   handleRefresh = () => {

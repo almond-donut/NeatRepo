@@ -28,9 +28,7 @@ export default function RootLayout({
       <body className={`${jetbrainsMono.variable} font-mono`}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
           <NavigationErrorBoundary>
-            <AuthProvider>
-              {children}
-            </AuthProvider>
+            {children}
           </NavigationErrorBoundary>
         </ThemeProvider>
       </body>

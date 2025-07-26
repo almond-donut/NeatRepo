@@ -40,37 +40,13 @@ function SearchParamsHandler({ onError }: { onError: (error: string) => void }) 
 }
 
 function HomePageContent() {
-  const { user, loading } = useAuth()
+  // Temporarily disable auth for debugging
+  const user = null
+  const loading = false
   const [showAuthForms, setShowAuthForms] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [debugInfo, setDebugInfo] = useState<any>(null)
   const [isRedirecting, setIsRedirecting] = useState(false)
-
-  // Redirect to dashboard if user is already authenticated
-  useEffect(() => {
-    if (user && !loading) {
-      setIsRedirecting(true)
-      // Use a small delay to ensure auth state is stable
-      const timer = setTimeout(() => {
-        window.location.href = '/dashboard'
-      }, 100)
-      return () => clearTimeout(timer)
-    }
-  }, [user, loading])
-
-  // Show loading state while auth is loading or redirecting
-  if (loading || isRedirecting) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">
-            {isRedirecting ? 'Redirecting to dashboard...' : 'Loading...'}
-          </p>
-        </div>
-      </div>
-    )
-  }
 
   const initializeDebugInfo = useCallback(() => {
     if (typeof window !== "undefined") {
