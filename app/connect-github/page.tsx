@@ -1,5 +1,8 @@
 'use client'
 
+// Force dynamic rendering to avoid static generation issues with auth
+export const dynamic = 'force-dynamic'
+
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/components/auth-provider'
 import { Button } from '@/components/ui/button'

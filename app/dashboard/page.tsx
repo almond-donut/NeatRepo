@@ -1,5 +1,8 @@
 "use client"
 
+// Force dynamic rendering to avoid static generation issues with auth
+export const dynamic = 'force-dynamic'
+
 import React, { useState, useEffect, useRef } from "react";
 import { DragDropContext, Droppable, Draggable, DropResult, DraggableProvided, DraggableStateSnapshot, DroppableProvided, DroppableStateSnapshot } from "@hello-pangea/dnd";
 import { useRouter, useSearchParams } from "next/navigation";
