@@ -186,44 +186,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(session.user);
           setLastActivity(Date.now());
 
-          // 🚀 MANDATORY GITHUB CONNECTION CHECK:
-          // Check if user has GitHub connection by looking at their profile
-          // We need to fetch profile first to see if they have github_username
-          try {
-            const userProfile = await fetchProfile(session.user.id);
-            const hasGitHubConnection = userProfile?.github_username || session.user.app_metadata?.provider === 'github';
-            
-            console.log('🔍 AUTH: GitHub connection check:', { 
-              provider: session.user.app_metadata?.provider,
-              hasGitHubUsername: !!userProfile?.github_username,
-              hasGitHubConnection 
-            });
-            
-            // If user doesn't have GitHub connection, redirect to GitHub OAuth
-            if (!hasGitHubConnection) {
-              console.log('⚠️ AUTH: User not connected to GitHub, redirecting to GitHub OAuth...');
-              
-              // Redirect to GitHub OAuth with current URL as redirect target
-              const currentUrl = window.location.href;
-              const { error } = await supabase.auth.signInWithOAuth({
-                provider: 'github',
-                options: {
-                  redirectTo: currentUrl,
-                  scopes: 'repo read:user user:email'
-                }
-              });
-              
-              if (error) {
-                console.error('❌ AUTH: GitHub OAuth redirect failed:', error);
-                // Fallback: redirect to home with error message
-                window.location.href = '/?error=github_connection_required';
-              }
-              return; // Stop further processing since we're redirecting
-            }
-          } catch (profileError) {
-            console.error('❌ AUTH: Failed to check GitHub connection:', profileError);
-            // Continue with normal flow if profile check fails
-          }
+          // GitHub connection check is now handled by AuthGuard component
+          // This prevents conflicts between multiple redirect attempts
 
           // 🚀 PARALLEL: Fetch profile in background without blocking UI
           fetchProfile(session.user.id).then((fetchedProfile) => {

@@ -41,20 +41,46 @@ function SearchParamsHandler({ onError }: { onError: (error: string) => void }) 
 
 // Separate component to handle auth state and redirects
 function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth()
+  const { user, loading, profile } = useAuth()
   const [isRedirecting, setIsRedirecting] = useState(false)
 
-  // Redirect to dashboard if user is already authenticated
+  // Handle GitHub connection requirement and dashboard redirect
   useEffect(() => {
     if (user && !loading) {
-      setIsRedirecting(true)
-      // Use a small delay to ensure auth state is stable
-      const timer = setTimeout(() => {
-        window.location.href = '/dashboard'
-      }, 100)
-      return () => clearTimeout(timer)
+      // If profile is loaded, check GitHub connection
+      if (profile) {
+        const hasGitHubConnection = profile.github_username || user.app_metadata?.provider === 'github'
+        
+        if (hasGitHubConnection) {
+          // User has GitHub connection, redirect to dashboard
+          setIsRedirecting(true)
+          const timer = setTimeout(() => {
+            window.location.href = '/dashboard'
+          }, 100)
+          return () => clearTimeout(timer)
+        } else {
+          // User doesn't have GitHub connection, redirect to GitHub OAuth
+          console.log('⚠️ AUTH: User not connected to GitHub, redirecting to GitHub OAuth...')
+          const currentUrl = window.location.href
+          
+          // Import supabase client
+          import('@/lib/supabase').then(({ supabase }) => {
+            supabase.auth.signInWithOAuth({
+              provider: 'github',
+              options: {
+                redirectTo: currentUrl,
+                scopes: 'repo read:user user:email'
+              }
+            }).catch(error => {
+              console.error('❌ AUTH: GitHub OAuth redirect failed:', error)
+              window.location.href = '/?error=github_connection_required'
+            })
+          })
+        }
+      }
+      // If profile is not loaded yet, wait for it
     }
-  }, [user, loading])
+  }, [user, loading, profile])
 
   // Show loading state while auth is loading or redirecting
   if (loading || isRedirecting) {
