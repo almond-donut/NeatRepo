@@ -187,14 +187,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
           // 🚀 PARALLEL: Fetch profile in background without blocking UI
           fetchProfile(session.user.id).then((fetchedProfile) => {
-            // Only show popup if user truly has no token AND hasn't dismissed it recently
+            // Only show popup if user truly has no token AND hasn't permanently skipped
             if (!fetchedProfile?.github_token && typeof window !== 'undefined') {
-              const lastDismissed = localStorage.getItem(`token_popup_dismissed_${session.user.id}`);
-              const now = Date.now();
-              const dismissedTime = lastDismissed ? parseInt(lastDismissed) : 0;
+              const permanentlySkipped = localStorage.getItem(`token_popup_skipped_permanently_${session.user.id}`);
 
-              // Show popup if never dismissed or dismissed more than 1 hour ago
-              if (!lastDismissed || (now - dismissedTime) > 3600000) {
+              // Only show popup if user hasn't permanently skipped
+              if (!permanentlySkipped) {
                 setShowTokenPopupState(true);
               }
             }
@@ -211,8 +209,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             // Only show popup for new users (not returning users with fetch errors)
             if (typeof window !== 'undefined') {
-              const lastDismissed = localStorage.getItem(`token_popup_dismissed_${session.user.id}`);
-              if (!lastDismissed) {
+              const permanentlySkipped = localStorage.getItem(`token_popup_skipped_permanently_${session.user.id}`);
+              if (!permanentlySkipped) {
                 setShowTokenPopupState(true);
               }
             }
@@ -336,9 +334,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setProfile(prev => (prev ? { ...prev, github_token: token } : null));
       setShowTokenPopupState(false);
 
-      // Mark that user has provided token - don't show popup again unless they sign out
+      // Mark that user has provided token - clear any skip flags
       if (typeof window !== 'undefined') {
         localStorage.removeItem(`token_popup_dismissed_${user.id}`);
+        localStorage.removeItem(`token_popup_skipped_permanently_${user.id}`);
       }
     } catch (error) {
       console.error('Error saving GitHub token:', error);
@@ -351,8 +350,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const handleSkipToken = () => {
     if (user && typeof window !== 'undefined') {
-      // Mark that user skipped token setup
-      localStorage.setItem(`token_popup_dismissed_${user.id}`, Date.now().toString());
+      // Mark that user permanently skipped token setup - don't show popup again
+      localStorage.setItem(`token_popup_skipped_permanently_${user.id}`, 'true');
     }
     setShowTokenPopupState(false);
   };

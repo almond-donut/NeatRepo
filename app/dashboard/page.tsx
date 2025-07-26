@@ -14,6 +14,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useAuth } from "@/components/auth-provider";
 import TokenWarningBadge from "@/components/token-warning-badge";
+import GitHubTokenWarning from "@/components/github-token-warning";
 import { supabase } from "@/lib/supabase";
 import { repositoryManager } from "@/lib/repository-manager";
 import { aiAssistant } from "@/lib/ai-assistant";
@@ -1828,7 +1829,12 @@ These repositories best demonstrate the skills recruiters look for in ${jobTitle
       <div className="container mx-auto px-6 py-8">
         <div className="grid grid-cols-3 gap-8">
           <div className="col-span-2">
-            {/* Token Warning Badge */}
+            {/* GitHub Token Warning */}
+            {!currentProfile?.github_token && (
+              <GitHubTokenWarning onSetupToken={() => setShowTokenPopup(true)} />
+            )}
+
+            {/* Legacy Token Warning Badge */}
             <TokenWarningBadge />
 
             {error && (

@@ -44,27 +44,23 @@ export default function AuthForms({ onClose }: AuthFormsProps) {
       const { data, error } = await supabase.auth.signUp({
         email: signUpData.email,
         password: signUpData.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/api/auth/callback`
-        }
+        // No email confirmation - direct signup for faster onboarding
       })
       
       if (error) throw error
       
-      if (data.user && !data.session) {
-        setMessage({ 
-          type: 'success', 
-          text: 'Check your email for the confirmation link!' 
-        })
-      } else {
-        setMessage({ 
-          type: 'success', 
-          text: 'Account created successfully! Redirecting...' 
-        })
-        setTimeout(() => {
-          window.location.href = '/dashboard'
-        }, 1500)
-      }
+      // Always redirect to login page after signup (no email confirmation)
+      setMessage({
+        type: 'success',
+        text: 'Account created successfully! Please login to continue.'
+      })
+      setTimeout(() => {
+        // Switch to login tab
+        const loginTab = document.querySelector('[value="signin"]') as HTMLElement;
+        if (loginTab) {
+          loginTab.click();
+        }
+      }, 1500)
     } catch (error: any) {
       setMessage({ type: 'error', text: error.message })
     } finally {

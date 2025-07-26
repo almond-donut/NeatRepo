@@ -94,6 +94,23 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(redirectUrl)
     }
 
+    // Check GitHub connection for protected routes
+    if (isProtectedRoute && session) {
+      const provider = session.user?.app_metadata?.provider
+      const hasGitHubConnection = provider === 'github' || session.user?.user_metadata?.provider === 'github'
+
+      // If user doesn't have GitHub connection, redirect to connect page
+      if (!hasGitHubConnection && req.nextUrl.pathname !== '/connect-github') {
+        console.log('🔗 MIDDLEWARE: User needs GitHub connection, redirecting...')
+        return NextResponse.redirect(new URL('/connect-github', req.url))
+      }
+    }
+
+    // Allow access to connect-github page for authenticated users
+    if (req.nextUrl.pathname === '/connect-github' && !session) {
+      return NextResponse.redirect(new URL('/', req.url))
+    }
+
     // If accessing home with session, allow but don't auto-redirect
     // This allows users to visit landing page even when logged in
 
