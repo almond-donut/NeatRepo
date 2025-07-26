@@ -534,6 +534,9 @@ ${successCount > 0 ? 'Your portfolio is now cleaner and more professional! 🚀'
   const [isCriticMode, setIsCriticMode] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [storageInitialized, setStorageInitialized] = useState(false);
+  const [isInterviewMode, setIsInterviewMode] = useState(false);
+  const [interviewProgress, setInterviewProgress] = useState(0);
+  const [generatedReadme, setGeneratedReadme] = useState<string | null>(null);
   const [isPageVisible, setIsPageVisible] = useState(true);
   const [lastVisibilityChange, setLastVisibilityChange] = useState(Date.now());
   const [isLoadingRepos, setIsLoadingRepos] = useState(false);
@@ -1213,6 +1216,23 @@ If you found this project helpful, please give it a star!
     }, 2000);
   };
 
+  // 📥 DOWNLOAD PORTFOLIO README
+  const downloadPortfolioReadme = () => {
+    if (!generatedReadme) return;
+
+    const filename = `Portfolio-README-${new Date().toISOString().split('T')[0]}.md`;
+    saveAndDownloadContent(generatedReadme, filename);
+
+    // Show success message
+    const successMessage: ChatMessage = {
+      id: Date.now().toString(),
+      role: "assistant",
+      content: "🎉 **Portfolio README Downloaded!**\n\nYour personalized README has been saved. Upload it to your GitHub profile repository to showcase your unique story and skills!",
+      timestamp: new Date(),
+    };
+    setChatMessages(prev => [...prev, successMessage]);
+  };
+
   const generateTemplate = async (templateId: string) => {
     const template = projectTemplates.find(t => t.id === templateId);
     if (!template) return;
@@ -1477,7 +1497,23 @@ Be encouraging and supportive but follow the EXACT numbered format above.`;
           // Execute the specific action
           const actionResult = await aiAssistant.executeAction(action);
           response = actionResult.message;
-          console.log(' Action executed:', actionResult);
+          console.log('🎯 Action executed:', actionResult);
+
+          // Handle interview-specific actions
+          if (action.type === 'start_interview') {
+            setIsInterviewMode(true);
+            setInterviewProgress(0);
+          } else if (action.type === 'interview_answer') {
+            if (actionResult.data?.interviewCompleted) {
+              setIsInterviewMode(false);
+              setInterviewProgress(100);
+              setGeneratedReadme(actionResult.data.portfolioReadme);
+            } else if (actionResult.data?.progress) {
+              setInterviewProgress(actionResult.data.progress);
+            }
+          } else if (action.type === 'generate_portfolio_readme') {
+            setGeneratedReadme(actionResult.data?.portfolioReadme);
+          }
         } else {
           // Fall back to direct AI response for general queries
           response = await geminiAI.generateResponse(
@@ -2585,8 +2621,24 @@ These repositories best demonstrate the skills recruiters look for in ${jobTitle
                       <button className="w-3 h-3 bg-green-500 rounded-full hover:bg-green-600"></button>
                     </div>
                     <h2 className="text-sm font-medium text-gray-300">
-                      AI Assistant {isCriticMode && <span className="text-red-400">• Critic Mode</span>}
+                      AI Assistant
+                      {isCriticMode && <span className="text-red-400">• Critic Mode</span>}
+                      {isInterviewMode && <span className="text-blue-400">• Interview Mode</span>}
                     </h2>
+                    {isInterviewMode && (
+                      <div className="mt-1">
+                        <div className="flex items-center gap-2 text-xs text-gray-400">
+                          <span>Portfolio Interview Progress</span>
+                          <div className="flex-1 bg-gray-700 rounded-full h-1">
+                            <div
+                              className="bg-blue-500 h-1 rounded-full transition-all duration-300"
+                              style={{ width: `${interviewProgress}%` }}
+                            />
+                          </div>
+                          <span>{interviewProgress}%</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <Button
@@ -2597,6 +2649,18 @@ These repositories best demonstrate the skills recruiters look for in ${jobTitle
                     >
                       {isCriticMode ? '🔥' : '😊'} {isCriticMode ? 'Brutal' : 'Nice'}
                     </Button>
+
+                    {generatedReadme && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={downloadPortfolioReadme}
+                        className="text-xs text-green-400 bg-green-500/20 hover:bg-green-500/30"
+                        title="Download Portfolio README"
+                      >
+                        📥 Download README
+                      </Button>
+                    )}
                   </div>
                 </CardHeader>
                 <CardContent className="p-4 h-[60vh] flex flex-col">
@@ -2656,6 +2720,37 @@ These repositories best demonstrate the skills recruiters look for in ${jobTitle
                                 <Lightbulb className="h-3 w-3 mr-1.5" />
                                 Get Suggestions
                               </Button>
+
+                              {/* Portfolio README Actions */}
+                              <div className="border-t border-border pt-2 mt-2">
+                                <div className="text-xs text-muted-foreground mb-2 font-medium">📝 Portfolio README</div>
+                                <div className="grid grid-cols-1 gap-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="w-full justify-start bg-blue-500/10 text-blue-400 border-blue-500/30 hover:bg-blue-500/20 text-xs px-2 py-1 h-8"
+                                    onClick={() => {
+                                      sendDirectMessage("start interview for personalized portfolio README");
+                                    }}
+                                    disabled={isAiThinking || isInterviewMode}
+                                  >
+                                    <MessageCircle className="h-3 w-3 mr-1.5" />
+                                    {isInterviewMode ? 'Interview Active...' : 'Start Interview'}
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="w-full justify-start bg-transparent text-xs px-2 py-1 h-8"
+                                    onClick={() => {
+                                      sendDirectMessage("generate portfolio README based on all my repositories");
+                                    }}
+                                    disabled={isAiThinking || repositories.length === 0}
+                                  >
+                                    <FileText className="h-3 w-3 mr-1.5" />
+                                    Quick Portfolio README
+                                  </Button>
+                                </div>
+                              </div>
                             </div>
                           </div>
                         )}

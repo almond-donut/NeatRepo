@@ -3,8 +3,33 @@ import { geminiAI } from './gemini';
 import { GitHubAPIService } from './github-api';
 import { RepositorySorter, Repository } from './repository-sorter';
 
+export interface InterviewQuestion {
+  id: string;
+  question: string;
+  category: 'personal' | 'technical' | 'career' | 'projects' | 'hobbies';
+  followUp?: string;
+}
+
+export interface InterviewState {
+  isActive: boolean;
+  currentQuestion: number;
+  questions: InterviewQuestion[];
+  answers: Record<string, string>;
+  completed: boolean;
+}
+
+export interface PortfolioData {
+  name?: string;
+  codingPassion?: string;
+  recentExcitement?: string;
+  careerGoals?: string;
+  hobbies?: string;
+  techFocus?: string;
+  personalStory?: string;
+}
+
 export interface AIAction {
-  type: 'create_repo' | 'create_file' | 'delete_repo' | 'sort_repos' | 'analyze_complexity' | 'cv_recommendations' | 'general_response';
+  type: 'create_repo' | 'create_file' | 'delete_repo' | 'sort_repos' | 'analyze_complexity' | 'cv_recommendations' | 'generate_portfolio_readme' | 'start_interview' | 'interview_answer' | 'general_response';
   intent: string;
   parameters: Record<string, any>;
   confidence: number;
@@ -24,6 +49,14 @@ export interface UserContext {
     techStack?: string[];
     experienceLevel?: string;
   };
+  personalInfo?: {
+    name?: string;
+    bio?: string;
+    hobbies?: string[];
+    careerGoals?: string;
+    favoriteLanguages?: string[];
+    personalStory?: string;
+  };
   conversationHistory: Array<{
     role: 'user' | 'assistant';
     content: string;
@@ -34,12 +67,20 @@ export interface UserContext {
 export class AIAssistantEngine {
   private githubAPI: GitHubAPIService | null = null;
   private userContext: UserContext;
+  private interviewState: InterviewState;
 
   constructor() {
     this.userContext = {
       repositories: [],
       preferences: {},
       conversationHistory: [],
+    };
+    this.interviewState = {
+      isActive: false,
+      currentQuestion: 0,
+      questions: [],
+      answers: {},
+      completed: false,
     };
   }
 
@@ -49,6 +90,48 @@ export class AIAssistantEngine {
     console.log('🔧 GitHub API initialized for:', username);
   }
 
+  // 🎤 INTERVIEW QUESTION BANK
+  private getInterviewQuestions(): InterviewQuestion[] {
+    return [
+      {
+        id: 'name_passion',
+        question: "Hi! I'm excited to help you create an amazing portfolio README! 🚀 Let's start with the basics - what's your name and what do you love most about coding?",
+        category: 'personal',
+        followUp: "That's awesome! Tell me more about what specifically excites you about that."
+      },
+      {
+        id: 'recent_excitement',
+        question: "What project or technology have you been most excited about recently? I'd love to hear what's been keeping you motivated!",
+        category: 'projects',
+        followUp: "That sounds fascinating! What was the most challenging or rewarding part?"
+      },
+      {
+        id: 'career_goals',
+        question: "Where do you see yourself in your coding journey? Any dream job, company, or role you're working towards?",
+        category: 'career',
+        followUp: "That's a great goal! What steps are you taking to get there?"
+      },
+      {
+        id: 'tech_focus',
+        question: "What technologies or programming languages are you most passionate about right now? What draws you to them?",
+        category: 'technical',
+        followUp: "Interesting choice! What do you love most about working with those?"
+      },
+      {
+        id: 'hobbies_personality',
+        question: "When you're not coding, what do you love to do? I want to show your personality in your README!",
+        category: 'hobbies',
+        followUp: "That's cool! How do those interests influence your approach to coding?"
+      },
+      {
+        id: 'personal_story',
+        question: "Last question! Is there anything unique about your coding journey or background that you'd like people to know about you?",
+        category: 'personal',
+        followUp: "That's a great story! It really shows your unique perspective."
+      }
+    ];
+  }
+
   // 🧠 PARSE USER COMMAND USING AI
   async parseCommand(userMessage: string): Promise<AIAction> {
     const systemPrompt = `You are an AI assistant that helps developers manage their GitHub repositories. 
@@ -56,7 +139,7 @@ export class AIAssistantEngine {
     Analyze the user's message and determine what action they want to perform. Respond with a JSON object containing:
     
     {
-      "type": "create_repo" | "create_file" | "delete_repo" | "sort_repos" | "analyze_complexity" | "cv_recommendations" | "general_response",
+      "type": "create_repo" | "create_file" | "delete_repo" | "sort_repos" | "analyze_complexity" | "cv_recommendations" | "generate_portfolio_readme" | "start_interview" | "interview_answer" | "general_response",
       "intent": "brief description of what user wants",
       "parameters": {
         // extracted parameters based on action type
@@ -77,6 +160,12 @@ export class AIAssistantEngine {
       Parameters: { repo?, all?: boolean }
     - cv_recommendations: User wants CV/resume optimization
       Parameters: { targetJob?, focus? }
+    - generate_portfolio_readme: User wants a comprehensive portfolio README
+      Parameters: { includePersonal?: boolean }
+    - start_interview: User wants to start portfolio interview for personalized README
+      Parameters: { mode?: "quick" | "detailed" }
+    - interview_answer: User is answering an interview question
+      Parameters: { answer: string, questionId?: string }
     - general_response: General conversation or help
       Parameters: { topic? }
     
@@ -88,6 +177,10 @@ export class AIAssistantEngine {
     "Please sort the repos in order from simple to complex so i can put it on my CV" → sort_repos with criteria="complexity", order="asc"
     "Recommend repositories for my CV" → cv_recommendations
     "Create a file readme in my hello-world repo" → create_file with repo="hello-world", filename="README.md"
+    "Generate portfolio README" → generate_portfolio_readme
+    "Create README based on all my repos" → generate_portfolio_readme
+    "Start interview for portfolio" → start_interview
+    "I want personalized README" → start_interview
 
     PRIORITY RULES:
     - If user mentions "sort" AND ("simple" OR "complex" OR "complexity"), ALWAYS use sort_repos regardless of CV mention
@@ -138,7 +231,16 @@ export class AIAssistantEngine {
         
         case 'cv_recommendations':
           return await this.handleCVRecommendations(action.parameters);
-        
+
+        case 'generate_portfolio_readme':
+          return await this.handleGeneratePortfolioReadme(action.parameters);
+
+        case 'start_interview':
+          return await this.handleStartInterview(action.parameters);
+
+        case 'interview_answer':
+          return await this.handleInterviewAnswer(action.parameters);
+
         case 'general_response':
           return await this.handleGeneralResponse(action.parameters);
         
@@ -503,6 +605,173 @@ export class AIAssistantEngine {
     };
   }
 
+  // 🎤 START INTERVIEW ACTION
+  private async handleStartInterview(params: any): Promise<AIResponse> {
+    console.log('🎤 Starting portfolio interview...');
+
+    // Initialize interview state
+    this.interviewState = {
+      isActive: true,
+      currentQuestion: 0,
+      questions: this.getInterviewQuestions(),
+      answers: {},
+      completed: false,
+    };
+
+    const firstQuestion = this.interviewState.questions[0];
+
+    return {
+      message: firstQuestion.question,
+      action: {
+        type: 'start_interview',
+        intent: 'Started portfolio interview',
+        parameters: {
+          questionId: firstQuestion.id,
+          totalQuestions: this.interviewState.questions.length,
+          currentQuestion: 1
+        },
+        confidence: 1.0,
+      },
+      data: {
+        interviewActive: true,
+        currentQuestion: 1,
+        totalQuestions: this.interviewState.questions.length,
+        questionId: firstQuestion.id
+      },
+      success: true,
+    };
+  }
+
+  // 🎤 HANDLE INTERVIEW ANSWER
+  private async handleInterviewAnswer(params: any): Promise<AIResponse> {
+    if (!this.interviewState.isActive) {
+      return {
+        message: "No interview is currently active. Would you like to start a portfolio interview?",
+        success: false,
+      };
+    }
+
+    const currentQuestion = this.interviewState.questions[this.interviewState.currentQuestion];
+    const answer = params.answer || '';
+
+    // Store the answer
+    this.interviewState.answers[currentQuestion.id] = answer;
+
+    // Move to next question
+    this.interviewState.currentQuestion++;
+
+    // Check if interview is complete
+    if (this.interviewState.currentQuestion >= this.interviewState.questions.length) {
+      this.interviewState.completed = true;
+      this.interviewState.isActive = false;
+
+      // Generate portfolio README based on answers
+      const portfolioReadme = await this.generatePortfolioReadmeFromInterview();
+
+      return {
+        message: `🎉 **Interview Complete!**
+
+Thank you for sharing your story! I've created a personalized portfolio README that captures your unique journey and passion.
+
+Here's your custom README based on our conversation:
+
+---
+
+${portfolioReadme}
+
+---
+
+**Your README is ready to download!** This personal touch will help you stand out to recruiters and showcase the real person behind the code. 🚀`,
+        action: {
+          type: 'interview_answer',
+          intent: 'Interview completed, README generated',
+          parameters: {
+            completed: true,
+            readmeGenerated: true
+          },
+          confidence: 1.0,
+        },
+        data: {
+          interviewCompleted: true,
+          portfolioReadme,
+          downloadReady: true
+        },
+        success: true,
+      };
+    }
+
+    // Continue with next question
+    const nextQuestion = this.interviewState.questions[this.interviewState.currentQuestion];
+
+    return {
+      message: `Great answer! 😊
+
+${nextQuestion.question}`,
+      action: {
+        type: 'interview_answer',
+        intent: 'Interview continuing',
+        parameters: {
+          questionId: nextQuestion.id,
+          currentQuestion: this.interviewState.currentQuestion + 1,
+          totalQuestions: this.interviewState.questions.length
+        },
+        confidence: 1.0,
+      },
+      data: {
+        interviewActive: true,
+        currentQuestion: this.interviewState.currentQuestion + 1,
+        totalQuestions: this.interviewState.questions.length,
+        questionId: nextQuestion.id,
+        progress: Math.round(((this.interviewState.currentQuestion) / this.interviewState.questions.length) * 100)
+      },
+      success: true,
+    };
+  }
+
+  // 📝 GENERATE PORTFOLIO README ACTION
+  private async handleGeneratePortfolioReadme(params: any): Promise<AIResponse> {
+    console.log('📝 Generating portfolio README...');
+
+    if (this.userContext.repositories.length === 0) {
+      return {
+        message: "I need access to your repositories to generate a portfolio README. Please make sure your repositories are loaded first.",
+        success: false,
+      };
+    }
+
+    // Generate basic portfolio README without interview
+    const portfolioReadme = await this.generateBasicPortfolioReadme();
+
+    return {
+      message: `📝 **Portfolio README Generated!**
+
+I've created a comprehensive README based on your repository analysis:
+
+---
+
+${portfolioReadme}
+
+---
+
+**Want it more personalized?** Try saying "start interview" for a custom README that includes your personality and story! 🎤`,
+      action: {
+        type: 'generate_portfolio_readme',
+        intent: 'Basic portfolio README generated',
+        parameters: {
+          repositoryCount: this.userContext.repositories.length,
+          includePersonal: false
+        },
+        confidence: 1.0,
+      },
+      data: {
+        portfolioReadme,
+        downloadReady: true,
+        suggestInterview: true
+      },
+      success: true,
+    };
+  }
+
   // 💬 GENERAL RESPONSE ACTION
   private async handleGeneralResponse(params: any): Promise<AIResponse> {
     const helpMessage = `🤖 **AI Assistant Ready**
@@ -613,6 +882,219 @@ What would you like me to help you with?`;
       console.error('❌ Failed to get authenticated username:', error);
       return 'user';
     }
+  }
+
+  // 🎨 GENERATE PORTFOLIO README FROM INTERVIEW
+  private async generatePortfolioReadmeFromInterview(): Promise<string> {
+    const answers = this.interviewState.answers;
+    const repos = this.userContext.repositories;
+
+    // Analyze repositories for tech stack and recent projects
+    const repoAnalysis = this.analyzeRepositories(repos);
+    const recentProjects = this.getRecentProjects(repos, 3);
+
+    // Extract personal info from interview answers
+    const personalData: PortfolioData = {
+      name: this.extractNameFromAnswer(answers.name_passion),
+      codingPassion: this.extractPassionFromAnswer(answers.name_passion),
+      recentExcitement: answers.recent_excitement,
+      careerGoals: answers.career_goals,
+      hobbies: answers.hobbies_personality,
+      techFocus: answers.tech_focus,
+      personalStory: answers.personal_story,
+    };
+
+    return this.buildPersonalizedReadme(personalData, repoAnalysis, recentProjects);
+  }
+
+  // 🎨 GENERATE BASIC PORTFOLIO README
+  private async generateBasicPortfolioReadme(): Promise<string> {
+    const repos = this.userContext.repositories;
+    const repoAnalysis = this.analyzeRepositories(repos);
+    const recentProjects = this.getRecentProjects(repos, 3);
+
+    const basicData: PortfolioData = {
+      name: "Developer", // Default name
+      codingPassion: "building innovative solutions",
+      techFocus: repoAnalysis.primaryLanguages.join(", "),
+    };
+
+    return this.buildPersonalizedReadme(basicData, repoAnalysis, recentProjects);
+  }
+
+  // 📊 ANALYZE REPOSITORIES
+  private analyzeRepositories(repos: any[]) {
+    const languages: Record<string, number> = {};
+    const frameworks: string[] = [];
+    let totalStars = 0;
+    let mostStarredRepo = null;
+    let maxStars = 0;
+
+    repos.forEach(repo => {
+      // Count languages
+      if (repo.language) {
+        languages[repo.language] = (languages[repo.language] || 0) + 1;
+      }
+
+      // Track stars
+      totalStars += repo.stargazers_count || 0;
+      if ((repo.stargazers_count || 0) > maxStars) {
+        maxStars = repo.stargazers_count || 0;
+        mostStarredRepo = repo;
+      }
+
+      // Detect frameworks (basic detection)
+      if (repo.name.includes('react') || repo.description?.toLowerCase().includes('react')) {
+        frameworks.push('React');
+      }
+      if (repo.name.includes('next') || repo.description?.toLowerCase().includes('next')) {
+        frameworks.push('Next.js');
+      }
+      if (repo.name.includes('vue') || repo.description?.toLowerCase().includes('vue')) {
+        frameworks.push('Vue.js');
+      }
+    });
+
+    const primaryLanguages = Object.entries(languages)
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, 3)
+      .map(([lang]) => lang);
+
+    return {
+      primaryLanguages,
+      frameworks: [...new Set(frameworks)],
+      totalStars,
+      mostStarredRepo,
+      totalRepos: repos.length,
+      languages
+    };
+  }
+
+  // 📅 GET RECENT PROJECTS
+  private getRecentProjects(repos: any[], count: number = 3) {
+    return repos
+      .filter(repo => !repo.fork) // Exclude forks
+      .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+      .slice(0, count);
+  }
+
+  // 🎭 BUILD PERSONALIZED README
+  private buildPersonalizedReadme(data: PortfolioData, analysis: any, recentProjects: any[]): string {
+    const name = data.name || "Developer";
+    const passion = data.codingPassion || "building innovative solutions";
+    const hobbies = data.hobbies ? ` When I'm not coding, ${data.hobbies.toLowerCase()}.` : "";
+
+    let readme = `# Hey, I'm ${name}! 👋\n\n`;
+
+    // Personal intro
+    readme += `I'm a passionate developer who loves ${passion}.${hobbies}\n\n`;
+
+    // What drives me section
+    if (data.careerGoals) {
+      readme += `## 🚀 What drives me\n`;
+      readme += `${data.careerGoals}\n\n`;
+    }
+
+    // Tech journey
+    readme += `## 💻 My Tech Journey\n`;
+    if (data.techFocus) {
+      readme += `I'm currently focused on ${data.techFocus}. `;
+    }
+    readme += `I work primarily with ${analysis.primaryLanguages.join(", ")}`;
+    if (analysis.frameworks.length > 0) {
+      readme += ` and love building with ${analysis.frameworks.join(", ")}`;
+    }
+    readme += `.\n\n`;
+
+    // Recent projects
+    if (data.recentExcitement) {
+      readme += `## 🔥 What I'm excited about lately\n`;
+      readme += `${data.recentExcitement}\n\n`;
+    }
+
+    if (recentProjects.length > 0) {
+      readme += `## 🚀 Recent Projects\n\n`;
+      recentProjects.forEach(project => {
+        readme += `**${project.name}** - ${project.description || "An exciting project I've been working on"}\n`;
+      });
+      readme += `\n`;
+    }
+
+    // Tech stack
+    readme += `## 🛠️ Technologies I work with\n\n`;
+    readme += `**Languages:** ${analysis.primaryLanguages.join(" • ")}\n`;
+    if (analysis.frameworks.length > 0) {
+      readme += `**Frameworks:** ${analysis.frameworks.join(" • ")}\n`;
+    }
+    readme += `**Total Repositories:** ${analysis.totalRepos}\n`;
+    if (analysis.totalStars > 0) {
+      readme += `**GitHub Stars:** ${analysis.totalStars} ⭐\n`;
+    }
+    readme += `\n`;
+
+    // Personal story
+    if (data.personalStory) {
+      readme += `## 🌟 My Story\n`;
+      readme += `${data.personalStory}\n\n`;
+    }
+
+    // GitHub stats
+    readme += `## 📊 GitHub Stats\n\n`;
+    readme += `![GitHub Stats](https://github-readme-stats.vercel.app/api?username=YOUR_USERNAME&show_icons=true&theme=radical)\n\n`;
+
+    // What's next
+    if (data.careerGoals) {
+      readme += `## 🎯 What's Next\n`;
+      readme += `I'm always looking for new challenges and opportunities to grow. ${data.careerGoals}\n\n`;
+    }
+
+    readme += `---\n\n`;
+    readme += `💬 **Let's connect!** I'm always excited to collaborate on interesting projects or just chat about tech.\n`;
+
+    return readme;
+  }
+
+  // 🔍 EXTRACT NAME FROM ANSWER
+  private extractNameFromAnswer(answer: string): string {
+    if (!answer) return "Developer";
+
+    // Look for "I'm [name]" or "My name is [name]" patterns
+    const patterns = [
+      /(?:i'm|i am)\s+([a-zA-Z]+)/i,
+      /(?:my name is|name is)\s+([a-zA-Z]+)/i,
+      /^([a-zA-Z]+)(?:\s|,|\.)/,
+    ];
+
+    for (const pattern of patterns) {
+      const match = answer.match(pattern);
+      if (match && match[1]) {
+        return match[1].charAt(0).toUpperCase() + match[1].slice(1).toLowerCase();
+      }
+    }
+
+    return "Developer";
+  }
+
+  // 💝 EXTRACT PASSION FROM ANSWER
+  private extractPassionFromAnswer(answer: string): string {
+    if (!answer) return "building innovative solutions";
+
+    // Look for passion indicators
+    const passionKeywords = ["love", "passionate", "enjoy", "excited", "fascinated"];
+    const lowerAnswer = answer.toLowerCase();
+
+    for (const keyword of passionKeywords) {
+      const index = lowerAnswer.indexOf(keyword);
+      if (index !== -1) {
+        // Extract the part after the passion keyword
+        const afterKeyword = answer.substring(index + keyword.length).trim();
+        if (afterKeyword.length > 0) {
+          return afterKeyword.split('.')[0].trim();
+        }
+      }
+    }
+
+    return "building innovative solutions";
   }
 }
 
