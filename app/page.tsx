@@ -74,7 +74,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
-function HomePageContent() {
+function HomePageContent({ handleError }: { handleError: (error: string) => void }) {
   const [showAuthForms, setShowAuthForms] = useState(false)
   const [debugInfo, setDebugInfo] = useState<any>(null)
 
@@ -491,7 +491,7 @@ function HomePageWrapper() {
         </div>
       )}
       <AuthGuard>
-        <HomePageContent />
+        <HomePageContent handleError={handleError} />
       </AuthGuard>
     </>
   )
