@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { ThemeToggle } from "@/components/theme-toggle"
 import AuthForms from "@/components/auth-forms"
 import { useAuth } from "@/components/auth-provider"
+import GitHubConnectPopup from "@/components/github-connect-popup"
 import {
   Github,
   Star,
@@ -43,6 +44,7 @@ function SearchParamsHandler({ onError }: { onError: (error: string) => void }) 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, loading, profile } = useAuth()
   const [isRedirecting, setIsRedirecting] = useState(false)
+  const [showGitHubPopup, setShowGitHubPopup] = useState(false)
 
   // Handle GitHub connection requirement and dashboard redirect
   useEffect(() => {
@@ -59,28 +61,24 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
           }, 100)
           return () => clearTimeout(timer)
         } else {
-          // User doesn't have GitHub connection, redirect to GitHub OAuth
-          console.log('⚠️ AUTH: User not connected to GitHub, redirecting to GitHub OAuth...')
-          const currentUrl = window.location.href
-          
-          // Import supabase client
-          import('@/lib/supabase').then(({ supabase }) => {
-            supabase.auth.signInWithOAuth({
-              provider: 'github',
-              options: {
-                redirectTo: currentUrl,
-                scopes: 'repo read:user user:email'
-              }
-            }).catch(error => {
-              console.error('❌ AUTH: GitHub OAuth redirect failed:', error)
-              window.location.href = '/?error=github_connection_required'
-            })
-          })
+          // User doesn't have GitHub connection, show popup instead of auto-redirect
+          console.log('⚠️ AUTH: User not connected to GitHub, showing connect popup...')
+          setShowGitHubPopup(true)
         }
       }
       // If profile is not loaded yet, wait for it
     }
   }, [user, loading, profile])
+
+  const handleSkipGitHub = () => {
+    setShowGitHubPopup(false)
+    // Allow user to continue to dashboard without GitHub connection
+    setIsRedirecting(true)
+    const timer = setTimeout(() => {
+      window.location.href = '/dashboard'
+    }, 100)
+    return () => clearTimeout(timer)
+  }
 
   // Show loading state while auth is loading or redirecting
   if (loading || isRedirecting) {
@@ -93,6 +91,20 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
           </p>
         </div>
       </div>
+    )
+  }
+
+  // Show GitHub connect popup if needed
+  if (showGitHubPopup) {
+    return (
+      <>
+        <GitHubConnectPopup 
+          onClose={() => setShowGitHubPopup(false)}
+          onSkip={handleSkipGitHub}
+          userEmail={user?.email}
+        />
+        {children}
+      </>
     )
   }
 
