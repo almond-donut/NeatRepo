@@ -39,10 +39,9 @@ function SearchParamsHandler({ onError }: { onError: (error: string) => void }) 
   return null
 }
 
-function HomePageContent() {
+// Separate component to handle auth state and redirects
+function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
-  const [showAuthForms, setShowAuthForms] = useState(false)
-  const [debugInfo, setDebugInfo] = useState<any>(null)
   const [isRedirecting, setIsRedirecting] = useState(false)
 
   // Redirect to dashboard if user is already authenticated
@@ -70,6 +69,14 @@ function HomePageContent() {
       </div>
     )
   }
+
+  // Only render children if user is not authenticated and not loading
+  return <>{children}</>
+}
+
+function HomePageContent() {
+  const [showAuthForms, setShowAuthForms] = useState(false)
+  const [debugInfo, setDebugInfo] = useState<any>(null)
 
   const initializeDebugInfo = useCallback(() => {
     if (typeof window !== "undefined") {
@@ -483,7 +490,9 @@ function HomePageWrapper() {
           </Alert>
         </div>
       )}
-      <HomePageContent />
+      <AuthGuard>
+        <HomePageContent />
+      </AuthGuard>
     </>
   )
 }
