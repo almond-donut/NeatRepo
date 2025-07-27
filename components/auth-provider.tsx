@@ -126,11 +126,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             if (error) {
               console.error('❌ AUTH: Error setting session from OAuth tokens:', error);
+              setLoading(false); // Ensure loading is false on error
             } else {
               console.log('✅ AUTH: Session established from OAuth tokens');
-              // Clean up URL immediately and continue with normal flow
+              // Clean up URL immediately
               window.history.replaceState({}, '', window.location.pathname);
-              // Don't redirect here - let the normal session check handle it
+              // Set user and loading state immediately
+              if (data.session?.user) {
+                setUser(data.session.user);
+                setLoading(false);
+                console.log('✅ AUTH: User set from OAuth session');
+                return; // Exit early to prevent duplicate session check
+              }
             }
           }
         }
