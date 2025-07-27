@@ -1456,7 +1456,17 @@ What would you like to start with? 🚀`;
     // 🚀 TRUE AI ASSISTANT - Real AI-powered responses with actions
     try {
       // 🔧 Initialize GitHub API using the same token source as repository manager
-      const effectiveToken = await getEffectiveToken();
+      let effectiveToken = await getEffectiveToken();
+
+      // 🔧 FALLBACK: Check localStorage for PAT token (used during recovery)
+      if (!effectiveToken && typeof window !== 'undefined') {
+        const localToken = localStorage.getItem('github_token');
+        if (localToken) {
+          effectiveToken = localToken;
+          console.log('🔧 AI Assistant: Using PAT token from localStorage (recovery mode)');
+        }
+      }
+
       if (effectiveToken) {
         const username = profile?.github_username || effectiveProfile?.github_username || 'almond-donut';
         aiAssistant.initializeGitHub(effectiveToken, username);
