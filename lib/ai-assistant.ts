@@ -75,13 +75,65 @@ export class AIAssistantEngine {
       preferences: {},
       conversationHistory: [],
     };
-    this.interviewState = {
+
+    // 💾 RESTORE INTERVIEW STATE FROM LOCALSTORAGE
+    this.interviewState = this.loadInterviewState();
+  }
+
+  // 💾 SAVE INTERVIEW STATE TO LOCALSTORAGE
+  private saveInterviewState() {
+    if (typeof window === 'undefined') return;
+
+    try {
+      localStorage.setItem('ai_interview_state', JSON.stringify(this.interviewState));
+      console.log('💾 Interview state saved to localStorage');
+    } catch (error) {
+      console.error('❌ Failed to save interview state:', error);
+    }
+  }
+
+  // 💾 LOAD INTERVIEW STATE FROM LOCALSTORAGE
+  private loadInterviewState(): InterviewState {
+    if (typeof window === 'undefined') {
+      return {
+        isActive: false,
+        currentQuestion: 0,
+        questions: [],
+        answers: {},
+        completed: false,
+      };
+    }
+
+    try {
+      const saved = localStorage.getItem('ai_interview_state');
+      if (saved) {
+        const state = JSON.parse(saved);
+        console.log('💾 Interview state loaded from localStorage:', state);
+        return state;
+      }
+    } catch (error) {
+      console.error('❌ Failed to load interview state:', error);
+    }
+
+    return {
       isActive: false,
       currentQuestion: 0,
       questions: [],
       answers: {},
       completed: false,
     };
+  }
+
+  // 💾 CLEAR INTERVIEW STATE
+  private clearInterviewState() {
+    if (typeof window === 'undefined') return;
+
+    try {
+      localStorage.removeItem('ai_interview_state');
+      console.log('💾 Interview state cleared from localStorage');
+    } catch (error) {
+      console.error('❌ Failed to clear interview state:', error);
+    }
   }
 
   // 🔧 Initialize with GitHub credentials
@@ -736,6 +788,9 @@ This analysis is based on repository size, language complexity, recent activity,
       completed: false,
     };
 
+    // 💾 SAVE STATE TO LOCALSTORAGE
+    this.saveInterviewState();
+
     const firstQuestion = this.interviewState.questions[0];
 
     return {
@@ -778,10 +833,16 @@ This analysis is based on repository size, language complexity, recent activity,
     // Move to next question
     this.interviewState.currentQuestion++;
 
+    // 💾 SAVE STATE TO LOCALSTORAGE
+    this.saveInterviewState();
+
     // Check if interview is complete
     if (this.interviewState.currentQuestion >= this.interviewState.questions.length) {
       this.interviewState.completed = true;
       this.interviewState.isActive = false;
+
+      // 💾 CLEAR STATE FROM LOCALSTORAGE (interview complete)
+      this.clearInterviewState();
 
       // Generate portfolio README based on answers
       const portfolioReadme = await this.generatePortfolioReadmeFromInterview();
