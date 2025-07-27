@@ -51,19 +51,18 @@ export async function GET(req: NextRequest) {
     if (!error) {
       const redirectUrl = new URL(next, origin)
       redirectUrl.searchParams.set('auth', 'success')
-      
+
       console.log('🔀 AUTH CALLBACK: Redirecting to', redirectUrl.toString(), 'with session cookies')
-      
-      // Gunakan respons yang sudah ada (yang berisi cookie sesi) untuk redirect
-      // daripada membuat NextResponse.redirect baru
-      res.headers.set('Location', redirectUrl.toString())
-      res.headers.set('Content-Type', 'text/html; charset=UTF-8')
-      
+
       // Log cookie yang ada untuk debugging
       const cookies = res.cookies.getAll()
       console.log('🍪 AUTH CALLBACK: Cookies being sent:', cookies.map(c => c.name))
-      
-      return res
+
+      // Use NextResponse.redirect with the response that contains cookies
+      return NextResponse.redirect(redirectUrl.toString(), {
+        status: 302,
+        headers: res.headers,
+      })
     }
   }
 
