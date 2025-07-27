@@ -1865,7 +1865,7 @@ These repositories best demonstrate the skills recruiters look for in ${jobTitle
           <div className="col-span-2">
             {/* GitHub Token Warning */}
             {!currentProfile?.github_token && (
-              <GitHubTokenWarning onSetupToken={() => setShowTokenPopup(true)} />
+              <GitHubTokenWarning onSetupToken={showTokenPopup} />
             )}
 
             {/* Legacy Token Warning Badge */}
