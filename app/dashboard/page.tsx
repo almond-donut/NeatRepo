@@ -2282,6 +2282,40 @@ These repositories best demonstrate the skills recruiters look for in ${jobTitle
                               <RefreshCw className="h-4 w-4" />
                               Refresh Repositories
                             </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={async () => {
+                                try {
+                                  // Fetch the profile from database to get the PAT
+                                  const { data: profile, error } = await supabase
+                                    .from('user_profiles')
+                                    .select('*')
+                                    .eq('github_username', 'almond-donut')
+                                    .single();
+
+                                  if (error || !profile?.github_token) {
+                                    throw new Error('Could not fetch almond-donut profile or PAT token');
+                                  }
+
+                                  console.log('🧪 TESTING: Found profile, fetching repos with PAT...');
+                                  setIsLoadingRepos(true);
+                                  await repositoryManager.fetchRepositories(profile.github_token, true);
+                                  setError(null);
+                                  console.log('🧪 TESTING: Repository fetch completed');
+                                } catch (error) {
+                                  console.error('🧪 TESTING: Failed:', error);
+                                  setError('Test authentication failed: ' + error.message);
+                                } finally {
+                                  setIsLoadingRepos(false);
+                                }
+                              }}
+                              className="flex items-center gap-2 bg-yellow-50 hover:bg-yellow-100 border-yellow-300"
+                              disabled={isLoadingRepos}
+                            >
+                              <Bug className="h-4 w-4" />
+                              Test Auth (almond-donut)
+                            </Button>
                           </div>
 
                           <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800 max-w-md mx-auto">
