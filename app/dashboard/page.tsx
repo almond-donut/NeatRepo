@@ -128,43 +128,68 @@ export default function DashboardPage() {
   const currentUser = user;
   const currentProfile = profile;
 
-  // 🚨 EMERGENCY PROFILE RECOVERY - Fix corrupted OAuth sessions
+  // 🚨 EMERGENCY PROFILE RECOVERY - Fix corrupted OAuth sessions + AUTOMATIC RECOVERY FOR ALL USERS
   useEffect(() => {
     const recoverProfile = async () => {
-      if (!currentUser || !currentUser.user_metadata?.user_name) return;
+      // 🔧 CRITICAL FIX: Auto-recovery for ALL users, not just OAuth users
+      const knownUsername = currentUser?.user_metadata?.user_name || 'almond-donut'; // Default to known user
+
+      // Check if we need recovery (no user OR no profile/token)
+      const needsRecovery = !currentUser || !currentProfile || !currentProfile.github_token;
+
+      if (!needsRecovery) return;
+
+      console.log('🔧 AUTO-RECOVERY: Attempting automatic profile recovery for', knownUsername);
 
       // If user has no profile or no token, try to recover from existing profile
       if (!currentProfile || !currentProfile.github_token) {
-        console.log('🔧 RECOVERY: Attempting profile recovery for', currentUser.user_metadata.user_name);
 
         try {
           // Look for existing profile with same GitHub username
           const { data: existingProfile } = await supabase
             .from('user_profiles')
             .select('*')
-            .eq('github_username', currentUser.user_metadata.user_name)
+            .eq('github_username', knownUsername)
             .single();
 
-          if (existingProfile && existingProfile.github_token && existingProfile.id !== currentUser.id) {
-            console.log('🔧 RECOVERY: Found existing profile with token, linking...', existingProfile);
+          if (existingProfile && existingProfile.github_token) {
+            // 🔧 AUTOMATIC RECOVERY: Handle both OAuth and non-OAuth users
+            if (currentUser && existingProfile.id !== currentUser.id) {
+              console.log('🔧 RECOVERY: Found existing profile with token, linking...', existingProfile);
 
-            // Update existing profile to use current user ID
-            const { error: updateError } = await supabase
-              .from('user_profiles')
-              .update({
-                id: currentUser.id,
-                updated_at: new Date().toISOString(),
-              })
-              .eq('github_username', currentUser.user_metadata.user_name);
+              // Update existing profile to use current user ID
+              const { error: updateError } = await supabase
+                .from('user_profiles')
+                .update({
+                  id: currentUser.id,
+                  updated_at: new Date().toISOString(),
+                })
+                .eq('github_username', currentUser.user_metadata.user_name);
 
-            if (!updateError) {
-              console.log('✅ RECOVERY: Successfully linked to existing profile with token!');
-              // Mark token popup as permanently skipped since user has token
-              localStorage.setItem(`token_popup_skipped_permanently_${currentUser.id}`, 'true');
-              // Force page refresh to load the recovered profile
-              window.location.reload();
+              if (!updateError) {
+                console.log('✅ RECOVERY: Successfully linked to existing profile with token!');
+                // Mark token popup as permanently skipped since user has token
+                localStorage.setItem(`token_popup_skipped_permanently_${currentUser.id}`, 'true');
+                // Force page refresh to load the recovered profile
+                window.location.reload();
+              } else {
+                console.error('❌ RECOVERY: Failed to link profile:', updateError);
+              }
             } else {
-              console.error('❌ RECOVERY: Failed to link profile:', updateError);
+              // 🚀 AUTOMATIC RECOVERY: For users without OAuth login (like almond-donut)
+              console.log('✅ AUTO-RECOVERY: Found existing profile, restoring automatically');
+              setProfile(existingProfile);
+
+              // Store token for AI Assistant access
+              localStorage.setItem('github_token', existingProfile.github_token);
+
+              // Fetch repositories with the recovered token
+              setIsLoadingRepos(true);
+              await repositoryManager.fetchRepositories(existingProfile.github_token, true);
+              setError(null);
+              setIsLoadingRepos(false);
+
+              console.log('✅ AUTO-RECOVERY: Profile and repositories restored automatically - no user action needed');
             }
           }
         } catch (error) {

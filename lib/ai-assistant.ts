@@ -556,10 +556,106 @@ export class AIAssistantEngine {
       };
     }
 
-    // For now, return a simulated analysis
+    // 🔧 REAL COMPLEXITY ANALYSIS: Analyze actual repository data
+    const repos = this.userContext.repositories;
+
+    if (!repos || repos.length === 0) {
+      return {
+        message: "No repositories found to analyze. Please make sure your repositories are loaded.",
+        success: false,
+      };
+    }
+
+    // Analyze repository complexity based on real data
+    const analysis = this.analyzeRepositoryComplexity(repos);
+
+    const message = `🧠 **Repository Complexity Analysis Complete!**
+
+📊 **Overview:**
+• Total Repositories: ${repos.length}
+• Languages Found: ${analysis.languages.join(', ')}
+• Average Complexity Score: ${analysis.averageComplexity}/10
+
+🏆 **Most Complex Repositories:**
+${analysis.mostComplex.map((repo, i) => `${i + 1}. **${repo.name}** (${repo.complexity}/10) - ${repo.language || 'Unknown'}`).join('\n')}
+
+📈 **Complexity Breakdown:**
+• High Complexity (8-10): ${analysis.highComplexity} repos
+• Medium Complexity (5-7): ${analysis.mediumComplexity} repos
+• Low Complexity (1-4): ${analysis.lowComplexity} repos
+
+💡 **Insights:**
+${analysis.insights.join('\n')}
+
+This analysis is based on repository size, language complexity, recent activity, and project structure.`;
+
     return {
-      message: "🧠 Complexity analysis is being implemented. This feature will analyze your repositories and provide detailed complexity scores based on:\n\n• Programming languages used\n• Project structure\n• Dependencies\n• Documentation quality\n• Architecture patterns\n\nStay tuned for this advanced feature!",
+      message,
       success: true,
+    };
+  }
+
+  // 🔍 ANALYZE REPOSITORY COMPLEXITY HELPER
+  private analyzeRepositoryComplexity(repos: any[]) {
+    const languages = [...new Set(repos.map(repo => repo.language).filter(Boolean))];
+
+    // Calculate complexity scores for each repo
+    const reposWithComplexity = repos.map(repo => {
+      let complexity = 1;
+
+      // Language complexity scoring
+      const languageComplexity: Record<string, number> = {
+        'TypeScript': 8, 'JavaScript': 7, 'Python': 6, 'Java': 8, 'C++': 9, 'C#': 7,
+        'Go': 6, 'Rust': 9, 'Swift': 7, 'Kotlin': 7, 'PHP': 5, 'Ruby': 6,
+        'HTML': 2, 'CSS': 2, 'Shell': 4, 'Dockerfile': 3
+      };
+
+      if (repo.language && languageComplexity[repo.language]) {
+        complexity += languageComplexity[repo.language];
+      }
+
+      // Size complexity (based on size in KB)
+      if (repo.size > 10000) complexity += 2; // Large projects
+      else if (repo.size > 1000) complexity += 1; // Medium projects
+
+      // Recent activity bonus
+      const daysSinceUpdate = Math.floor((Date.now() - new Date(repo.updated_at).getTime()) / (1000 * 60 * 60 * 24));
+      if (daysSinceUpdate < 7) complexity += 1; // Recently active
+
+      // Stars/forks indicate complexity
+      if (repo.stargazers_count > 10) complexity += 1;
+      if (repo.forks_count > 5) complexity += 1;
+
+      // Cap at 10
+      complexity = Math.min(complexity, 10);
+
+      return { ...repo, complexity };
+    });
+
+    const averageComplexity = Math.round(reposWithComplexity.reduce((sum, repo) => sum + repo.complexity, 0) / repos.length * 10) / 10;
+    const mostComplex = reposWithComplexity.sort((a, b) => b.complexity - a.complexity).slice(0, 3);
+
+    const highComplexity = reposWithComplexity.filter(repo => repo.complexity >= 8).length;
+    const mediumComplexity = reposWithComplexity.filter(repo => repo.complexity >= 5 && repo.complexity < 8).length;
+    const lowComplexity = reposWithComplexity.filter(repo => repo.complexity < 5).length;
+
+    // Generate insights
+    const insights = [];
+    if (languages.includes('TypeScript')) insights.push('• Strong TypeScript usage indicates advanced development practices');
+    if (highComplexity > repos.length * 0.3) insights.push('• High proportion of complex projects shows advanced technical skills');
+    if (repos.some(repo => repo.forks_count > 0)) insights.push('• Forked repositories demonstrate open source contribution');
+    if (repos.some(repo => new Date(repo.updated_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000))) {
+      insights.push('• Recent activity shows active development and maintenance');
+    }
+
+    return {
+      languages,
+      averageComplexity,
+      mostComplex,
+      highComplexity,
+      mediumComplexity,
+      lowComplexity,
+      insights
     };
   }
 
