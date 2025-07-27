@@ -1,111 +1,80 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { createServerClient } from '@supabase/ssr'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { NextResponse, type NextRequest } from 'next/server'
 
-export async function GET(request: NextRequest) {
-  const { searchParams, origin } = new URL(request.url)
-  const code = searchParams.get("code")
-  const error = searchParams.get("error")
-  const error_description = searchParams.get("error_description")
-  const state = searchParams.get("state")
-
-  console.log("🔗 Auth callback received:", {
-    code: code ? "Present" : "Missing",
-    error,
-    error_description,
-    state: state ? "Present" : "Missing",
-    origin,
-    fullUrl: request.url,
+export async function GET(req: NextRequest) {
+  console.log('🚀 AUTH CALLBACK: Starting OAuth callback processing')
+  
+  const { searchParams, origin } = new URL(req.url)
+  const code = searchParams.get('code')
+  const next = searchParams.get('next') ?? '/dashboard'
+  
+  console.log('🔍 AUTH CALLBACK: Received params:', { 
+    hasCode: !!code, 
+    next,
+    origin
   })
 
-  // Handle OAuth errors
-  if (error) {
-    console.error("❌ OAuth error:", { error, error_description })
-    // For bad_oauth_state errors, redirect to clean homepage to retry
-    if (error === 'invalid_request' && error_description?.includes('bad_oauth_state')) {
-      console.log("🔄 OAuth state error detected, redirecting to clean homepage for retry")
-      return NextResponse.redirect(`${origin}/`)
-    }
-    return NextResponse.redirect(`${origin}/?error=${encodeURIComponent(error_description || error)}`)
-  }
-
-  if (!code) {
-    console.error("❌ No authorization code received")
-    return NextResponse.redirect(`${origin}/?error=no_authorization_code`)
-  }
-
-  // Create response to handle cookies
-  let response = NextResponse.redirect(`${origin}/dashboard`)
-
-  // Create server-side Supabase client
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value
-        },
-        set(name: string, value: string, options: any) {
-          response.cookies.set({
-            name,
-            value,
-            ...options,
-          })
-        },
-        remove(name: string, options: any) {
-          response.cookies.set({
-            name,
-            value: '',
-            ...options,
-          })
-        },
+  if (code) {
+    const res = NextResponse.next({
+      request: {
+        headers: req.headers,
       },
-    }
-  )
-
-  try {
-    // Exchange code for session
-    const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
-
-    if (exchangeError) {
-      console.error("❌ Code exchange error:", exchangeError)
-      response = NextResponse.redirect(`${origin}/?error=${encodeURIComponent(exchangeError.message)}`)
-      return response
-    }
-
-    if (!data.session) {
-      console.error("❌ No session created")
-      response = NextResponse.redirect(`${origin}/?error=no_session_created`)
-      return response
-    }
-
-    console.log("✅ Authentication successful:", {
-      userId: data.user?.id,
-      email: data.user?.email,
-      provider: data.user?.app_metadata?.provider,
-      sessionId: data.session?.id,
     })
-
-    // Log cookies being set
-    console.log("🍪 Setting auth cookies for session:", data.session?.id)
-
-    // Successful authentication - redirect to dashboard with session confirmation
-    response = NextResponse.redirect(`${origin}/dashboard?auth=success`)
-
-    // Add cache control headers to prevent caching of auth responses
-    response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')
-    response.headers.set('Pragma', 'no-cache')
-    response.headers.set('Expires', '0')
     
-    // Add session confirmation header
-    response.headers.set('X-Auth-Success', 'true')
-
-    return response
-  } catch (error) {
-    console.error("❌ Callback processing error:", error)
-    response = NextResponse.redirect(
-      `${origin}/?error=${encodeURIComponent(error instanceof Error ? error.message : "authentication_failed")}`,
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return req.cookies.get(name)?.value
+          },
+          set(name: string, value: string, options: CookieOptions) {
+            res.cookies.set({ name, value, ...options })
+          },
+          remove(name: string, options: CookieOptions) {
+            res.cookies.set({ name, value: '', ...options })
+          },
+        },
+      }
     )
-    return response
+    
+    console.log('🔄 AUTH CALLBACK: Exchanging code for session...')
+    const { error } = await supabase.auth.exchangeCodeForSession(code)
+    
+    if (error) {
+      console.error('❌ AUTH CALLBACK: Error exchanging code for session:', error)
+    } else {
+      console.log('✅ AUTH CALLBACK: Successfully exchanged code for session')
+    }
+    
+    if (!error) {
+      const redirectUrl = new URL(next, origin)
+      redirectUrl.searchParams.set('auth', 'success')
+      
+      console.log('🔀 AUTH CALLBACK: Redirecting to', redirectUrl.toString(), 'with session cookies')
+      
+      // Gunakan respons yang sudah ada (yang berisi cookie sesi) untuk redirect
+      // daripada membuat NextResponse.redirect baru
+      res.headers.set('Location', redirectUrl.toString())
+      res.headers.set('Content-Type', 'text/html; charset=UTF-8')
+      
+      // Log cookie yang ada untuk debugging
+      const cookies = res.cookies.getAll()
+      console.log('🍪 AUTH CALLBACK: Cookies being sent:', cookies.map(c => c.name))
+      
+      return res
+    }
   }
+
+  // return the user to an error page with instructions
+  console.log('❌ AUTH CALLBACK: No code provided or error occurred, redirecting to error page')
+  
+  const redirectUrl = new URL('/auth/error', origin)
+  redirectUrl.searchParams.set('error', 'OAuth callback error')
+  
+  // Untuk kasus error di luar blok if (code), kita perlu membuat respons baru
+  // karena res hanya didefinisikan di dalam blok if (code)
+  console.log('🔀 AUTH CALLBACK: Redirecting to error page:', redirectUrl.toString())
+  return NextResponse.redirect(redirectUrl)
 }

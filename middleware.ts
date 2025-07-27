@@ -1,150 +1,90 @@
-import { createServerClient } from '@supabase/ssr'
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(req: NextRequest) {
+  const res = NextResponse.next({
+    request: {
+      headers: req.headers,
+    },
+  })
+
   try {
-    // Check if required environment variables are present
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-      console.error('Missing Supabase environment variables')
-      return NextResponse.next()
-    }
-
-    let res = NextResponse.next({
-      request: {
-        headers: req.headers,
-      },
-    })
-
     const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
           get(name: string) {
             return req.cookies.get(name)?.value
           },
-          set(name: string, value: string, options: any) {
-            req.cookies.set({
-              name,
-              value,
-              ...options,
-            })
-            res = NextResponse.next({
-              request: {
-                headers: req.headers,
-              },
-            })
-            res.cookies.set({
-              name,
-              value,
-              ...options,
-            })
+          set(name: string, value: string, options: CookieOptions) {
+            res.cookies.set({ name, value, ...options })
           },
-          remove(name: string, options: any) {
-            req.cookies.set({
-              name,
-              value: '',
-              ...options,
-            })
-            res = NextResponse.next({
-              request: {
-                headers: req.headers,
-              },
-            })
-            res.cookies.set({
-              name,
-              value: '',
-              ...options,
-            })
+          remove(name: string, options: CookieOptions) {
+            res.cookies.set({ name, value: '', ...options })
           },
         },
       }
     )
 
-    // Refresh session if expired
     const {
       data: { session },
-      error
+      error,
     } = await supabase.auth.getSession()
 
     if (error) {
-      console.error('🚨 MIDDLEWARE: Supabase session error:', error)
-      // Continue without session if there's an error
+      console.error('🚨 MIDDLEWARE: Supabase session error:', error.message)
     }
 
-    // Log session status for debugging
-    console.log('🔍 MIDDLEWARE: Session check:', {
-      hasSession: !!session,
-      userId: session?.user?.id,
-      path: req.nextUrl.pathname,
-      cookies: req.cookies.getAll().map(c => c.name).join(', ')
-    })
-
-    // Protected routes that require authentication
     const protectedRoutes = ['/dashboard', '/profile']
     const isProtectedRoute = protectedRoutes.some(route =>
       req.nextUrl.pathname.startsWith(route)
     )
 
-    // If accessing protected route without session, redirect to home
-    // BUT: Allow dashboard access with auth=success parameter (fresh from OAuth callback)
+    console.log('🔍 MIDDLEWARE: Session check:', {
+      hasSession: !!session,
+      pathname: req.nextUrl.pathname,
+      isProtectedRoute,
+    })
+
     if (isProtectedRoute && !session) {
+      // Allow access to dashboard immediately after OAuth callback
       const authSuccess = req.nextUrl.searchParams.get('auth')
       if (authSuccess === 'success' && req.nextUrl.pathname === '/dashboard') {
-        console.log('🔄 MIDDLEWARE: Allowing dashboard access with auth=success parameter')
-        // Allow access - don't redirect, let the client handle session establishment
-        return NextResponse.next()
+        console.log('✅ MIDDLEWARE: Allowing fresh OAuth login to dashboard.')
+        return res
       }
-      
-      // CRITICAL FIX: Don't redirect if we're in the middle of OAuth callback
-      // Check if this might be a fresh OAuth callback that hasn't established session yet
-      if (req.nextUrl.pathname === '/dashboard') {
-        const referer = req.headers.get('referer')
-        const userAgent = req.headers.get('user-agent')
-        
-        // Allow dashboard access if coming from GitHub OAuth or has auth success header
-        if (referer?.includes('github.com') || req.headers.get('X-Auth-Success') === 'true') {
-          console.log('🔄 MIDDLEWARE: OAuth callback detected, allowing dashboard access')
-          return NextResponse.next()
-        }
-        
-        // TEMPORARY FIX: Allow all dashboard access for debugging
-        console.log('🔄 MIDDLEWARE: TEMPORARY - Allowing all dashboard access for debugging')
-        return NextResponse.next()
-      }
-      
-      const redirectUrl = new URL('/', req.url)
-      redirectUrl.searchParams.set('redirected', 'true')
-      console.log('🚫 MIDDLEWARE: No session found, redirecting to home')
+
+      console.log(`🚫 MIDDLEWARE: No session, redirecting from protected route ${req.nextUrl.pathname} to home.`)
+      const redirectUrl = req.nextUrl.clone()
+      redirectUrl.pathname = '/'
+      redirectUrl.search = '' // Clear any query params
+      redirectUrl.searchParams.set('error', 'unauthenticated')
       return NextResponse.redirect(redirectUrl)
     }
 
-    // Check GitHub connection for protected routes
     if (isProtectedRoute && session) {
-      const provider = session.user?.app_metadata?.provider
-      const hasGitHubConnection = provider === 'github' || session.user?.user_metadata?.provider === 'github'
-
-      // If user doesn't have GitHub connection, redirect to connect page
+      const hasGitHubConnection = session.user?.app_metadata?.provider === 'github'
       if (!hasGitHubConnection && req.nextUrl.pathname !== '/connect-github') {
-        console.log('🔗 MIDDLEWARE: User needs GitHub connection, redirecting...')
+        console.log('🔗 MIDDLEWARE: User needs GitHub connection, redirecting to /connect-github')
         return NextResponse.redirect(new URL('/connect-github', req.url))
       }
     }
-
-    // Allow access to connect-github page for authenticated users
+    
     if (req.nextUrl.pathname === '/connect-github' && !session) {
+      console.log('🚫 MIDDLEWARE: Unauthenticated access to /connect-github, redirecting to home.')
       return NextResponse.redirect(new URL('/', req.url))
     }
 
-    // If accessing home with session, allow but don't auto-redirect
-    // This allows users to visit landing page even when logged in
-
     return res
-  } catch (error) {
-    console.error('Middleware error:', error)
-    // Return next response if middleware fails
-    return NextResponse.next()
+  } catch (e) {
+    console.error('❌ MIDDLEWARE: Unhandled error:', e)
+    // If an error occurs, just pass the request through
+    return NextResponse.next({
+      request: {
+        headers: req.headers,
+      },
+    })
   }
 }
 
