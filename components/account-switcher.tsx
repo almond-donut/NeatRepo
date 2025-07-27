@@ -60,7 +60,20 @@ export default function AccountSwitcher() {
     setShowManageDialog(true)
   }
 
-  if (!user || !profile) return null
+  // 🚨 TEMPORARY DEBUG: Show debug info instead of returning null
+  if (!user || !profile) {
+    console.log("🚨 ACCOUNT SWITCHER DEBUG:", {
+      user: !!user,
+      profile: !!profile,
+      userId: user?.id,
+      userMetadata: user?.user_metadata
+    });
+    return (
+      <div className="text-red-500 text-xs p-2 border border-red-300 rounded">
+        DEBUG: user={!!user}, profile={!!profile}
+      </div>
+    );
+  }
 
   // Use currentAccount from hook or fallback
   const displayAccount = currentAccount || {
