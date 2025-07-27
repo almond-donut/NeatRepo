@@ -2244,30 +2244,51 @@ These repositories best demonstrate the skills recruiters look for in ${jobTitle
                         </div>
                       </div>
                     ) : (
-                      // 🎯 FRIENDLY ERROR MESSAGE FOR BETTER UX
-                      <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                      // 🎯 SUPER FRIENDLY MESSAGE FOR NEW USERS
+                      <div className="flex flex-col items-center justify-center py-12 space-y-6">
                         <div className="text-center">
-                          <Folder className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                          <h3 className="text-lg font-medium text-foreground mb-2">No repositories found</h3>
-                          <p className="text-sm text-muted-foreground mb-4">
-                            If your repositories are still showing 0, please click the refresh button below
+                          <div className="relative">
+                            <Folder className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                            <div className="absolute -top-2 -right-2 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                              <span className="text-white text-xs font-bold">!</span>
+                            </div>
+                          </div>
+                          <h3 className="text-xl font-semibold text-foreground mb-2">Welcome to NeatRepo! 🎉</h3>
+                          <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                            We need your GitHub Personal Access Token to see your repositories and unlock powerful features like bulk delete.
                           </p>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={async () => {
-                              const effectiveToken = await getEffectiveToken();
-                              if (effectiveToken) {
-                                setIsLoadingRepos(true);
-                                await repositoryManager.fetchRepositories(effectiveToken, true);
-                              }
-                            }}
-                            className="flex items-center gap-2"
-                            disabled={isLoadingRepos}
-                          >
-                            <RefreshCw className="h-4 w-4" />
-                            Refresh Repositories
-                          </Button>
+
+                          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                            <Button
+                              onClick={() => window.location.href = '/profile'}
+                              className="bg-blue-600 hover:bg-blue-700 text-white"
+                            >
+                              <Settings className="h-4 w-4 mr-2" />
+                              Setup GitHub Token
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={async () => {
+                                const effectiveToken = await getEffectiveToken();
+                                if (effectiveToken) {
+                                  setIsLoadingRepos(true);
+                                  await repositoryManager.fetchRepositories(effectiveToken, true);
+                                }
+                              }}
+                              className="flex items-center gap-2"
+                              disabled={isLoadingRepos}
+                            >
+                              <RefreshCw className="h-4 w-4" />
+                              Refresh Repositories
+                            </Button>
+                          </div>
+
+                          <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800 max-w-md mx-auto">
+                            <p className="text-sm text-blue-700 dark:text-blue-300">
+                              💡 <strong>New user?</strong> Don't worry! Setting up your token takes just 2 minutes and unlocks all features.
+                            </p>
+                          </div>
                         </div>
                       </div>
                     )
