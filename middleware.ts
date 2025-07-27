@@ -59,7 +59,8 @@ export async function middleware(req: NextRequest) {
       const redirectUrl = req.nextUrl.clone()
       redirectUrl.pathname = '/'
       redirectUrl.search = '' // Clear any query params
-      redirectUrl.searchParams.set('error', 'unauthenticated')
+      // CRITICAL FIX: Don't add error parameter - let client handle OAuth tokens
+      // redirectUrl.searchParams.set('error', 'unauthenticated')
       return NextResponse.redirect(redirectUrl)
     }
 
