@@ -1754,18 +1754,20 @@ These repositories best demonstrate the skills recruiters look for in ${jobTitle
   );
 
   // CONDITIONAL RETURNS AFTER ALL HOOKS
-  // Early return if no user - redirect to landing page (but wait for auth to load)
+  // CRITICAL FIX: Give more time for auth to load and be more lenient
   if (!currentUser && !loading) {
-    if (typeof window !== 'undefined') {
+    // Wait longer for auth to establish and check user from auth provider too
+    if (typeof window !== 'undefined' && !user) {
       setTimeout(() => {
+        console.log('🚫 DASHBOARD: No user after extended wait, redirecting to homepage');
         window.location.href = '/';
-      }, 1000);
+      }, 3000); // Increased from 1000ms to 3000ms
     }
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Redirecting...</h1>
-          <p className="text-muted-foreground">Please wait while we redirect you to sign in.</p>
+          <h1 className="text-2xl font-bold mb-4">Loading Dashboard...</h1>
+          <p className="text-muted-foreground">Please wait while we load your dashboard.</p>
         </div>
       </div>
     );
