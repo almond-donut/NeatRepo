@@ -2327,6 +2327,10 @@ These repositories best demonstrate the skills recruiters look for in ${jobTitle
                                     email: 'generalpwtx7@gmail.com' // Known email from database
                                   }));
 
+                                  // 🔧 CRITICAL FIX: Store github_token for AI Assistant access
+                                  localStorage.setItem('github_token', existingProfile.github_token);
+                                  console.log('🔧 RECOVERY: Stored github_token for AI Assistant access');
+
                                   setError('✅ Repositories restored! Your data is back. Please sign in properly to maintain access.');
                                   console.log('✅ RECOVERY: Successfully restored access for almond-donut');
 
