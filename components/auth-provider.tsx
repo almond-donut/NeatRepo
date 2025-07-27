@@ -293,25 +293,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               profile: fetchedProfile
             });
 
-              // Show PAT popup for GitHub OAuth users who don't have a token
-              if (isGitHubOAuth && !fetchedProfile?.github_token) {
-                const permanentlySkipped = localStorage.getItem(`token_popup_skipped_permanently_${session.user.id}`);
-                
-                console.log('🔍 PAT POPUP STORAGE DEBUG:', {
-                  permanentlySkipped,
-                  shouldShow: !permanentlySkipped
-                });
+            // Show PAT popup for GitHub OAuth users who don't have a token
+            if (isGitHubOAuth && !fetchedProfile?.github_token) {
+              const permanentlySkipped = localStorage.getItem(`token_popup_skipped_permanently_${session.user.id}`);
 
-                // Only check if permanently skipped - remove complex timing logic
-                if (!permanentlySkipped) {
-                  console.log('✅ PAT POPUP: Showing popup for GitHub OAuth user without token');
-                  setShowTokenPopupState(true);
-                } else {
-                  console.log('❌ PAT POPUP: User permanently skipped token setup');
-                }
+              console.log('🔍 PAT POPUP STORAGE DEBUG:', {
+                permanentlySkipped,
+                shouldShow: !permanentlySkipped
+              });
+
+              // Only check if permanently skipped - remove complex timing logic
+              if (!permanentlySkipped) {
+                console.log('✅ PAT POPUP: Showing popup for GitHub OAuth user without token');
+                setShowTokenPopupState(true);
               } else {
-                console.log('❌ PAT POPUP: Not showing - either not GitHub OAuth or already has token');
+                console.log('❌ PAT POPUP: User permanently skipped token setup');
               }
+            } else {
+              console.log('❌ PAT POPUP: Not showing - either not GitHub OAuth or already has token');
             }
 
             setLoading(false);
