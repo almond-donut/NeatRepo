@@ -1125,17 +1125,20 @@ ${successCount > 0 ? 'Your portfolio is now cleaner and more professional! 🚀'
     // 🔄 BACKGROUND FETCH: Update data in background (non-blocking)
     const backgroundFetch = async () => {
       try {
-        console.log('🔄 BACKGROUND: Getting effective token...');
+        console.log('🔄 BACKGROUND: Getting effective token for NEW USER...');
         const effectiveToken = await getEffectiveToken();
 
         if (!effectiveToken) {
-          console.log('⚠️ No token available (PAT or OAuth), skipping repository fetch');
+          console.log('⚠️ NEW USER: No token available (PAT or OAuth), skipping repository fetch');
+          console.log('🔍 NEW USER DEBUG: This should NOT happen for GitHub OAuth users!');
           // Only show error if we don't have cached data
           if (!cachedRepos) {
-            setError('No GitHub token available. Please setup your GitHub token to view repositories.');
+            setError('Unable to access GitHub repositories. Please try refreshing the page.');
           }
           return;
         }
+
+        console.log('✅ NEW USER: Got effective token, fetching repositories...');
 
         console.log('🔄 BACKGROUND: Fetching fresh data with effective token...');
         await repositoryManager.fetchRepositories(effectiveToken, false);

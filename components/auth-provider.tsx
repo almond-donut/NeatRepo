@@ -434,20 +434,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const getEffectiveToken = async (): Promise<string | null> => {
     // First priority: Personal Access Token from profile
     if (profile?.github_token) {
+      console.log('🔑 Using PAT token from profile');
       return profile.github_token;
     }
 
     // Second priority: OAuth token from session (for GitHub OAuth users)
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      console.log('🔍 OAUTH DEBUG: Checking session for OAuth token...', {
+        hasSession: !!session,
+        hasUser: !!session?.user,
+        provider: session?.user?.app_metadata?.provider,
+        hasProviderToken: !!session?.provider_token,
+        tokenLength: session?.provider_token?.length
+      });
+
       if (session?.provider_token && session?.user?.app_metadata?.provider === 'github') {
-        console.log('🔑 Using OAuth token as fallback for repository access');
+        console.log('🔑 ✅ Using OAuth token for repository access - NEW USER CAN BROWSE!');
         return session.provider_token;
+      } else {
+        console.log('❌ No OAuth token available:', {
+          hasProviderToken: !!session?.provider_token,
+          isGitHubProvider: session?.user?.app_metadata?.provider === 'github'
+        });
       }
     } catch (error) {
       console.error('❌ Failed to get OAuth token:', error);
     }
 
+    console.log('❌ No token available (neither PAT nor OAuth)');
     return null;
   };
 
