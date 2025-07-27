@@ -1455,16 +1455,14 @@ What would you like to start with? 🚀`;
 
     // 🚀 TRUE AI ASSISTANT - Real AI-powered responses with actions
     try {
-      // 🔧 Initialize GitHub API if token is available
-      if (profile?.github_token && profile?.github_username) {
-        aiAssistant.initializeGitHub(profile.github_token, profile.github_username);
-        console.log('🔧 AI Assistant GitHub API initialized with user token');
-      } else if (localStorage.getItem('github_token')) {
-        // Fallback to localStorage token
-        const token = localStorage.getItem('github_token');
-        const username = profile?.github_username || 'user';
-        aiAssistant.initializeGitHub(token!, username);
-        console.log('🔧 AI Assistant GitHub API initialized with localStorage token');
+      // 🔧 Initialize GitHub API using the same token source as repository manager
+      const effectiveToken = await getEffectiveToken();
+      if (effectiveToken) {
+        const username = profile?.github_username || effectiveProfile?.github_username || 'almond-donut';
+        aiAssistant.initializeGitHub(effectiveToken, username);
+        console.log('🔧 AI Assistant GitHub API initialized with effective token for:', username);
+      } else {
+        console.log('⚠️ AI Assistant: No effective token available');
       }
 
       // Update AI context with current repositories
