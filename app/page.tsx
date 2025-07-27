@@ -48,29 +48,31 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   const [isRedirecting, setIsRedirecting] = useState(false)
   const [showGitHubPopup, setShowGitHubPopup] = useState(false)
 
+  // DISABLED: Auto-redirect interferes with button navigation
+  // Let users manually click "Continue to Dashboard" button instead
   // Handle GitHub connection requirement and dashboard redirect
-  useEffect(() => {
-    if (user && !loading) {
-      // If profile is loaded, check GitHub connection
-      if (profile) {
-        const hasGitHubConnection = profile.github_username || user.app_metadata?.provider === 'github'
-        
-        if (hasGitHubConnection) {
-          // User has GitHub connection, redirect to dashboard
-          setIsRedirecting(true)
-          const timer = setTimeout(() => {
-            window.location.href = '/dashboard'
-          }, 100)
-          return () => clearTimeout(timer)
-        } else {
-          // User doesn't have GitHub connection, show popup instead of auto-redirect
-          console.log('⚠️ AUTH: User not connected to GitHub, showing connect popup...')
-          setShowGitHubPopup(true)
-        }
-      }
-      // If profile is not loaded yet, wait for it
-    }
-  }, [user, loading, profile])
+  // useEffect(() => {
+  //   if (user && !loading) {
+  //     // If profile is loaded, check GitHub connection
+  //     if (profile) {
+  //       const hasGitHubConnection = profile.github_username || user.app_metadata?.provider === 'github'
+
+  //       if (hasGitHubConnection) {
+  //         // User has GitHub connection, redirect to dashboard
+  //         setIsRedirecting(true)
+  //         const timer = setTimeout(() => {
+  //           window.location.href = '/dashboard'
+  //         }, 100)
+  //         return () => clearTimeout(timer)
+  //       } else {
+  //         // User doesn't have GitHub connection, show popup instead of auto-redirect
+  //         console.log('⚠️ AUTH: User not connected to GitHub, showing connect popup...')
+  //         setShowGitHubPopup(true)
+  //       }
+  //     }
+  //     // If profile is not loaded yet, wait for it
+  //   }
+  // }, [user, loading, profile])
 
   const handleSkipGitHub = () => {
     setShowGitHubPopup(false)
@@ -222,7 +224,11 @@ function HomePageContent({ handleError }: { handleError: (error: string) => void
                 // Show dashboard and logout buttons when user is authenticated
                 <>
                   <Button
-                    onClick={() => window.location.href = '/dashboard'}
+                    onClick={() => {
+                      console.log('🎯 BUTTON: Continue to Dashboard clicked');
+                      // Force immediate navigation
+                      window.location.href = '/dashboard';
+                    }}
                     className="bg-primary hover:bg-primary/90 text-primary-foreground"
                   >
                     <ArrowRight className="h-4 w-4 mr-2" />
@@ -275,7 +281,10 @@ function HomePageContent({ handleError }: { handleError: (error: string) => void
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
             <Button
               size="lg"
-              onClick={loading ? undefined : (user ? () => window.location.href = '/dashboard' : () => setShowGitHubAuth(true))}
+              onClick={loading ? undefined : (user ? () => {
+                console.log('🎯 BUTTON: Go to Dashboard clicked');
+                window.location.href = '/dashboard';
+              } : () => setShowGitHubAuth(true))}
               disabled={loading}
               className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-4 text-lg font-semibold"
             >
