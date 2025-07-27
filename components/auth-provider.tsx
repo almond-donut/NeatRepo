@@ -38,6 +38,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fetchProfile = async (userId: string) => {
     try {
+      console.log("🔍 AUTH: Fetching profile for user ID:", userId);
       const { data, error } = await supabase
         .from('user_profiles')
         .select('*')
@@ -45,7 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .single();
 
       if (error) {
-        console.error('Error fetching profile:', error);
+        console.error('❌ AUTH: Error fetching profile:', error);
         // If profile doesn't exist, create it
         if (error.code === 'PGRST116') {
           console.log('🔧 Profile not found, creating new profile...');
@@ -83,6 +84,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setProfile(basicProfile);
         return basicProfile;
       } else {
+        console.log("✅ AUTH: Profile fetched successfully:", {
+          id: data.id,
+          github_username: data.github_username,
+          hasToken: !!data.github_token,
+          avatar_url: data.avatar_url
+        });
         setProfile(data);
         return data;
       }
