@@ -453,10 +453,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log('🔑 ✅ Using OAuth token for repository access - NEW USER CAN BROWSE!');
         return session.provider_token;
       } else {
-        console.log('❌ No OAuth token available:', {
-          hasProviderToken: !!session?.provider_token,
-          isGitHubProvider: session?.user?.app_metadata?.provider === 'github'
-        });
+        console.log('❌ No OAuth token available from Supabase session');
+
+        // CRITICAL FIX: Supabase doesn't store provider tokens by default
+        // For GitHub OAuth users, try our custom API endpoint
+        if (session?.user?.app_metadata?.provider === 'github') {
+          console.log('🔧 WORKAROUND: GitHub OAuth user detected, checking token API...');
+
+          try {
+            const response = await fetch('/api/github-token');
+            const data = await response.json();
+
+            if (response.ok && data.token) {
+              console.log('🔑 ✅ Got OAuth token from API!', { source: data.source });
+              return data.token;
+            } else {
+              console.log('❌ GitHub token API response:', data);
+              console.log('💡 NEW USER GUIDANCE: OAuth tokens not available, user should configure PAT for full functionality');
+              return null;
+            }
+          } catch (apiError) {
+            console.error('❌ GitHub token API error:', apiError);
+            console.log('💡 NEW USER GUIDANCE: Token API failed, user should configure PAT for full functionality');
+            return null;
+          }
+        }
       }
     } catch (error) {
       console.error('❌ Failed to get OAuth token:', error);
