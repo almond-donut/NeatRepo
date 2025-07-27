@@ -62,12 +62,10 @@ export async function GET(req: NextRequest) {
       console.log('🍪 AUTH CALLBACK: Cookies being sent:', cookies.map(c => c.name))
       cookies.forEach(cookie => {
         redirectResponse.cookies.set(cookie.name, cookie.value, {
-          httpOnly: cookie.httpOnly,
-          secure: cookie.secure,
-          sameSite: cookie.sameSite,
-          maxAge: cookie.maxAge,
-          path: cookie.path,
-          domain: cookie.domain,
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          path: '/',
         })
       })
 
