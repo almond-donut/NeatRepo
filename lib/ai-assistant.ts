@@ -134,6 +134,14 @@ export class AIAssistantEngine {
 
   // 🧠 PARSE USER COMMAND USING AI
   async parseCommand(userMessage: string): Promise<AIAction> {
+    // 🔍 DEBUG: Log interview state
+    console.log('🔍 DEBUG Interview State:', {
+      isActive: this.interviewState.isActive,
+      completed: this.interviewState.completed,
+      currentQuestion: this.interviewState.currentQuestion,
+      totalQuestions: this.interviewState.questions.length
+    });
+
     // 🎤 INTERVIEW MODE: If interview is active, treat all responses as interview answers
     if (this.interviewState.isActive && !this.interviewState.completed) {
       console.log('🎤 Interview active - treating response as interview answer');
