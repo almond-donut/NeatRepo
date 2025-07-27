@@ -1793,7 +1793,7 @@ These repositories best demonstrate the skills recruiters look for in ${jobTitle
   const privateRepos = repositories.length - publicRepos;
 
   return (
-    <AuthGuard requireAuth={true}>
+    // <AuthGuard requireAuth={true}>
       <div
         className="min-h-screen bg-background text-foreground"
         data-user-id={currentUser?.id}
@@ -3063,7 +3063,7 @@ These repositories best demonstrate the skills recruiters look for in ${jobTitle
         </Button>
       </div>
     </div>
-    </AuthGuard>
+    // </AuthGuard>
   );
 }
 
