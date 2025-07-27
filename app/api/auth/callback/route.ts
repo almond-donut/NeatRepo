@@ -89,13 +89,16 @@ export async function GET(request: NextRequest) {
     // Log cookies being set
     console.log("🍪 Setting auth cookies for session:", data.session?.id)
 
-    // Successful authentication - redirect to dashboard
-    response = NextResponse.redirect(`${origin}/dashboard`)
+    // Successful authentication - redirect to dashboard with session confirmation
+    response = NextResponse.redirect(`${origin}/dashboard?auth=success`)
 
     // Add cache control headers to prevent caching of auth responses
     response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')
     response.headers.set('Pragma', 'no-cache')
     response.headers.set('Expires', '0')
+    
+    // Add session confirmation header
+    response.headers.set('X-Auth-Success', 'true')
 
     return response
   } catch (error) {

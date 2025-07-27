@@ -88,9 +88,20 @@ export async function middleware(req: NextRequest) {
     )
 
     // If accessing protected route without session, redirect to home
+    // BUT: Allow dashboard access with auth=success parameter (fresh from OAuth callback)
     if (isProtectedRoute && !session) {
+      const authSuccess = req.nextUrl.searchParams.get('auth')
+      if (authSuccess === 'success' && req.nextUrl.pathname === '/dashboard') {
+        console.log('🔄 MIDDLEWARE: Allowing dashboard access with auth=success parameter')
+        // Allow access but remove the parameter to clean URL
+        const cleanUrl = new URL(req.url)
+        cleanUrl.searchParams.delete('auth')
+        return NextResponse.redirect(cleanUrl)
+      }
+      
       const redirectUrl = new URL('/', req.url)
       redirectUrl.searchParams.set('redirected', 'true')
+      console.log('🚫 MIDDLEWARE: No session found, redirecting to home')
       return NextResponse.redirect(redirectUrl)
     }
 
