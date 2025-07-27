@@ -113,8 +113,8 @@ export function useAccountSwitcher(): UseAccountSwitcherReturn {
     setError(null)
 
     try {
-      // Sign out current user
-      await signOut()
+      // Just sign out from Supabase (no GitHub logout for account switching)
+      await supabase.auth.signOut()
       
       // Redirect to GitHub OAuth with account hint
       const currentUrl = window.location.origin
@@ -128,19 +128,23 @@ export function useAccountSwitcher(): UseAccountSwitcherReturn {
             redirectTo: `${currentUrl}/dashboard`,
             scopes: 'repo read:user user:email',
             queryParams: {
-              login: targetAccount.username // Hint to GitHub
+              login: targetAccount.username, // Hint to GitHub
+              prompt: 'select_account' // Force account selection
             }
           }
         })
         
         if (error) throw error
       } else {
-        // Fallback: just redirect to OAuth
+        // Fallback: just redirect to OAuth with account selection
         const { error } = await supabase.auth.signInWithOAuth({
           provider: 'github',
           options: {
             redirectTo: `${currentUrl}/dashboard`,
-            scopes: 'repo read:user user:email'
+            scopes: 'repo read:user user:email',
+            queryParams: {
+              prompt: 'select_account' // Force account selection
+            }
           }
         })
         
@@ -152,7 +156,7 @@ export function useAccountSwitcher(): UseAccountSwitcherReturn {
     } finally {
       setIsLoading(false)
     }
-  }, [user?.id, accounts, signOut])
+  }, [user?.id, accounts])
 
   // Add a new account
   const addAccount = useCallback(async () => {
@@ -160,7 +164,7 @@ export function useAccountSwitcher(): UseAccountSwitcherReturn {
     setError(null)
 
     try {
-      // Sign out from current session
+      // Just sign out from Supabase (no GitHub logout for adding accounts)
       await supabase.auth.signOut()
       
       // Redirect to GitHub OAuth for new account
@@ -201,6 +205,20 @@ export function useAccountSwitcher(): UseAccountSwitcherReturn {
 
   // Sign out from all accounts
   const signOutAll = useCallback(async () => {
+    // Show confirmation dialog before signing out all accounts
+    const confirmed = window.confirm(
+      "Sign out from all accounts?\n\n" +
+      "This will:\n" +
+      "• Remove all saved GitHub accounts\n" +
+      "• Sign you out completely\n" +
+      "• Redirect to GitHub logout\n\n" +
+      "You'll need to sign in again to use NeatRepo."
+    );
+    
+    if (!confirmed) {
+      return; // User cancelled
+    }
+
     setIsLoading(true)
     setError(null)
 

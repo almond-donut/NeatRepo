@@ -36,9 +36,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [showTokenPopupState, setShowTokenPopupState] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [lastActivity, setLastActivity] = useState(Date.now());
-  const [sessionHealth, setSessionHealth] = useState<'healthy' | 'warning' | 'expired'>('healthy');
-
   const fetchProfile = async (userId: string) => {
     try {
       const { data, error } = await supabase
@@ -102,67 +99,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // 🎯 YOUTUBE-STYLE: Long-term session health monitoring
-  useEffect(() => {
-    const checkSessionHealth = async () => {
-      if (!user) return;
-
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        const now = Date.now();
-        const timeSinceActivity = now - lastActivity;
-
-        if (error || !session) {
-          console.warn('⚠️ SESSION: Session expired or invalid');
-          setSessionHealth('expired');
-          return;
-        }
-
-        // Check if session is close to expiring (within 10 minutes)
-        const expiresAt = session.expires_at ? session.expires_at * 1000 : 0;
-        const timeUntilExpiry = expiresAt - now;
-
-        if (timeUntilExpiry < 600000) { // 10 minutes
-          console.warn('⚠️ SESSION: Session expiring soon, refreshing...');
-          setSessionHealth('warning');
-          await supabase.auth.refreshSession();
-          setSessionHealth('healthy');
-        } else if (timeSinceActivity > 7200000) { // 2 hours inactive
-          console.log('💤 SESSION: Long inactivity detected, validating session...');
-          setSessionHealth('warning');
-          // Validate session is still good
-          const { error: testError } = await supabase.from('user_profiles').select('id').limit(1);
-          if (testError) {
-            setSessionHealth('expired');
-          } else {
-            setSessionHealth('healthy');
-          }
-        }
-      } catch (error) {
-        console.error('❌ SESSION: Health check failed:', error);
-        setSessionHealth('expired');
-      }
-    };
-
-    // Check session health every 5 minutes
-    const healthCheckInterval = setInterval(checkSessionHealth, 300000);
-
-    // Also check on visibility change (when user returns to tab)
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        setLastActivity(Date.now());
-        checkSessionHealth();
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-      clearInterval(healthCheckInterval);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [user, lastActivity]);
-
   useEffect(() => {
     const initializeSession = async () => {
       try {
@@ -187,7 +123,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (session?.user) {
           console.log('✅ Setting user from session:', session.user.id);
           setUser(session.user);
-          setLastActivity(Date.now());
 
           // GitHub connection check is now handled by AuthGuard component
           // This prevents conflicts between multiple redirect attempts
@@ -316,6 +251,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signOut = async () => {
+    // Show confirmation dialog before signing out
+    const confirmed = window.confirm(
+      "Are you sure you want to sign out?\n\n" +
+      "This will:\n" +
+      "• Sign you out from NeatRepo\n" +
+      "• Sign you out from GitHub (to allow account switching)\n" +
+      "• Clear all saved account data"
+    );
+    
+    if (!confirmed) {
+      return; // User cancelled
+    }
+
     // Clear dismiss tracking on sign out so popup shows for next login
     if (user) {
       localStorage.removeItem(`token_popup_dismissed_${user.id}`);
