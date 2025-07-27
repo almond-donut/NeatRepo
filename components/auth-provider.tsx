@@ -238,37 +238,60 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const isGitHubOAuth = session.user.app_metadata?.provider === 'github';
             const githubId = session.user.user_metadata?.provider_id || session.user.identities?.find(i => i.provider === 'github')?.id;
 
-            const { error: upsertError } = await supabase
+            // 🚨 FIX: Check for existing profile by github_username first
+            const { data: existingProfile } = await supabase
               .from('user_profiles')
-              .upsert({
-                id: session.user.id,
-                github_id: githubId,
-                github_username: session.user.user_metadata?.user_name,
-                display_name: session.user.user_metadata?.full_name,
-                avatar_url: session.user.user_metadata?.avatar_url,
-                updated_at: new Date().toISOString(),
-              }, { onConflict: 'id' });
+              .select('*')
+              .eq('github_username', session.user.user_metadata?.user_name)
+              .single();
 
-            if (upsertError) {
-              console.error("❌ AUTH: Error upserting profile:", upsertError);
-              // Only show popup for GitHub OAuth users, not Google/email users
-              if (isGitHubOAuth) {
-                const lastDismissed = localStorage.getItem(`token_popup_dismissed_${session.user.id}`);
-                if (!lastDismissed) {
-                  setShowTokenPopupState(true);
-                }
+            if (existingProfile && existingProfile.id !== session.user.id) {
+              console.log('🔧 FIXING: Found existing profile with different user ID, updating...');
+              // Update the existing profile to use the new user ID
+              const { error: updateError } = await supabase
+                .from('user_profiles')
+                .update({
+                  id: session.user.id,
+                  github_id: githubId,
+                  display_name: session.user.user_metadata?.full_name,
+                  avatar_url: session.user.user_metadata?.avatar_url,
+                  updated_at: new Date().toISOString(),
+                })
+                .eq('github_username', session.user.user_metadata?.user_name);
+
+              if (updateError) {
+                console.error('❌ Failed to update existing profile:', updateError);
+              } else {
+                console.log('✅ Successfully linked to existing profile with token');
               }
             } else {
-              console.log("✅ AUTH: Profile upserted successfully");
-              const fetchedProfile = await fetchProfile(session.user.id);
+              // Normal upsert for new profiles or same user ID
+              const { error: upsertError } = await supabase
+                .from('user_profiles')
+                .upsert({
+                  id: session.user.id,
+                  github_id: githubId,
+                  github_username: session.user.user_metadata?.user_name,
+                  display_name: session.user.user_metadata?.full_name,
+                  avatar_url: session.user.user_metadata?.avatar_url,
+                  updated_at: new Date().toISOString(),
+                }, { onConflict: 'id' });
 
-              // Simplified PAT popup logic for GitHub OAuth users
-              console.log('🔍 PAT POPUP DEBUG:', {
-                isGitHubOAuth,
-                hasToken: !!fetchedProfile?.github_token,
-                userId: session.user.id,
-                profile: fetchedProfile
-              });
+              if (upsertError) {
+                console.error("❌ AUTH: Error upserting profile:", upsertError);
+              }
+            }
+
+            console.log("✅ AUTH: Profile linking completed");
+            const fetchedProfile = await fetchProfile(session.user.id);
+
+            // Simplified PAT popup logic for GitHub OAuth users
+            console.log('🔍 PAT POPUP DEBUG:', {
+              isGitHubOAuth,
+              hasToken: !!fetchedProfile?.github_token,
+              userId: session.user.id,
+              profile: fetchedProfile
+            });
 
               // Show PAT popup for GitHub OAuth users who don't have a token
               if (isGitHubOAuth && !fetchedProfile?.github_token) {
