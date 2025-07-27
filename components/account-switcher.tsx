@@ -60,18 +60,27 @@ export default function AccountSwitcher() {
     setShowManageDialog(true)
   }
 
-  // 🚨 TEMPORARY DEBUG: Show debug info instead of returning null
-  if (!user || !profile) {
-    console.log("🚨 ACCOUNT SWITCHER DEBUG:", {
+  // 🚨 FIXED: Show loading state instead of returning null
+  if (!user) {
+    return null; // No user at all
+  }
+
+  if (!profile) {
+    console.log("🚨 ACCOUNT SWITCHER: Profile loading...", {
       user: !!user,
       profile: !!profile,
       userId: user?.id,
       userMetadata: user?.user_metadata
     });
+    // Show loading state while profile is being fetched
     return (
-      <div className="text-red-500 text-xs p-2 border border-red-300 rounded">
-        DEBUG: user={!!user}, profile={!!profile}
-      </div>
+      <Button variant="ghost" className="flex items-center space-x-2 px-3 py-2 h-auto" disabled>
+        <User className="w-6 h-6" />
+        <div className="flex flex-col items-start">
+          <span className="text-sm font-medium">Loading...</span>
+          <span className="text-xs text-muted-foreground">{user.email}</span>
+        </div>
+      </Button>
     );
   }
 
