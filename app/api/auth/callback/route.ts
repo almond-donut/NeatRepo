@@ -54,15 +54,12 @@ export async function GET(req: NextRequest) {
 
       console.log('🔀 AUTH CALLBACK: Redirecting to', redirectUrl.toString(), 'with session cookies')
 
-      // Log cookie yang ada untuk debugging
-      const cookies = res.cookies.getAll()
-      console.log('🍪 AUTH CALLBACK: Cookies being sent:', cookies.map(c => c.name))
-
       // Create a proper redirect response that preserves cookies
       const redirectResponse = NextResponse.redirect(redirectUrl.toString())
 
       // Copy all cookies from the auth response to the redirect response
       const cookies = res.cookies.getAll()
+      console.log('🍪 AUTH CALLBACK: Cookies being sent:', cookies.map(c => c.name))
       cookies.forEach(cookie => {
         redirectResponse.cookies.set(cookie.name, cookie.value, {
           httpOnly: cookie.httpOnly,
