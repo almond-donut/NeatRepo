@@ -40,12 +40,43 @@ export async function GET(req: NextRequest) {
     )
     
     console.log('🔄 AUTH CALLBACK: Exchanging code for session...')
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
-    
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+
     if (error) {
       console.error('❌ AUTH CALLBACK: Error exchanging code for session:', error)
     } else {
       console.log('✅ AUTH CALLBACK: Successfully exchanged code for session')
+
+      // CRITICAL FIX: Store GitHub OAuth token for new users
+      if (data.session?.provider_token && data.session?.user?.app_metadata?.provider === 'github') {
+        console.log('🔑 OAUTH SUCCESS: Storing GitHub token for new user repository access')
+
+        try {
+          // Store the OAuth token in user profile for repository access
+          const { error: updateError } = await supabase
+            .from('user_profiles')
+            .upsert({
+              id: data.session.user.id,
+              username: data.session.user.user_metadata?.user_name || data.session.user.user_metadata?.preferred_username,
+              email: data.session.user.email,
+              avatar_url: data.session.user.user_metadata?.avatar_url,
+              github_id: data.session.user.user_metadata?.sub,
+              github_token: data.session.provider_token, // Store OAuth token
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            })
+
+          if (updateError) {
+            console.error('❌ Failed to store OAuth token:', updateError)
+          } else {
+            console.log('✅ OAuth token stored successfully - NEW USER CAN NOW SEE REPOSITORIES!')
+          }
+        } catch (storeError) {
+          console.error('❌ Error storing OAuth token:', storeError)
+        }
+      } else {
+        console.log('⚠️ No provider token available in session')
+      }
     }
     
     if (!error) {
