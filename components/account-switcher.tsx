@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
@@ -27,17 +27,38 @@ import AccountManagementDialog from "./account-management-dialog"
 
 export default function AccountSwitcher() {
   const { user, profile } = useAuth()
-  const { 
-    accounts, 
-    currentAccount, 
-    isLoading, 
-    error, 
-    switchAccount, 
-    addAccount, 
-    signOutAll 
+  const {
+    accounts,
+    currentAccount,
+    isLoading,
+    error,
+    switchAccount,
+    addAccount,
+    signOutAll
   } = useAccountSwitcher()
   const [isOpen, setIsOpen] = useState(false)
   const [showManageDialog, setShowManageDialog] = useState(false)
+
+  // 🚨 EMERGENCY RECOVERY: Check for temporary recovery profile
+  const [tempRecoveryProfile, setTempRecoveryProfile] = useState(null)
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const recoveryData = localStorage.getItem('temp_recovery_profile')
+      if (recoveryData && !user) {
+        try {
+          setTempRecoveryProfile(JSON.parse(recoveryData))
+          console.log('🔧 RECOVERY: Using temporary profile data for display')
+        } catch (error) {
+          console.error('❌ RECOVERY: Failed to parse recovery profile:', error)
+        }
+      } else if (user) {
+        // Clear recovery data if user is properly authenticated
+        localStorage.removeItem('temp_recovery_profile')
+        setTempRecoveryProfile(null)
+      }
+    }
+  }, [user])
 
   const handleAddAccount = async () => {
     setIsOpen(false)
@@ -84,8 +105,8 @@ export default function AccountSwitcher() {
     );
   }
 
-  // Use currentAccount from hook or fallback
-  const displayAccount = currentAccount || {
+  // Use currentAccount from hook or fallback - prioritize recovery profile if available
+  const displayAccount = tempRecoveryProfile || currentAccount || {
     id: user.id,
     email: user.email || '',
     username: profile.github_username || 'Unknown',

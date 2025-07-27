@@ -2287,34 +2287,95 @@ These repositories best demonstrate the skills recruiters look for in ${jobTitle
                               size="sm"
                               onClick={async () => {
                                 try {
-                                  // Fetch the profile from database to get the PAT
-                                  const { data: profile, error } = await supabase
+                                  console.log('🔧 DIRECT RECOVERY: Restoring almond-donut access directly...');
+                                  setError('Restoring your repositories...');
+                                  setIsLoadingRepos(true);
+
+                                  // Fetch the existing profile and use PAT directly
+                                  const { data: existingProfile, error: profileError } = await supabase
                                     .from('user_profiles')
                                     .select('*')
                                     .eq('github_username', 'almond-donut')
                                     .single();
 
-                                  if (error || !profile?.github_token) {
-                                    throw new Error('Could not fetch almond-donut profile or PAT token');
+                                  if (profileError || !existingProfile) {
+                                    throw new Error('Could not find almond-donut profile in database');
                                   }
 
-                                  console.log('🧪 TESTING: Found profile, fetching repos with PAT...');
-                                  setIsLoadingRepos(true);
-                                  await repositoryManager.fetchRepositories(profile.github_token, true);
-                                  setError(null);
-                                  console.log('🧪 TESTING: Repository fetch completed');
+                                  if (!existingProfile.github_token) {
+                                    throw new Error('No GitHub token found in profile');
+                                  }
+
+                                  console.log('✅ RECOVERY: Found profile with PAT, fetching repositories...');
+
+                                  // Directly fetch repositories with the PAT
+                                  await repositoryManager.fetchRepositories(existingProfile.github_token, true);
+
+                                  // Store the profile data temporarily in localStorage for display
+                                  localStorage.setItem('temp_recovery_profile', JSON.stringify({
+                                    username: existingProfile.github_username,
+                                    avatar_url: existingProfile.avatar_url,
+                                    display_name: existingProfile.display_name,
+                                    email: 'generalpwtx7@gmail.com' // Known email from database
+                                  }));
+
+                                  setError('✅ Repositories restored! Your data is back. Please sign in properly to maintain access.');
+                                  console.log('✅ RECOVERY: Successfully restored access for almond-donut');
+
+                                  // Force a page refresh to show the recovered data
+                                  setTimeout(() => {
+                                    window.location.reload();
+                                  }, 2000);
+
                                 } catch (error) {
-                                  console.error('🧪 TESTING: Failed:', error);
-                                  setError('Test authentication failed: ' + error.message);
+                                  console.error('❌ RECOVERY: Direct recovery failed:', error);
+                                  setError('Recovery failed: ' + error.message + '. Please try the OAuth recovery or sign in manually.');
                                 } finally {
                                   setIsLoadingRepos(false);
                                 }
                               }}
-                              className="flex items-center gap-2 bg-yellow-50 hover:bg-yellow-100 border-yellow-300"
+                              className="flex items-center gap-2 bg-green-50 hover:bg-green-100 border-green-300"
                               disabled={isLoadingRepos}
                             >
                               <Bug className="h-4 w-4" />
-                              Test Auth (almond-donut)
+                              🔧 Direct Recovery (almond-donut)
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={async () => {
+                                try {
+                                  console.log('🔧 OAUTH RECOVERY: Starting OAuth session restoration for almond-donut...');
+                                  setError('Starting OAuth recovery...');
+
+                                  // Attempt GitHub OAuth sign-in
+                                  console.log('🔄 RECOVERY: Attempting GitHub OAuth sign-in...');
+                                  const { data: authData, error: authError } = await supabase.auth.signInWithOAuth({
+                                    provider: 'github',
+                                    options: {
+                                      redirectTo: `${window.location.origin}/dashboard?recovery=almond-donut`,
+                                      scopes: 'repo user'
+                                    }
+                                  });
+
+                                  if (authError) {
+                                    console.error('❌ RECOVERY: OAuth failed:', authError);
+                                    throw new Error('OAuth sign-in failed: ' + authError.message);
+                                  }
+
+                                  console.log('✅ RECOVERY: OAuth initiated, redirecting to GitHub...');
+                                  setError('Redirecting to GitHub for authentication...');
+
+                                } catch (error) {
+                                  console.error('❌ RECOVERY: OAuth recovery failed:', error);
+                                  setError('OAuth recovery failed: ' + error.message + '. Try the Direct Recovery instead.');
+                                }
+                              }}
+                              className="flex items-center gap-2 bg-blue-50 hover:bg-blue-100 border-blue-300"
+                              disabled={isLoadingRepos}
+                            >
+                              <Bug className="h-4 w-4" />
+                              🔄 OAuth Recovery (almond-donut)
                             </Button>
                           </div>
 
