@@ -1883,13 +1883,12 @@ These repositories best demonstrate the skills recruiters look for in ${jobTitle
   const privateRepos = repositories.length - publicRepos;
 
   return (
-    // <AuthGuard requireAuth={true}>
-      <div
-        className="min-h-screen bg-background text-foreground"
-        data-user-id={currentUser?.id}
-        data-loading={loading.toString()}
-        data-repos-count={repositories.length}
-      >
+    <div
+      className="min-h-screen bg-background text-foreground"
+      data-user-id={currentUser?.id}
+      data-loading={loading.toString()}
+      data-repos-count={repositories.length}
+    >
       {/* 🚀 ENHANCED DASHBOARD HEADER WITH MULTI-ACCOUNT SUPPORT */}
       <DashboardHeader />
 
@@ -3273,7 +3272,6 @@ These repositories best demonstrate the skills recruiters look for in ${jobTitle
         </Button>
       </div>
     </div>
-    // </AuthGuard>
   );
 }
 
