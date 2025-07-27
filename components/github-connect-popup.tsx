@@ -25,7 +25,7 @@ export default function GitHubConnectPopup({ onClose, onSkip, userEmail }: GitHu
         provider: 'github',
         options: {
           redirectTo: currentUrl,
-          scopes: 'repo read:user user:email'
+          scopes: 'repo read:user'
         }
       })
       

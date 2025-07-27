@@ -126,7 +126,7 @@ export function useAccountSwitcher(): UseAccountSwitcherReturn {
           provider: 'github',
           options: {
             redirectTo: `${currentUrl}/dashboard`,
-            scopes: 'repo read:user user:email',
+            scopes: 'repo read:user',
             queryParams: {
               login: targetAccount.username, // Hint to GitHub
               prompt: 'select_account' // Force account selection
@@ -141,7 +141,7 @@ export function useAccountSwitcher(): UseAccountSwitcherReturn {
           provider: 'github',
           options: {
             redirectTo: `${currentUrl}/dashboard`,
-            scopes: 'repo read:user user:email',
+            scopes: 'repo read:user',
             queryParams: {
               prompt: 'select_account' // Force account selection
             }
@@ -173,7 +173,7 @@ export function useAccountSwitcher(): UseAccountSwitcherReturn {
         provider: 'github',
         options: {
           redirectTo: `${currentUrl}/dashboard`,
-          scopes: 'repo read:user user:email',
+          scopes: 'repo read:user',
           queryParams: {
             prompt: 'select_account' // Force account selection
           }

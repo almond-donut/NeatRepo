@@ -25,7 +25,7 @@ export default function GitHubAuth({ onClose }: GitHubAuthProps) {
         provider: 'github',
         options: {
           redirectTo: `${window.location.origin}/dashboard`,
-          scopes: 'repo read:user user:email',
+          scopes: 'repo read:user',
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
