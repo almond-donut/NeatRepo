@@ -93,10 +93,27 @@ export async function middleware(req: NextRequest) {
       const authSuccess = req.nextUrl.searchParams.get('auth')
       if (authSuccess === 'success' && req.nextUrl.pathname === '/dashboard') {
         console.log('🔄 MIDDLEWARE: Allowing dashboard access with auth=success parameter')
-        // Allow access but remove the parameter to clean URL
-        const cleanUrl = new URL(req.url)
-        cleanUrl.searchParams.delete('auth')
-        return NextResponse.redirect(cleanUrl)
+        // Allow access - don't redirect, let the client handle session establishment
+        return NextResponse.next()
+      }
+      
+      // CRITICAL FIX: Don't redirect if we're in the middle of OAuth callback
+      // Check if this might be a fresh OAuth callback that hasn't established session yet
+      if (req.nextUrl.pathname === '/dashboard') {
+        const referer = req.headers.get('referer')
+        const userAgent = req.headers.get('user-agent')
+        
+        // Allow dashboard access if coming from GitHub OAuth or has auth success header
+        if (referer?.includes('github.com') || req.headers.get('X-Auth-Success') === 'true') {
+          console.log('🔄 MIDDLEWARE: OAuth callback detected, allowing dashboard access')
+          return NextResponse.next()
+        }
+        
+        // Also allow if this looks like a fresh page load after OAuth (no referer but recent)
+        if (!referer && userAgent) {
+          console.log('🔄 MIDDLEWARE: Fresh page load to dashboard, allowing access (might be post-OAuth)')
+          return NextResponse.next()
+        }
       }
       
       const redirectUrl = new URL('/', req.url)

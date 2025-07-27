@@ -102,6 +102,8 @@ interface ChatMessage {
   timestamp: Date;
 }
 
+import { AuthGuard } from "@/components/auth-guard";
+
 export default function DashboardPage() {
   const { user, profile, loading, signOut, showTokenPopup, getEffectiveToken } = useAuth();
   const router = useRouter();
@@ -1791,12 +1793,13 @@ These repositories best demonstrate the skills recruiters look for in ${jobTitle
   const privateRepos = repositories.length - publicRepos;
 
   return (
-    <div
-      className="min-h-screen bg-background text-foreground"
-      data-user-id={currentUser?.id}
-      data-loading={loading.toString()}
-      data-repos-count={repositories.length}
-    >
+    <AuthGuard requireAuth={true}>
+      <div
+        className="min-h-screen bg-background text-foreground"
+        data-user-id={currentUser?.id}
+        data-loading={loading.toString()}
+        data-repos-count={repositories.length}
+      >
       {/* 🚀 ENHANCED DASHBOARD HEADER WITH MULTI-ACCOUNT SUPPORT */}
       <DashboardHeader />
 
@@ -3060,6 +3063,7 @@ These repositories best demonstrate the skills recruiters look for in ${jobTitle
         </Button>
       </div>
     </div>
+    </AuthGuard>
   );
 }
 
