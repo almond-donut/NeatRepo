@@ -109,11 +109,9 @@ export async function middleware(req: NextRequest) {
           return NextResponse.next()
         }
         
-        // Also allow if this looks like a fresh page load after OAuth (no referer but recent)
-        if (!referer && userAgent) {
-          console.log('🔄 MIDDLEWARE: Fresh page load to dashboard, allowing access (might be post-OAuth)')
-          return NextResponse.next()
-        }
+        // TEMPORARY FIX: Allow all dashboard access for debugging
+        console.log('🔄 MIDDLEWARE: TEMPORARY - Allowing all dashboard access for debugging')
+        return NextResponse.next()
       }
       
       const redirectUrl = new URL('/', req.url)
