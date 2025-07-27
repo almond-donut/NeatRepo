@@ -53,7 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const newProfile = {
             id: userId,
             github_username: user?.user_metadata?.user_name || 'user',
-            github_token: null, // Always null for new users to force popup
+            github_token: null, // Only null for truly new users
             display_name: user?.user_metadata?.full_name || user?.user_metadata?.name,
             avatar_url: user?.user_metadata?.avatar_url
           };
@@ -75,11 +75,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         }
 
-        // For other errors, create basic profile - always null token to force popup
+        // 🚨 CRITICAL FIX: For other errors (network, timeout, etc.),
+        // don't override existing profile data - preserve current state
+        console.error('❌ AUTH: Database error fetching profile, preserving current state');
+        if (profile) {
+          console.log('🔄 AUTH: Keeping existing profile to preserve PAT token');
+          return profile; // Keep existing profile to preserve any PAT
+        }
+
+        // Only create basic profile if we have no existing profile at all
         const basicProfile = {
           id: userId,
           github_username: user?.user_metadata?.user_name || 'user',
-          github_token: null // Always null to force popup
+          github_token: null // Only null if no existing profile
         };
         setProfile(basicProfile);
         return basicProfile;
@@ -88,14 +96,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           id: data.id,
           github_username: data.github_username,
           hasToken: !!data.github_token,
+          tokenLength: data.github_token?.length,
           avatar_url: data.avatar_url
         });
         setProfile(data);
         return data;
       }
     } catch (err) {
-      console.error('Profile fetch failed:', err);
-      // Create a basic profile on any error
+      console.error('❌ AUTH: Profile fetch failed with exception:', err);
+
+      // 🚨 CRITICAL FIX: Don't override existing profile on network/connection errors
+      if (profile) {
+        console.log('🔄 AUTH: Network error, preserving existing profile with PAT');
+        return profile; // Keep existing profile to preserve any PAT
+      }
+
+      // Only create basic profile if we have no existing profile at all
       const basicProfile = {
         id: userId,
         github_username: user?.user_metadata?.user_name || 'user',

@@ -99,6 +99,20 @@ class RepositoryManager {
   }
 
   async fetchRepositories(token: string, forceRefresh = false): Promise<void> {
+    // 🚨 CRITICAL DEBUG: Log token information (safely)
+    console.log('🔑 SINGLETON: Starting fetch with token:', {
+      hasToken: !!token,
+      tokenLength: token?.length,
+      tokenPrefix: token?.substring(0, 7) + '...',
+      forceRefresh
+    });
+
+    // Validate token before proceeding
+    if (!token || token.trim() === '') {
+      console.error('❌ SINGLETON: No valid token provided for repository fetch');
+      throw new Error('No GitHub token available for repository access');
+    }
+
     // 🚀 IMPROVED UX: Always fetch fresh data unless explicitly using cache
     // Only skip if we have recent data (less than 5 minutes old) and not forced
     if (!forceRefresh && this.repositories.length > 0) {
@@ -124,6 +138,7 @@ class RepositoryManager {
       console.log('🚀 SINGLETON: ULTRA-FAST FETCH STARTING...');
 
       // PARALLEL REQUESTS for maximum speed
+      console.log('🌐 SINGLETON: Making parallel GitHub API requests...');
       const [userRepos, starredRepos] = await Promise.allSettled([
         fetch("https://api.github.com/user/repos?sort=updated&per_page=50", {
           headers: {
@@ -138,6 +153,11 @@ class RepositoryManager {
           },
         })
       ]);
+
+      console.log('🌐 SINGLETON: API requests completed:', {
+        userReposStatus: userRepos.status,
+        starredReposStatus: starredRepos.status
+      });
 
       let repos: any[] = [];
 
@@ -175,6 +195,23 @@ class RepositoryManager {
 
     } catch (error) {
       console.error('❌ SINGLETON: Fetch error:', error);
+
+      // 🚨 CRITICAL DEBUG: Log detailed error information
+      if (error instanceof Error) {
+        console.error('❌ SINGLETON: Error details:', {
+          message: error.message,
+          name: error.name,
+          stack: error.stack
+        });
+      }
+
+      // Check if it's a token-related error
+      if (error.message?.includes('401') || error.message?.includes('Unauthorized')) {
+        console.error('🔑 SINGLETON: Token appears to be invalid or expired');
+        // Clear cached data for invalid tokens
+        this.clearCache();
+      }
+
       // Fallback to cached data if available
       if (this.repositories.length > 0) {
         console.log('🔄 SINGLETON: Using cached data as fallback');
