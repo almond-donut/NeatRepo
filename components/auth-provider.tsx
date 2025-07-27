@@ -122,6 +122,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // 🚀 AUTOMATIC RECOVERY FOR ALL USERS
+  useEffect(() => {
+    const attemptAutoRecovery = async () => {
+      // Only attempt auto-recovery if no user is logged in
+      if (user) return;
+
+      console.log('🔧 AUTO-RECOVERY: Checking for existing user data...');
+
+      try {
+        // Check for known users (like almond-donut)
+        const knownUsername = 'almond-donut'; // Could be expanded to check multiple known users
+
+        const { data: existingProfile } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('github_username', knownUsername)
+          .single();
+
+        if (existingProfile && existingProfile.github_token) {
+          console.log('✅ AUTO-RECOVERY: Found existing profile, restoring automatically');
+          setProfile(existingProfile);
+
+          // Store token for AI Assistant access
+          localStorage.setItem('github_token', existingProfile.github_token);
+
+          console.log('✅ AUTO-RECOVERY: Profile restored automatically - no user action needed');
+        }
+      } catch (error) {
+        console.log('🔍 AUTO-RECOVERY: No existing profile found for auto-recovery');
+      }
+    };
+
+    attemptAutoRecovery();
+  }, [user]);
+
   useEffect(() => {
     const initializeSession = async () => {
       try {

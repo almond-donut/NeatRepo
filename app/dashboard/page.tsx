@@ -177,8 +177,7 @@ export default function DashboardPage() {
               }
             } else {
               // 🚀 AUTOMATIC RECOVERY: For users without OAuth login (like almond-donut)
-              console.log('✅ AUTO-RECOVERY: Found existing profile, restoring automatically');
-              setProfile(existingProfile);
+              console.log('✅ AUTO-RECOVERY: Found existing profile, auto-recovery handled by auth provider');
 
               // Store token for AI Assistant access
               localStorage.setItem('github_token', existingProfile.github_token);
@@ -189,7 +188,7 @@ export default function DashboardPage() {
               setError(null);
               setIsLoadingRepos(false);
 
-              console.log('✅ AUTO-RECOVERY: Profile and repositories restored automatically - no user action needed');
+              console.log('✅ AUTO-RECOVERY: Repositories restored automatically');
             }
           }
         } catch (error) {
