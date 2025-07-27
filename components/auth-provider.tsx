@@ -107,15 +107,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // 🚀 OPTIMIZED: Keep loading true initially to prevent hydration mismatch
         // We'll set loading false after session check to ensure consistency
 
-        // Add timeout protection for session initialization
-        const sessionTimeout = setTimeout(() => {
-          console.warn('⏰ AUTH: Session initialization timeout - using fallback');
-          // Don't clear user state if we already have a session
-          if (!user) {
-            setUser(null);
-          }
-          setLoading(false);
-        }, 30000); // Increased to 30 seconds for OAuth flows
+        // REMOVED: No more session timeouts - users stay logged in like Facebook/Google
+        // Sessions only end when user explicitly signs out
 
         // 🔥 CRITICAL FIX: Handle OAuth callback tokens in URL
         if (typeof window !== 'undefined') {
@@ -135,9 +128,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               console.error('❌ AUTH: Error setting session from OAuth tokens:', error);
             } else {
               console.log('✅ AUTH: Session established from OAuth tokens');
-              // Clean up URL
-              window.history.replaceState({}, '', window.location.pathname);
-              // Redirect to dashboard
+              // Clean up URL and redirect to dashboard immediately
+              window.history.replaceState({}, '', '/dashboard');
               window.location.href = '/dashboard';
               return;
             }
@@ -211,7 +203,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(null);
         }
 
-        clearTimeout(sessionTimeout);
         setLoading(false); // Set loading false after session check to prevent hydration mismatch
         console.log('✅ AUTH: INSTANT initialization completed - UI ready!');
       } catch (err) {
@@ -231,11 +222,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (event === 'SIGNED_IN' && session?.user) {
           setLoading(true);
 
-          // Add timeout protection for sign-in process
-          const signInTimeout = setTimeout(() => {
-            console.warn('⏰ AUTH: Sign-in process timeout - forcing completion');
-            setLoading(false);
-          }, 20000); // 20 second timeout for OAuth flows
+          // REMOVED: No more sign-in timeouts - let the session persist naturally
 
           try {
             // Check if user signed in with GitHub OAuth
@@ -295,11 +282,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               }
             }
 
-            clearTimeout(signInTimeout);
             setLoading(false);
             console.log("✅ AUTH: Sign-in process completed");
           } catch (error) {
-            clearTimeout(signInTimeout);
             console.error("❌ AUTH: Sign-in process error:", error);
             setLoading(false);
           }
