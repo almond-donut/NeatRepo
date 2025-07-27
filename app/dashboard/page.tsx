@@ -159,6 +159,8 @@ export default function DashboardPage() {
 
             if (!updateError) {
               console.log('✅ RECOVERY: Successfully linked to existing profile with token!');
+              // Mark token popup as permanently skipped since user has token
+              localStorage.setItem(`token_popup_skipped_permanently_${currentUser.id}`, 'true');
               // Force page refresh to load the recovered profile
               window.location.reload();
             } else {
@@ -168,6 +170,10 @@ export default function DashboardPage() {
         } catch (error) {
           console.error('❌ RECOVERY: Profile recovery failed:', error);
         }
+      } else if (currentProfile?.github_token) {
+        // If user has token, mark popup as permanently skipped
+        console.log('✅ RECOVERY: User has token, marking popup as skipped');
+        localStorage.setItem(`token_popup_skipped_permanently_${currentUser.id}`, 'true');
       }
     };
 

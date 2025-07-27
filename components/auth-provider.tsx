@@ -293,8 +293,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               profile: fetchedProfile
             });
 
-            // Show PAT popup for GitHub OAuth users who don't have a token
-            if (isGitHubOAuth && !fetchedProfile?.github_token) {
+            // 🚨 FIXED: Don't show PAT popup if user already has token
+            if (isGitHubOAuth && fetchedProfile?.github_token) {
+              console.log('✅ PAT POPUP: User has token, marking as permanently skipped');
+              // Mark as permanently skipped since user already has token
+              localStorage.setItem(`token_popup_skipped_permanently_${session.user.id}`, 'true');
+            } else if (isGitHubOAuth && !fetchedProfile?.github_token) {
               const permanentlySkipped = localStorage.getItem(`token_popup_skipped_permanently_${session.user.id}`);
 
               console.log('🔍 PAT POPUP STORAGE DEBUG:', {
