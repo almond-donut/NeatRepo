@@ -117,6 +117,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setLoading(false);
         }, 30000); // Increased to 30 seconds for OAuth flows
 
+        // 🔥 CRITICAL FIX: Handle OAuth callback tokens in URL
+        if (typeof window !== 'undefined') {
+          const hashParams = new URLSearchParams(window.location.hash.substring(1));
+          const accessToken = hashParams.get('access_token');
+
+          if (accessToken) {
+            console.log('🎯 AUTH: OAuth tokens detected in URL, establishing session...');
+
+            // Set the session using the tokens from URL
+            const { data, error } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: hashParams.get('refresh_token') || '',
+            });
+
+            if (error) {
+              console.error('❌ AUTH: Error setting session from OAuth tokens:', error);
+            } else {
+              console.log('✅ AUTH: Session established from OAuth tokens');
+              // Clean up URL
+              window.history.replaceState({}, '', window.location.pathname);
+              // Redirect to dashboard
+              window.location.href = '/dashboard';
+              return;
+            }
+          }
+        }
+
         const { data: { session }, error } = await supabase.auth.getSession();
         console.log('🔍 Session check:', { session: !!session, user: !!session?.user, error });
 
