@@ -104,13 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         console.log('🚀 AUTH: INSTANT LOADING - Starting optimized initialization...');
 
-        // 🚀 OPTIMIZED: Keep loading true initially to prevent hydration mismatch
-        // We'll set loading false after session check to ensure consistency
-
-        // REMOVED: No more session timeouts - users stay logged in like Facebook/Google
-        // Sessions only end when user explicitly signs out
-
-        // 🔥 CRITICAL FIX: Handle OAuth callback tokens in URL
+        // 🔥 CRITICAL FIX: Handle OAuth callback tokens in URL FIRST
         if (typeof window !== 'undefined') {
           const hashParams = new URLSearchParams(window.location.hash.substring(1));
           const accessToken = hashParams.get('access_token');
@@ -118,27 +112,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (accessToken) {
             console.log('🎯 AUTH: OAuth tokens detected in URL, establishing session...');
 
-            // Set the session using the tokens from URL
-            const { data, error } = await supabase.auth.setSession({
-              access_token: accessToken,
-              refresh_token: hashParams.get('refresh_token') || '',
-            });
+            try {
+              // Set the session using the tokens from URL
+              const { data, error } = await supabase.auth.setSession({
+                access_token: accessToken,
+                refresh_token: hashParams.get('refresh_token') || '',
+              });
 
-            if (error) {
-              console.error('❌ AUTH: Error setting session from OAuth tokens:', error);
-              setLoading(false); // Ensure loading is false on error
-            } else {
-              console.log('✅ AUTH: Session established from OAuth tokens');
-              // Clean up URL immediately
-              window.history.replaceState({}, '', window.location.pathname);
-              // Set user and loading state immediately
-              if (data.session?.user) {
-                setUser(data.session.user);
-                setLoading(false);
-                console.log('✅ AUTH: User set from OAuth session');
-                return; // Exit early to prevent duplicate session check
+              if (error) {
+                console.error('❌ AUTH: Error setting session from OAuth tokens:', error);
+              } else {
+                console.log('✅ AUTH: Session established from OAuth tokens');
+                // Clean up URL immediately
+                window.history.replaceState({}, '', window.location.pathname);
+                // Set user immediately and exit
+                if (data.session?.user) {
+                  setUser(data.session.user);
+                  setLoading(false);
+                  console.log('✅ AUTH: OAuth login complete - redirecting to dashboard');
+                  window.location.href = '/dashboard';
+                  return;
+                }
               }
+            } catch (err) {
+              console.error('❌ AUTH: OAuth session error:', err);
             }
+
+            // Always set loading false after OAuth processing
+            setLoading(false);
+            return;
           }
         }
 
