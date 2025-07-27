@@ -200,6 +200,18 @@ export class AIAssistantEngine {
       totalQuestions: this.interviewState.questions.length
     });
 
+    // 🎤 CHECK FOR START INTERVIEW COMMAND FIRST (before checking if interview is active)
+    const lowerMessage = userMessage.toLowerCase();
+    if (lowerMessage.includes('start') && lowerMessage.includes('interview')) {
+      console.log('🎤 Start interview command detected - will restart interview');
+      return {
+        type: 'start_interview',
+        intent: 'Start portfolio interview',
+        parameters: {},
+        confidence: 0.9,
+      };
+    }
+
     // 🎤 INTERVIEW MODE: If interview is active, treat all responses as interview answers
     if (this.interviewState.isActive && !this.interviewState.completed) {
       console.log('🎤 Interview active - treating response as interview answer');

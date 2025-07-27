@@ -1118,6 +1118,29 @@ ${successCount > 0 ? 'Your portfolio is now cleaner and more professional! 🚀'
     };
   }, [currentProfile?.github_token]); // Depend on token to re-setup listeners
 
+  // 🔄 SYNC INTERVIEW STATE FROM LOCALSTORAGE ON LOAD
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    try {
+      const saved = localStorage.getItem('ai_interview_state');
+      if (saved) {
+        const state = JSON.parse(saved);
+        if (state.isActive && !state.completed) {
+          setIsInterviewMode(true);
+          // Calculate progress based on current question
+          const progress = state.questions.length > 0
+            ? Math.round((state.currentQuestion / state.questions.length) * 100)
+            : 0;
+          setInterviewProgress(progress);
+          console.log('🔄 Synced interview UI state from localStorage:', { isActive: state.isActive, progress });
+        }
+      }
+    } catch (error) {
+      console.error('❌ Failed to sync interview state:', error);
+    }
+  }, []);
+
   // 🚀 INSTANT LOADING: Optimized auto-fetch with cache-first approach
   useEffect(() => {
     // Only run when we have user and profile (token optional for OAuth fallback)
