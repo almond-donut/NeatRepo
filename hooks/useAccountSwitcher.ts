@@ -205,20 +205,6 @@ export function useAccountSwitcher(): UseAccountSwitcherReturn {
 
   // Sign out from all accounts
   const signOutAll = useCallback(async () => {
-    // Show confirmation dialog before signing out all accounts
-    const confirmed = window.confirm(
-      "Sign out from all accounts?\n\n" +
-      "This will:\n" +
-      "• Remove all saved GitHub accounts\n" +
-      "• Sign you out completely\n" +
-      "• Redirect to GitHub logout\n\n" +
-      "You'll need to sign in again to use NeatRepo."
-    );
-    
-    if (!confirmed) {
-      return; // User cancelled
-    }
-
     setIsLoading(true)
     setError(null)
 
@@ -228,15 +214,15 @@ export function useAccountSwitcher(): UseAccountSwitcherReturn {
         localStorage.removeItem(STORAGE_KEY)
       }
       setAccounts([])
-      
-      // Sign out completely
+
+      // Sign out completely (auth provider will handle confirmation and redirect)
       await signOut()
     } catch (error) {
       console.error('Failed to sign out all accounts:', error)
       setError('Failed to sign out from all accounts')
-    } finally {
       setIsLoading(false)
     }
+    // Note: Don't set loading false here since we're redirecting to signout page
   }, [signOut])
 
   // Refresh accounts list

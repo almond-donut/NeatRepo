@@ -318,42 +318,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       "• Sign you out from GitHub (to allow account switching)\n" +
       "• Clear all saved account data"
     );
-    
+
     if (!confirmed) {
       return; // User cancelled
     }
+
+    // 🎯 GOOGLE-STYLE SIGNOUT: Store user info before clearing for signout page
+    const userInfo = {
+      username: user?.user_metadata?.user_name || user?.user_metadata?.preferred_username || 'User',
+      email: user?.email || '',
+      avatar: user?.user_metadata?.avatar_url || ''
+    };
 
     // Clear dismiss tracking on sign out so popup shows for next login
     if (user) {
       localStorage.removeItem(`token_popup_dismissed_${user.id}`);
       localStorage.removeItem(`token_popup_skipped_permanently_${user.id}`);
     }
-    
+
     // Clear local state first
     setProfile(null);
-    
+
     // Sign out from Supabase
     await supabase.auth.signOut();
-    
-    // 🚀 FACEBOOK-STYLE MULTI-ACCOUNT SUPPORT:
-    // Also sign out from GitHub to allow switching accounts
-    // This prevents the "sticky session" problem where users can't switch GitHub accounts
-    const currentUrl = window.location.origin;
-    const githubLogoutUrl = `https://github.com/logout`;
-    
-    // Create a form to POST to GitHub logout (required by GitHub)
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = githubLogoutUrl;
-    form.style.display = 'none';
-    
-    // Add authenticity token if we can get it (GitHub CSRF protection)
-    // For now, we'll try the simpler approach of just redirecting
-    document.body.appendChild(form);
-    
-    // Alternative approach: Direct redirect to GitHub logout with return URL
-    // GitHub will handle the logout and redirect back
-    window.location.href = `https://github.com/logout?return_to=${encodeURIComponent(currentUrl)}`;
+
+    // 🚀 GOOGLE-STYLE MULTI-ACCOUNT SUPPORT:
+    // Redirect to our custom signout page instead of GitHub
+    // This keeps users on our platform with professional UX
+    const signoutUrl = new URL('/signout', window.location.origin);
+    signoutUrl.searchParams.set('username', userInfo.username);
+    signoutUrl.searchParams.set('email', userInfo.email);
+    signoutUrl.searchParams.set('avatar', userInfo.avatar);
+
+    window.location.href = signoutUrl.toString();
   };
 
   const handleTokenSubmit = async (token: string) => {
