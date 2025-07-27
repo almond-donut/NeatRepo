@@ -27,6 +27,12 @@ export async function middleware(req: NextRequest) {
       }
     )
 
+    // CRITICAL FIX: Skip middleware for dashboard - let client handle auth
+    if (req.nextUrl.pathname === '/dashboard') {
+      console.log('✅ MIDDLEWARE: Allowing dashboard access - client will handle auth')
+      return res
+    }
+
     const {
       data: { session },
       error,
@@ -36,7 +42,7 @@ export async function middleware(req: NextRequest) {
       console.error('🚨 MIDDLEWARE: Supabase session error:', error.message)
     }
 
-    const protectedRoutes = ['/dashboard', '/profile']
+    const protectedRoutes = ['/profile'] // Remove dashboard from protected routes
     const isProtectedRoute = protectedRoutes.some(route =>
       req.nextUrl.pathname.startsWith(route)
     )
@@ -48,19 +54,10 @@ export async function middleware(req: NextRequest) {
     })
 
     if (isProtectedRoute && !session) {
-      // Allow access to dashboard immediately after OAuth callback
-      const authSuccess = req.nextUrl.searchParams.get('auth')
-      if (authSuccess === 'success' && req.nextUrl.pathname === '/dashboard') {
-        console.log('✅ MIDDLEWARE: Allowing fresh OAuth login to dashboard.')
-        return res
-      }
-
       console.log(`🚫 MIDDLEWARE: No session, redirecting from protected route ${req.nextUrl.pathname} to home.`)
       const redirectUrl = req.nextUrl.clone()
       redirectUrl.pathname = '/'
       redirectUrl.search = '' // Clear any query params
-      // CRITICAL FIX: Don't add error parameter - let client handle OAuth tokens
-      // redirectUrl.searchParams.set('error', 'unauthenticated')
       return NextResponse.redirect(redirectUrl)
     }
 
