@@ -19,17 +19,20 @@ export default function GitHubAuth({ onClose }: GitHubAuthProps) {
   const handleGitHubSignIn = async () => {
     setIsLoading(true)
     setError(null)
-    
+
     try {
-      const currentUrl = window.location.origin
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
-          redirectTo: `${currentUrl}/dashboard`,
-          scopes: 'repo read:user user:email'
+          redirectTo: `${window.location.origin}/api/auth/callback`,
+          scopes: 'repo read:user user:email',
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
         }
       })
-      
+
       if (error) {
         throw error
       }

@@ -6,17 +6,25 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get("code")
   const error = searchParams.get("error")
   const error_description = searchParams.get("error_description")
+  const state = searchParams.get("state")
 
   console.log("🔗 Auth callback received:", {
     code: code ? "Present" : "Missing",
     error,
     error_description,
+    state: state ? "Present" : "Missing",
     origin,
+    fullUrl: request.url,
   })
 
   // Handle OAuth errors
   if (error) {
     console.error("❌ OAuth error:", { error, error_description })
+    // For bad_oauth_state errors, redirect to clean homepage to retry
+    if (error === 'invalid_request' && error_description?.includes('bad_oauth_state')) {
+      console.log("🔄 OAuth state error detected, redirecting to clean homepage for retry")
+      return NextResponse.redirect(`${origin}/`)
+    }
     return NextResponse.redirect(`${origin}/?error=${encodeURIComponent(error_description || error)}`)
   }
 

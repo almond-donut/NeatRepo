@@ -125,6 +125,22 @@ function HomePageContent({ handleError }: { handleError: (error: string) => void
     console.log('🔍 Homepage auth state:', { user: !!user, loading, userId: user?.id })
   }, [user, loading])
 
+  // Handle auth success redirect
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const authSuccess = urlParams.get('auth')
+
+    if (authSuccess === 'success' && user && !loading) {
+      console.log('🎯 Auth success detected, redirecting to dashboard...')
+      // Clear the auth parameter from URL
+      window.history.replaceState({}, '', window.location.pathname)
+      // Redirect to dashboard
+      setTimeout(() => {
+        window.location.href = '/dashboard'
+      }, 1000) // Give time for session to fully establish
+    }
+  }, [user, loading])
+
   // Handle logout with proper cleanup (local only, no GitHub redirect)
   const handleLogout = async () => {
     try {
