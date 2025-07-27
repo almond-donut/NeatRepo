@@ -33,7 +33,7 @@ export const useAuth = () => {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // CRITICAL FIX: Start with loading false
   const [showTokenPopupState, setShowTokenPopupState] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fetchProfile = async (userId: string) => {
@@ -228,7 +228,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null);
 
         if (event === 'SIGNED_IN' && session?.user) {
-          setLoading(true);
+          // CRITICAL FIX: Don't set loading true - this causes the loading loop
+          // setLoading(true);
 
           // REMOVED: No more sign-in timeouts - let the session persist naturally
 
