@@ -128,6 +128,52 @@ export default function DashboardPage() {
   const currentUser = user;
   const currentProfile = profile;
 
+  // 🚨 EMERGENCY PROFILE RECOVERY - Fix corrupted OAuth sessions
+  useEffect(() => {
+    const recoverProfile = async () => {
+      if (!currentUser || !currentUser.user_metadata?.user_name) return;
+
+      // If user has no profile or no token, try to recover from existing profile
+      if (!currentProfile || !currentProfile.github_token) {
+        console.log('🔧 RECOVERY: Attempting profile recovery for', currentUser.user_metadata.user_name);
+
+        try {
+          // Look for existing profile with same GitHub username
+          const { data: existingProfile } = await supabase
+            .from('user_profiles')
+            .select('*')
+            .eq('github_username', currentUser.user_metadata.user_name)
+            .single();
+
+          if (existingProfile && existingProfile.github_token && existingProfile.id !== currentUser.id) {
+            console.log('🔧 RECOVERY: Found existing profile with token, linking...', existingProfile);
+
+            // Update existing profile to use current user ID
+            const { error: updateError } = await supabase
+              .from('user_profiles')
+              .update({
+                id: currentUser.id,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('github_username', currentUser.user_metadata.user_name);
+
+            if (!updateError) {
+              console.log('✅ RECOVERY: Successfully linked to existing profile with token!');
+              // Force page refresh to load the recovered profile
+              window.location.reload();
+            } else {
+              console.error('❌ RECOVERY: Failed to link profile:', updateError);
+            }
+          }
+        } catch (error) {
+          console.error('❌ RECOVERY: Profile recovery failed:', error);
+        }
+      }
+    };
+
+    recoverProfile();
+  }, [currentUser, currentProfile]);
+
   // Create fallback profile from user data if profile doesn't exist
   const fallbackProfile = currentProfile || {
     id: currentUser?.id || 'unknown',
