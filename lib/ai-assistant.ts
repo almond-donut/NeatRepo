@@ -1024,7 +1024,27 @@ What would you like me to help you with?`;
         confidence: 0.8,
       };
     }
-    
+
+    // 🎤 START INTERVIEW
+    if (lowerMessage.includes('start') && lowerMessage.includes('interview')) {
+      return {
+        type: 'start_interview',
+        intent: 'Start portfolio interview',
+        parameters: {},
+        confidence: 0.9,
+      };
+    }
+
+    // 📝 GENERATE PORTFOLIO README
+    if (lowerMessage.includes('portfolio') && lowerMessage.includes('readme')) {
+      return {
+        type: 'generate_portfolio_readme',
+        intent: 'Generate portfolio README',
+        parameters: {},
+        confidence: 0.8,
+      };
+    }
+
     return {
       type: 'general_response',
       intent: 'General help',
