@@ -128,10 +128,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               console.error('❌ AUTH: Error setting session from OAuth tokens:', error);
             } else {
               console.log('✅ AUTH: Session established from OAuth tokens');
-              // Clean up URL and redirect to dashboard immediately
-              window.history.replaceState({}, '', '/dashboard');
-              window.location.href = '/dashboard';
-              return;
+              // Clean up URL immediately and continue with normal flow
+              window.history.replaceState({}, '', window.location.pathname);
+              // Don't redirect here - let the normal session check handle it
             }
           }
         }
