@@ -21,21 +21,24 @@ export default function GitHubAuth({ onClose }: GitHubAuthProps) {
     setError(null)
 
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'github',
-        options: {
-          redirectTo: `${window.location.origin}/dashboard`,
-          scopes: 'repo read:user',
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          }
-        }
-      })
+      // CRITICAL FIX: Use custom OAuth flow to bypass Supabase OAuth issues
+      const clientId = 'Ov23liaOcBS8zuFJCGyG'
+      const redirectUri = `${window.location.origin}/api/github/callback`
+      const scopes = 'repo read:user'
+      const state = Math.random().toString(36).substring(2, 15)
 
-      if (error) {
-        throw error
-      }
+      // Store state for verification
+      sessionStorage.setItem('github_oauth_state', state)
+
+      const githubAuthUrl = `https://github.com/login/oauth/authorize?` +
+        `client_id=${clientId}&` +
+        `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+        `scope=${encodeURIComponent(scopes)}&` +
+        `state=${state}&` +
+        `prompt=consent`
+
+      console.log('🔄 CUSTOM OAUTH: Redirecting to GitHub OAuth...')
+      window.location.href = githubAuthUrl
     } catch (err: any) {
       console.error('GitHub OAuth error:', err)
       setError(err.message || 'Failed to sign in with GitHub')
