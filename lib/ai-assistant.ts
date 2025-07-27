@@ -95,6 +95,7 @@ export class AIAssistantEngine {
   // 💾 LOAD INTERVIEW STATE FROM LOCALSTORAGE
   private loadInterviewState(): InterviewState {
     if (typeof window === 'undefined') {
+      console.log('💾 Server-side rendering, using default interview state');
       return {
         isActive: false,
         currentQuestion: 0,
@@ -106,15 +107,20 @@ export class AIAssistantEngine {
 
     try {
       const saved = localStorage.getItem('ai_interview_state');
+      console.log('💾 Raw localStorage value:', saved);
+
       if (saved) {
         const state = JSON.parse(saved);
         console.log('💾 Interview state loaded from localStorage:', state);
         return state;
+      } else {
+        console.log('💾 No saved interview state found in localStorage');
       }
     } catch (error) {
       console.error('❌ Failed to load interview state:', error);
     }
 
+    console.log('💾 Using default interview state');
     return {
       isActive: false,
       currentQuestion: 0,
