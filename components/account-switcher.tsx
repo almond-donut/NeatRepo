@@ -110,7 +110,7 @@ export default function AccountSwitcher() {
     );
   }
 
-  if (!profile) {
+  if (!profile && user) {
     console.log("🚨 ACCOUNT SWITCHER: Profile loading...", {
       user: !!user,
       profile: !!profile,
@@ -123,7 +123,7 @@ export default function AccountSwitcher() {
         <User className="w-6 h-6" />
         <div className="flex flex-col items-start">
           <span className="text-sm font-medium">Loading...</span>
-          <span className="text-xs text-muted-foreground">{user.email}</span>
+          <span className="text-xs text-muted-foreground">{user?.email || 'Loading...'}</span>
         </div>
       </Button>
     );
