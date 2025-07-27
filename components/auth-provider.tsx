@@ -129,19 +129,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
           // 🚀 PARALLEL: Fetch profile in background without blocking UI
           fetchProfile(session.user.id).then((fetchedProfile) => {
-            // Only show popup if user truly has no token AND hasn't permanently skipped
-            if (!fetchedProfile?.github_token && typeof window !== 'undefined') {
+            // Check if this is a GitHub OAuth user
+            const isGitHubOAuth = session.user.app_metadata?.provider === 'github';
+            
+            console.log('🔍 INITIAL PAT POPUP DEBUG:', {
+              isGitHubOAuth,
+              hasToken: !!fetchedProfile?.github_token,
+              userId: session.user.id,
+              profile: fetchedProfile
+            });
+
+            // Show PAT popup for GitHub OAuth users who don't have a token
+            if (isGitHubOAuth && !fetchedProfile?.github_token && typeof window !== 'undefined') {
               const permanentlySkipped = localStorage.getItem(`token_popup_skipped_permanently_${session.user.id}`);
+              
+              console.log('🔍 INITIAL PAT POPUP STORAGE DEBUG:', {
+                permanentlySkipped,
+                shouldShow: !permanentlySkipped
+              });
 
               // Only show popup if user hasn't permanently skipped
               if (!permanentlySkipped) {
+                console.log('✅ INITIAL PAT POPUP: Showing popup for GitHub OAuth user without token');
                 setShowTokenPopupState(true);
+              } else {
+                console.log('❌ INITIAL PAT POPUP: User permanently skipped token setup');
               }
+            } else {
+              console.log('❌ INITIAL PAT POPUP: Not showing - either not GitHub OAuth or already has token');
             }
             console.log('✅ Profile loaded in background');
           }).catch((error) => {
             console.error('❌ Background profile fetch failed:', error);
-            // Create basic profile as fallback - only show popup for truly new users
+            // Create basic profile as fallback
             const basicProfile = {
               id: session.user.id,
               github_username: session.user.user_metadata?.user_name || 'user',
@@ -149,10 +169,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             };
             setProfile(basicProfile);
 
-            // Only show popup for new users (not returning users with fetch errors)
-            if (typeof window !== 'undefined') {
+            // Show popup for GitHub OAuth users even on profile fetch error
+            const isGitHubOAuth = session.user.app_metadata?.provider === 'github';
+            if (isGitHubOAuth && typeof window !== 'undefined') {
               const permanentlySkipped = localStorage.getItem(`token_popup_skipped_permanently_${session.user.id}`);
               if (!permanentlySkipped) {
+                console.log('✅ FALLBACK PAT POPUP: Showing popup for GitHub OAuth user (profile fetch failed)');
                 setShowTokenPopupState(true);
               }
             }
@@ -217,16 +239,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               console.log("✅ AUTH: Profile upserted successfully");
               const fetchedProfile = await fetchProfile(session.user.id);
 
-              // Only show GitHub token popup for GitHub OAuth users who don't have a token
-              if (isGitHubOAuth && !fetchedProfile?.github_token) {
-                const lastDismissed = localStorage.getItem(`token_popup_dismissed_${session.user.id}`);
-                const now = Date.now();
-                const dismissedTime = lastDismissed ? parseInt(lastDismissed) : 0;
+              // Simplified PAT popup logic for GitHub OAuth users
+              console.log('🔍 PAT POPUP DEBUG:', {
+                isGitHubOAuth,
+                hasToken: !!fetchedProfile?.github_token,
+                userId: session.user.id,
+                profile: fetchedProfile
+              });
 
-                // Show popup if never dismissed or dismissed more than 1 hour ago
-                if (!lastDismissed || (now - dismissedTime) > 3600000) {
+              // Show PAT popup for GitHub OAuth users who don't have a token
+              if (isGitHubOAuth && !fetchedProfile?.github_token) {
+                const permanentlySkipped = localStorage.getItem(`token_popup_skipped_permanently_${session.user.id}`);
+                
+                console.log('🔍 PAT POPUP STORAGE DEBUG:', {
+                  permanentlySkipped,
+                  shouldShow: !permanentlySkipped
+                });
+
+                // Only check if permanently skipped - remove complex timing logic
+                if (!permanentlySkipped) {
+                  console.log('✅ PAT POPUP: Showing popup for GitHub OAuth user without token');
                   setShowTokenPopupState(true);
+                } else {
+                  console.log('❌ PAT POPUP: User permanently skipped token setup');
                 }
+              } else {
+                console.log('❌ PAT POPUP: Not showing - either not GitHub OAuth or already has token');
               }
             }
 
