@@ -134,10 +134,24 @@ export class AIAssistantEngine {
 
   // 🧠 PARSE USER COMMAND USING AI
   async parseCommand(userMessage: string): Promise<AIAction> {
-    const systemPrompt = `You are an AI assistant that helps developers manage their GitHub repositories. 
-    
+    // 🎤 INTERVIEW MODE: If interview is active, treat all responses as interview answers
+    if (this.interviewState.isActive && !this.interviewState.completed) {
+      console.log('🎤 Interview active - treating response as interview answer');
+      return {
+        type: 'interview_answer',
+        intent: 'User answering interview question',
+        parameters: {
+          answer: userMessage,
+          questionId: this.interviewState.questions[this.interviewState.currentQuestion]?.id
+        },
+        confidence: 1.0
+      };
+    }
+
+    const systemPrompt = `You are an AI assistant that helps developers manage their GitHub repositories.
+
     Analyze the user's message and determine what action they want to perform. Respond with a JSON object containing:
-    
+
     {
       "type": "create_repo" | "create_file" | "delete_repo" | "sort_repos" | "analyze_complexity" | "cv_recommendations" | "generate_portfolio_readme" | "start_interview" | "interview_answer" | "general_response",
       "intent": "brief description of what user wants",
