@@ -1354,7 +1354,7 @@ ${successCount > 0 ? 'Your portfolio is now cleaner and more professional! 🚀'
 
   const handleSignOut = async () => {
     await signOut();
-    router.push("/");
+    // REMOVED: Automatic redirect - user must manually navigate after sign out
   };
 
   const enablePreviewMode = (newRepos: GitHubRepo[]) => {

@@ -17,13 +17,12 @@ export default function SignoutPage() {
   const avatar = searchParams.get('avatar') || '';
 
   useEffect(() => {
-    // Countdown timer
+    // Countdown timer (display only - no automatic redirect)
     const timer = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
-          // Redirect to landing page
-          router.push('/');
+          // REMOVED: Automatic redirect - user must manually navigate
           return 0;
         }
         return prev - 1;

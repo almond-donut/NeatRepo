@@ -231,8 +231,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 if (data.session?.user) {
                   setUser(data.session.user);
                   setLoading(false);
-                  console.log('✅ AUTH: OAuth login complete - redirecting to dashboard');
-                  window.location.href = '/dashboard';
+                  console.log('✅ AUTH: OAuth login complete - user must manually navigate');
+                  // REMOVED: Automatic redirect - user must manually choose where to go
                   return;
                 }
               }

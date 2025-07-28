@@ -106,18 +106,14 @@ export default function ProfilePage() {
     );
   }
 
-  // If still no user after loading, redirect to home
+  // If still no user after loading, show message (no automatic redirect)
   if (!user) {
-    if (typeof window !== 'undefined') {
-      setTimeout(() => {
-        router.push('/');
-      }, 1000);
-    }
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Redirecting...</h1>
-          <p className="text-muted-foreground mb-4">Taking you back to the homepage...</p>
+          <h1 className="text-2xl font-bold mb-4">Not Authenticated</h1>
+          <p className="text-muted-foreground mb-4">Please sign in to view your profile.</p>
+          <p className="text-muted-foreground">Navigate manually to the homepage to sign in.</p>
         </div>
       </div>
     );

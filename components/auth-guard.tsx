@@ -35,8 +35,8 @@ export function AuthGuard({ children, requireAuth = true }: AuthGuardProps) {
       // Give the session a moment to establish after OAuth callback
       const sessionTimeout = setTimeout(() => {
         if (!user) {
-          console.log('⚠️ AUTH GUARD: Session not established after OAuth, redirecting to home')
-          router.push('/')
+          console.log('⚠️ AUTH GUARD: Session not established after OAuth - user must manually navigate')
+          // REMOVED: Automatic redirect - user must manually choose where to go
         } else {
           console.log('✅ AUTH GUARD: Session established successfully')
           // Clean up the URL parameter
@@ -52,8 +52,9 @@ export function AuthGuard({ children, requireAuth = true }: AuthGuardProps) {
 
     // Normal auth check
     if (!user) {
-      console.log('🚫 AUTH GUARD: No user found, redirecting to home')
-      router.push('/')
+      console.log('🚫 AUTH GUARD: No user found - user must manually navigate')
+      // REMOVED: Automatic redirect - user must manually choose where to go
+      setIsChecking(false)
       return
     }
 

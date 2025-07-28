@@ -16,12 +16,13 @@ export default function AuthErrorPage() {
   }, [searchParams])
 
   const handleRetry = () => {
-    // Clear any existing auth state and redirect to home
-    router.push('/')
+    // Clear any existing auth state - user must manually navigate
+    console.log('🔄 AUTH ERROR: User requested retry - manual navigation required')
   }
 
   const handleGoHome = () => {
-    router.push('/')
+    // User must manually navigate to homepage
+    console.log('🏠 AUTH ERROR: User requested home - manual navigation required')
   }
 
   return (
