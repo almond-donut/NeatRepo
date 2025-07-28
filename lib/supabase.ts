@@ -17,6 +17,7 @@ export interface UserProfile {
   id: string
   github_username: string
   github_id: number
+  github_token?: string
   display_name?: string
   avatar_url?: string
   bio?: string

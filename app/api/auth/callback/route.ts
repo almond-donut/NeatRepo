@@ -49,9 +49,10 @@ export async function GET(req: NextRequest) {
 
     console.log('✅ AUTH CALLBACK: Successfully exchanged code for session')
 
-    // Store user profile information (OAuth token will be handled by Supabase session)
+    // Store user profile information and GitHub access token
     if (data.session?.user) {
       const user = data.session.user
+      const session = data.session
       console.log('🔑 OAUTH SUCCESS: Creating/updating user profile for repository access')
 
       try {
@@ -64,13 +65,27 @@ export async function GET(req: NextRequest) {
           return NextResponse.redirect(`${origin}/auth/error?error=missing_github_username`)
         }
 
-        // Create or update user profile
+        // Extract GitHub access token from OAuth session
+        const githubToken = session.provider_token
+        console.log('🔑 OAUTH TOKEN: Extracting GitHub access token', {
+          hasToken: !!githubToken,
+          tokenLength: githubToken?.length,
+          tokenPrefix: githubToken?.substring(0, 7) + '...'
+        })
+
+        if (!githubToken) {
+          console.error('❌ No GitHub access token available in session')
+          return NextResponse.redirect(`${origin}/auth/error?error=missing_github_token`)
+        }
+
+        // Create or update user profile with GitHub token
         const { error: profileError } = await supabase
           .from('user_profiles')
           .upsert({
             id: user.id,
             github_username: githubUsername,
             github_id: githubId ? parseInt(githubId) : null,
+            github_token: githubToken,
             display_name: user.user_metadata?.full_name || user.user_metadata?.name,
             avatar_url: user.user_metadata?.avatar_url,
             email: user.email,
@@ -82,11 +97,13 @@ export async function GET(req: NextRequest) {
 
         if (profileError) {
           console.error('❌ Failed to create/update user profile:', profileError)
+          return NextResponse.redirect(`${origin}/auth/error?error=profile_creation_failed`)
         } else {
-          console.log('✅ User profile created/updated successfully')
+          console.log('✅ User profile created/updated successfully with GitHub token')
         }
       } catch (profileError) {
         console.error('❌ Error handling user profile:', profileError)
+        return NextResponse.redirect(`${origin}/auth/error?error=profile_error`)
       }
     }
 
