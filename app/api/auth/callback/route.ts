@@ -39,10 +39,36 @@ export async function GET(request: NextRequest) {
     )
 
     console.log('🔄 AUTH CALLBACK: Exchanging code for session...')
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
+    console.log('🔍 AUTH CALLBACK: Environment check:', {
+      supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 30) + '...',
+      hasAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      nodeEnv: process.env.NODE_ENV,
+      origin,
+      next
+    })
 
-    if (!error) {
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+
+    console.log('🔍 AUTH CALLBACK: Exchange result:', {
+      hasData: !!data,
+      hasSession: !!data?.session,
+      hasUser: !!data?.user,
+      error: error ? {
+        message: error.message,
+        status: error.status,
+        name: error.name
+      } : null
+    })
+
+    if (!error && data?.session) {
       console.log('✅ AUTH CALLBACK: Successfully exchanged code for session')
+      console.log('🔍 AUTH CALLBACK: Session details:', {
+        userId: data.user?.id,
+        email: data.user?.email,
+        provider: data.user?.app_metadata?.provider,
+        hasProviderToken: !!data.session.provider_token
+      })
+
       const forwardedHost = request.headers.get('x-forwarded-host') // original origin before load balancer
       const isLocalEnv = process.env.NODE_ENV === 'development'
       if (isLocalEnv) {
@@ -55,7 +81,12 @@ export async function GET(request: NextRequest) {
       }
     } else {
       console.error('❌ AUTH CALLBACK: Error exchanging code for session:', error)
-      return NextResponse.redirect(`${origin}/auth/error?error=${encodeURIComponent(error.message)}`)
+      console.error('❌ AUTH CALLBACK: Full error details:', {
+        error,
+        hasData: !!data,
+        dataKeys: data ? Object.keys(data) : null
+      })
+      return NextResponse.redirect(`${origin}/auth/error?error=${encodeURIComponent(error?.message || 'session_exchange_failed')}`)
     }
 
   }
