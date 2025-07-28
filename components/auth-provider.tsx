@@ -404,8 +404,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             // 🚨 CRITICAL FIX: Use UPSERT to create/update profile with provider token
             try {
-              // 🔄 TIMING FIX: Prevent emergency timeout from interfering with OAuth profile creation
-              setIsOAuthProfileCreating(true);
 
               // Extract GitHub metadata for profile creation
               const githubUsername = session.user.user_metadata?.user_name ||
@@ -454,9 +452,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               };
               setProfile(fallbackProfileData);
               console.log('🔄 AUTH: Fallback profile state created to prevent "No account" state');
-            } finally {
-              // 🔄 TIMING FIX: Clear the OAuth profile creation flag
-              setIsOAuthProfileCreating(false);
             }
           }
         }
