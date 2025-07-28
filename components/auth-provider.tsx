@@ -46,6 +46,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return () => clearTimeout(emergencyTimeout);
   }, []);
+
+  // 🚨 HELPER: Create profile with proper username handling
+  const createProfileWithUsername = async (user: any, githubUsername: string, githubId?: string) => {
+    try {
+      console.log('🔧 AUTH: Creating profile with username:', githubUsername);
+
+      const newProfile = {
+        id: user.id,
+        github_id: githubId,
+        github_username: githubUsername,
+        display_name: user.user_metadata?.full_name || user.user_metadata?.name || githubUsername,
+        avatar_url: user.user_metadata?.avatar_url,
+        github_token: null, // Will be set later if needed
+        updated_at: new Date().toISOString(),
+      };
+
+      const { error: upsertError } = await supabase
+        .from('user_profiles')
+        .upsert(newProfile, { onConflict: 'id' });
+
+      if (upsertError) {
+        console.error('❌ Failed to create profile:', upsertError);
+        throw upsertError;
+      }
+
+      console.log('✅ Profile created successfully:', githubUsername);
+      setProfile(newProfile);
+      return newProfile;
+    } catch (error) {
+      console.error('❌ Profile creation failed:', error);
+      throw error;
+    }
+  };
+
   const fetchProfile = async (userId: string) => {
     try {
       console.log("🔍 AUTH: Fetching profile for user ID:", userId);
@@ -390,6 +424,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setLoading(false);
           console.log("✅ AUTH: User signed in - UI ready immediately");
           console.log("🔍 AUTH: Loading state after SIGNED_IN:", false);
+          console.log("🔍 AUTH: New user details:", {
+            userId: session.user.id,
+            email: session.user.email,
+            githubUsername: session.user.user_metadata?.user_name,
+            provider: session.user.app_metadata?.provider
+          });
 
           // REMOVED: No more sign-in timeouts - let the session persist naturally
 
@@ -398,12 +438,51 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const isGitHubOAuth = session.user.app_metadata?.provider === 'github';
             const githubId = session.user.user_metadata?.provider_id || session.user.identities?.find(i => i.provider === 'github')?.id;
 
+            // 🚨 CRITICAL FIX: Multiple fallback methods to extract GitHub username
+            const githubUsername = session.user.user_metadata?.user_name ||
+                                 session.user.user_metadata?.preferred_username ||
+                                 session.user.user_metadata?.login ||
+                                 session.user.identities?.find(i => i.provider === 'github')?.identity_data?.login;
+
+            console.log("🔍 AUTH: GitHub OAuth details:", {
+              isGitHubOAuth,
+              githubId,
+              githubUsername,
+              hasProviderToken: !!session.provider_token,
+              userMetadata: session.user.user_metadata,
+              identities: session.user.identities
+            });
+
             // 🚨 FIX: Check for existing profile by github_username first
+            if (!githubUsername) {
+              console.error("❌ AUTH: No GitHub username available for profile creation");
+              console.error("❌ AUTH: Available user data:", {
+                userMetadata: session.user.user_metadata,
+                identities: session.user.identities,
+                email: session.user.email
+              });
+
+              // 🚨 FALLBACK: Use email username as last resort
+              const emailUsername = session.user.email?.split('@')[0];
+              if (emailUsername) {
+                console.log("🔧 AUTH: Using email username as fallback:", emailUsername);
+                await createProfileWithUsername(session.user, emailUsername, githubId);
+              }
+              return;
+            }
+
             const { data: existingProfile } = await supabase
               .from('user_profiles')
               .select('*')
-              .eq('github_username', session.user.user_metadata?.user_name)
+              .eq('github_username', githubUsername)
               .single();
+
+            console.log("🔍 AUTH: Existing profile check:", {
+              githubUsername,
+              hasExistingProfile: !!existingProfile,
+              existingProfileId: existingProfile?.id,
+              currentUserId: session.user.id
+            });
 
             if (existingProfile && existingProfile.id !== session.user.id) {
               console.log('🔧 FIXING: Found existing profile with different user ID, updating...');
@@ -425,32 +504,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 console.log('✅ Successfully linked to existing profile with token');
               }
             } else {
-              // Check if profile already exists to preserve github_token
-              const { data: existingProfileById } = await supabase
-                .from('user_profiles')
-                .select('github_token')
-                .eq('id', session.user.id)
-                .single();
-
-              // Preserve existing github_token if it exists
-              const { error: upsertError } = await supabase
-                .from('user_profiles')
-                .upsert({
-                  id: session.user.id,
-                  github_id: githubId,
-                  github_username: session.user.user_metadata?.user_name,
-                  display_name: session.user.user_metadata?.full_name,
-                  avatar_url: session.user.user_metadata?.avatar_url,
-                  // Preserve existing github_token if it exists
-                  ...(existingProfileById?.github_token && { github_token: existingProfileById.github_token }),
-                  updated_at: new Date().toISOString(),
-                }, { onConflict: 'id' });
-
-              if (upsertError) {
-                console.error("❌ AUTH: Error upserting profile:", upsertError);
-              } else {
-                console.log("✅ AUTH: Profile upserted, github_token preserved:", !!existingProfileById?.github_token);
-              }
+              // 🚨 SIMPLIFIED: Use helper method for profile creation
+              console.log('🔧 AUTH: Creating/updating profile for user:', githubUsername);
+              await createProfileWithUsername(session.user, githubUsername, githubId);
             }
 
             console.log("✅ AUTH: Profile linking completed");
