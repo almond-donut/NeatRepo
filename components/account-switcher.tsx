@@ -41,8 +41,6 @@ export default function AccountSwitcher() {
 
   // 🚨 EMERGENCY RECOVERY: Check for temporary recovery profile
   const [tempRecoveryProfile, setTempRecoveryProfile] = useState(null)
-  // 🔧 PAT PROFILE: Check for PAT-based profile when no OAuth session
-  const [patProfile, setPatProfile] = useState(null)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -87,8 +85,8 @@ export default function AccountSwitcher() {
     setShowManageDialog(true)
   }
 
-  // 🚨 FIXED: Handle PAT authentication without OAuth session
-  if (!user && !tempRecoveryProfile && !patProfile) {
+  // 🚨 FIXED: Handle authentication without OAuth session
+  if (!user && !tempRecoveryProfile) {
     console.log("🚨 ACCOUNT SWITCHER: No authentication available");
     return (
       <Button variant="ghost" className="flex items-center space-x-2 px-3 py-2 h-auto" disabled>
@@ -120,8 +118,8 @@ export default function AccountSwitcher() {
     );
   }
 
-  // Use currentAccount from hook or fallback - prioritize recovery profile, then PAT profile
-  const displayAccount = tempRecoveryProfile || patProfile || currentAccount || {
+  // Use currentAccount from hook or fallback - prioritize recovery profile
+  const displayAccount = tempRecoveryProfile || currentAccount || {
     id: user?.id || 'unknown-user',
     email: user?.email || 'unknown@example.com',
     username: profile?.github_username || user?.user_metadata?.user_name || 'unknown-user',
