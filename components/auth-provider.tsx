@@ -317,13 +317,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         // 🔒 CRITICAL FIX: Validate session integrity to prevent user mixing
-        if (session?.user) {
-          console.log("🔍 AUTH: Validating session for user:", session.user.id);
+        // BUT: Don't interfere with OAuth login flow
+        if (session?.user && user && user.id !== session.user.id) {
+          console.log("🔍 AUTH: User change detected:", {
+            previousUser: user.id,
+            newUser: session.user.id,
+            event: event
+          });
 
-          // Check if this is a different user than expected
-          if (user && user.id !== session.user.id) {
-            console.warn("⚠️ AUTH: User ID changed - potential session mixing detected!");
-            console.warn("Previous user:", user.id, "New user:", session.user.id);
+          // 🚨 OAUTH FIX: Don't clear data during OAuth login - it's not a "user change"
+          // OAuth events like SIGNED_IN are fresh logins, not account switching
+          if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+            console.log("✅ AUTH: OAuth login detected - preserving session data");
+          } else {
+            console.warn("⚠️ AUTH: Actual user switching detected - clearing previous user data");
 
             // Clear any cached profile data for the previous user
             setProfile(null);
