@@ -26,7 +26,7 @@ import { useAccountSwitcher } from "@/hooks/useAccountSwitcher"
 import AccountManagementDialog from "./account-management-dialog"
 
 export default function AccountSwitcher() {
-  const { user, profile } = useAuth()
+  const { user, profile, loading } = useAuth()
   const {
     accounts,
     currentAccount,
@@ -85,7 +85,21 @@ export default function AccountSwitcher() {
     setShowManageDialog(true)
   }
 
-  // 🚨 FIXED: Handle authentication without OAuth session
+  // 🔄 Show loading state during authentication initialization
+  if (loading) {
+    console.log("🔄 ACCOUNT SWITCHER: Authentication initializing...");
+    return (
+      <Button variant="ghost" className="flex items-center space-x-2 px-3 py-2 h-auto" disabled>
+        <Loader2 className="w-6 h-6 animate-spin" />
+        <div className="flex flex-col items-start">
+          <span className="text-sm font-medium">Loading...</span>
+          <span className="text-xs text-muted-foreground">Initializing...</span>
+        </div>
+      </Button>
+    );
+  }
+
+  // 🚨 FIXED: Handle authentication without OAuth session (only after loading is complete)
   if (!user && !tempRecoveryProfile) {
     console.log("🚨 ACCOUNT SWITCHER: No authentication available");
     return (
