@@ -33,7 +33,7 @@ export const useAuth = () => {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(false); // CRITICAL FIX: Start with loading false
+  const [loading, setLoading] = useState(true); // CRITICAL FIX: Start with loading true to prevent race conditions
   const [showTokenPopupState, setShowTokenPopupState] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fetchProfile = async (userId: string) => {
