@@ -5,7 +5,10 @@ type: "always_apply"
 # GitHub OAuth Repository Display Bug Fix
 
 ## Problem Statement
-After successful GitHub OAuth authentication, the dashboard displays 0 repositories instead of the user's actual repositories. This indicates a failure in the OAuth callback flow, token storage, or repository fetching mechanism.
+After successful GitHub OAuth authentication, the dashboard displays 0 repositories instead of the user's actual repositories. This indicates a failure in the OAuth callback flow, token storage, or repository fetching mechanism. 
+
+#REMEMBER
+Alwyas use mcp server sequential thinking and Context engine
 
 ## Critical Requirements
 
