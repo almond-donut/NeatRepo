@@ -197,3 +197,5 @@ This project is licensed under the MIT License.
 **NeatRepo** - Making GitHub portfolio management fast, professional, and job-ready! 🚀
 
 *Clean up your GitHub, land your dream job!*
+
+<!-- Updated: 2025-01-28 - New Supabase project configured -->
