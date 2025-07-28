@@ -79,36 +79,16 @@ export async function GET(req: NextRequest) {
           return NextResponse.redirect(`${origin}/auth/error?error=missing_github_username`)
         }
 
-        // 🔑 PROVIDER TOKEN: Now handled on client-side via onAuthStateChange
-        // The client-side auth provider will capture provider_token from the session
-        // and store it in localStorage and database for repository access
-        console.log('✅ OAUTH CALLBACK: Provider token will be captured on client-side')
-
-        // Create or update user profile (GitHub token will be added by client-side auth provider)
-        const { error: profileError } = await supabase
-          .from('user_profiles')
-          .upsert({
-            id: user.id,
-            github_username: githubUsername,
-            github_id: githubId ? parseInt(githubId) : null,
-            display_name: user.user_metadata?.full_name || user.user_metadata?.name,
-            avatar_url: user.user_metadata?.avatar_url,
-            email: user.email,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }, {
-            onConflict: 'id'
-          })
-
-        if (profileError) {
-          console.error('❌ Failed to create/update user profile:', profileError)
-          return NextResponse.redirect(`${origin}/auth/error?error=profile_creation_failed`)
-        } else {
-          console.log('✅ User profile created/updated successfully with GitHub token')
-        }
-      } catch (profileError) {
-        console.error('❌ Error handling user profile:', profileError)
-        return NextResponse.redirect(`${origin}/auth/error?error=profile_error`)
+        // 🎯 SUCCESS: OAuth session established successfully
+        // User profile creation and provider token capture will be handled by client-side auth provider
+        console.log('✅ OAUTH CALLBACK: Session established, user authenticated:', {
+          userId: user.id,
+          githubUsername,
+          provider: user.app_metadata?.provider
+        })
+      } catch (error) {
+        console.error('❌ Error in OAuth callback processing:', error)
+        return NextResponse.redirect(`${origin}/auth/error?error=callback_processing_failed`)
       }
     }
 
