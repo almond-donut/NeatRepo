@@ -40,10 +40,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - ✅ **Auth guard**: No longer auto-redirects to homepage when not authenticated
     - ✅ **Sign-out flow**: No longer auto-redirects after sign-out
     - ✅ **Profile/error pages**: No longer auto-redirect on auth failures
+    - ✅ **REMOVED ALL MISLEADING UI ELEMENTS**: Eliminated countdown timers and redirect messages
+  - **UI FIXES IMPLEMENTED**:
+    - ✅ **Sign-out page**: Removed "Redirecting in X seconds" countdown timer
+    - ✅ **Sign-out page**: Removed "Logging out..." animated message
+    - ✅ **Bug report page**: Removed "Redirecting to dashboard in 3 seconds"
+    - ✅ **Auth forms**: Removed "Redirecting..." success messages
+    - ✅ **Homepage**: Removed "Redirecting to dashboard..." loading states
+    - ✅ **OAuth flow**: Changed redirectTo from /dashboard to / (homepage)
   - **VALIDATION RESULTS**:
     - ✅ **Manual sign-out**: Users must explicitly click "Sign out all accounts" button
     - ✅ **Session isolation**: Complete session destruction prevents account mixing
     - ✅ **Manual navigation**: Users must manually choose where to go after auth events
+    - ✅ **UI consistency**: No misleading countdown timers or redirect messages
   - **SECURITY IMPACT**: Prevents session persistence and ensures complete session cleanup
 - 🎭 **Personality Mode Persistence Bug** - Fixed critic mode automatically reverting to nice mode after inactivity
   - Added localStorage persistence for personality mode state

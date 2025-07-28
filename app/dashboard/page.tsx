@@ -221,7 +221,9 @@ export default function DashboardPage() {
   const fallbackProfile = currentProfile || {
     id: currentUser?.id || 'unknown',
     github_username: currentUser?.user_metadata?.user_name || 'unknown-user',
-    github_token: '' // Token will be set through profile management
+    github_token: '', // Token will be set through profile management or OAuth
+    display_name: currentUser?.user_metadata?.full_name || currentUser?.user_metadata?.user_name || 'User',
+    avatar_url: currentUser?.user_metadata?.avatar_url || ''
   };
 
   // Use fallback profile for dashboard
@@ -1277,12 +1279,24 @@ ${successCount > 0 ? 'Your portfolio is now cleaner and more professional! 🚀'
 
   // 🚀 INSTANT LOADING: Optimized auto-fetch with cache-first approach
   useEffect(() => {
-    // Only run when we have user and profile (token optional for OAuth fallback)
-    if (!user || !currentProfile || isInitialized) {
+    // Only run when we have user (profile optional for OAuth users)
+    if (!user || isInitialized) {
       return;
     }
 
-    console.log('🚀 INSTANT AUTO-FETCH: User and profile ready, checking cache first...');
+    // For OAuth users, we can proceed even without profile if we have OAuth token
+    const hasOAuthToken = typeof window !== 'undefined' &&
+      localStorage.getItem(`oauth_provider_token_${user.id}`);
+
+    if (!currentProfile && !hasOAuthToken) {
+      console.log('🔄 INSTANT AUTO-FETCH: Waiting for profile or OAuth token...');
+      return;
+    }
+
+    console.log('🚀 INSTANT AUTO-FETCH: User ready, checking cache first...', {
+      hasProfile: !!currentProfile,
+      hasOAuthToken: !!hasOAuthToken
+    });
 
     // 🚀 CACHE-FIRST: Check if we have recent cached data
     const cachedRepos = localStorage.getItem('github_repositories');
@@ -1334,7 +1348,9 @@ ${successCount > 0 ? 'Your portfolio is now cleaner and more professional! 🚀'
         }
 
         // 🔧 Initialize AI Assistant with GitHub API (non-blocking)
-        const username = currentProfile.github_username || 'user';
+        const username = currentProfile?.github_username ||
+                        user?.user_metadata?.user_name ||
+                        'user';
         aiAssistant.initializeGitHub(effectiveToken, username);
         console.log('🔧 AI Assistant GitHub API initialized');
 
