@@ -139,15 +139,16 @@ export default function DashboardPage() {
 
       const authenticatedUsername = currentUser.user_metadata.user_name;
 
-      // Check if we need recovery (no profile/token for authenticated user)
-      const needsRecovery = !currentProfile || !currentProfile.github_token;
+      // Check if we need recovery (no profile for authenticated user)
+      // Note: github_token is optional - users can access dashboard without it
+      const needsRecovery = !currentProfile;
 
       if (!needsRecovery) return;
 
       console.log('🔧 SECURE RECOVERY: Attempting profile recovery for authenticated user:', authenticatedUsername);
 
-      // If user has no profile or no token, try to recover from existing profile
-      if (!currentProfile || !currentProfile.github_token) {
+      // If user has no profile, try to recover from existing profile
+      if (!currentProfile) {
 
         try {
           // Look for existing profile with same GitHub username
@@ -276,8 +277,9 @@ export default function DashboardPage() {
       addChatMessage({
         id: Date.now().toString(),
         role: "assistant",
-        content: `❌ GitHub token not found. Please configure your GitHub token first.`,
+        content: `🔑 To create repositories, please set up your GitHub Personal Access Token first. Click the 'Setup GitHub Token' button above.`,
       });
+      showTokenPopup(); // Automatically show the token setup popup
       return;
     }
 
@@ -372,8 +374,9 @@ export default function DashboardPage() {
       addChatMessage({
         id: Date.now().toString(),
         role: "assistant",
-        content: `❌ GitHub token not found. Please configure your GitHub token first.`,
+        content: `🔑 To rename repositories, please set up your GitHub Personal Access Token first. Click the 'Setup GitHub Token' button above.`,
       });
+      showTokenPopup(); // Automatically show the token setup popup
       return;
     }
 
@@ -433,7 +436,18 @@ export default function DashboardPage() {
   };
 
   const confirmDeleteRepo = async () => {
-    if (!repoToDelete || !effectiveProfile.github_token) return;
+    if (!repoToDelete) return;
+
+    if (!effectiveProfile.github_token) {
+      addChatMessage({
+        id: Date.now().toString(),
+        role: "assistant",
+        content: `🔑 To delete repositories, please set up your GitHub Personal Access Token first. Click the 'Setup GitHub Token' button above.`,
+      });
+      setShowDeleteConfirm(false);
+      showTokenPopup(); // Automatically show the token setup popup
+      return;
+    }
 
     setIsDeleting(true);
     try {
