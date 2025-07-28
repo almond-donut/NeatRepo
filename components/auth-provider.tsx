@@ -301,6 +301,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   console.error('❌ INIT: Failed to upsert profile with provider token:', error);
                 } else {
                   console.log('✅ INIT: Profile created/updated with provider token for user:', session.user.id);
+                  // 🔧 CRITICAL FIX: Set profile state immediately after successful UPSERT
+                  setProfile(profileData);
+                  console.log('✅ INIT: Profile state updated with OAuth data');
                 }
               } catch (error) {
                 console.error('❌ INIT: Exception upserting profile with provider token:', error);
@@ -433,6 +436,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 console.error('❌ AUTH: Failed to upsert profile with provider token:', error);
               } else {
                 console.log('✅ AUTH: Profile created/updated with provider token for user:', session.user.id);
+                // 🔧 CRITICAL FIX: Set profile state immediately after successful UPSERT
+                setProfile(profileData);
+                console.log('✅ AUTH: Profile state updated with OAuth data');
               }
             } catch (error) {
               console.error('❌ AUTH: Exception upserting profile with provider token:', error);
