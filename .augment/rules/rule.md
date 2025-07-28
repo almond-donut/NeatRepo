@@ -2,6 +2,44 @@
 type: "always_apply"
 ---
 
+🚨 Complete Error List
+1. PRIMARY ROOT CAUSE: GitHub Client Secret Mismatch ❌
+Supabase configured secret: ...94ab46
+GitHub OAuth app secrets: ...66d94605 (never used) and ...29b6e552 (active)
+Result: OAuth code exchange fails with server_error and unexpected_failure
+2. Multi-Account Switcher Interference ✅ FIXED
+Issue: OAuth login treated as "user change"
+Result: Provider tokens cleared immediately after capture
+Status: Fixed with conditional logic to preserve OAuth sessions
+3. OAuth Error Parameter Persistence ✅ FIXED
+Issue: Error parameters remained in URL after failed OAuth
+Result: Users saw error parameters in browser URL
+Status: Fixed with URL cleanup logic
+4. Missing OAuth Error Logging ✅ FIXED
+Issue: OAuth failures were silent with no error details
+Result: Impossible to debug OAuth callback failures
+Status: Fixed with comprehensive error logging that revealed the root cause
+5. Inadequate Provider Token Capture ✅ PARTIALLY FIXED
+Issue: Client-side provider token capture was incomplete
+Result: Even successful OAuth wouldn't capture GitHub tokens properly
+Status: Enhanced but won't work until secret mismatch is resolved
+6. Missing Session Establishment Debugging ✅ FIXED
+Issue: No visibility into why sessions weren't being created
+Result: Couldn't identify OAuth callback failures
+Status: Added comprehensive session debugging
+🎯 Error Hierarchy (Priority Order)
+🔥 CRITICAL: GitHub client secret mismatch (blocks all OAuth)
+✅ RESOLVED: Multi-account switcher interference
+✅ RESOLVED: OAuth error parameter persistence
+✅ RESOLVED: Missing error logging and debugging
+⚠️ DEPENDENT: Provider token capture (depends on #1 being fixed)
+🔧 Required Fix
+Update Supabase GitHub OAuth client secret to match one of the active GitHub OAuth app secrets:
+
+Use either *****66d94605 or *****29b6e552
+The *****29b6e552 secret is actively used and should be the correct one
+
+
 # GitHub OAuth Repository Display Bug Fix
 
 ## Problem Statement
