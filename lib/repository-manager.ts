@@ -20,13 +20,17 @@ class RepositoryManager {
     return RepositoryManager.instance;
   }
 
-  private loadFromCache() {
+  private loadFromCache(userId?: string) {
     // Skip on server side
     if (typeof window === 'undefined') return false;
 
     try {
-      const cached = localStorage.getItem('github_repositories');
-      const cacheTime = localStorage.getItem('github_repositories_time');
+      // Try user-specific cache first, then fall back to global cache
+      const cacheKey = userId ? `github_repositories_${userId}` : 'github_repositories';
+      const timeKey = userId ? `github_repositories_time_${userId}` : 'github_repositories_time';
+
+      const cached = localStorage.getItem(cacheKey);
+      const cacheTime = localStorage.getItem(timeKey);
 
       if (cached && cacheTime) {
         const timeSinceCache = Date.now() - parseInt(cacheTime);
@@ -35,7 +39,7 @@ class RepositoryManager {
           this.repositories = JSON.parse(cached);
           this.lastFetch = parseInt(cacheTime);
           this.isInitialized = true;
-          console.log(`⚡ SINGLETON: Loaded ${this.repositories.length} repositories from recent cache (${Math.round(timeSinceCache/1000)}s old)`);
+          console.log(`⚡ SINGLETON: Loaded ${this.repositories.length} repositories from ${userId ? 'user-specific' : 'global'} cache (${Math.round(timeSinceCache/1000)}s old)`);
           this.notifyListeners();
           return true;
         } else {
@@ -48,15 +52,19 @@ class RepositoryManager {
     return false;
   }
 
-  private saveToCache() {
+  private saveToCache(userId?: string) {
     // Skip on server side
     if (typeof window === 'undefined') return;
 
     try {
-      localStorage.setItem('github_repositories', JSON.stringify(this.repositories));
-      localStorage.setItem('github_repositories_time', Date.now().toString());
+      // Save to user-specific cache if userId provided, otherwise global cache
+      const cacheKey = userId ? `github_repositories_${userId}` : 'github_repositories';
+      const timeKey = userId ? `github_repositories_time_${userId}` : 'github_repositories_time';
+
+      localStorage.setItem(cacheKey, JSON.stringify(this.repositories));
+      localStorage.setItem(timeKey, Date.now().toString());
       this.lastFetch = Date.now();
-      console.log('💾 SINGLETON: Repositories cached');
+      console.log(`💾 SINGLETON: Repositories cached to ${userId ? 'user-specific' : 'global'} storage`);
     } catch (error) {
       console.log('📁 SINGLETON: Cache save failed:', error);
     }
@@ -98,7 +106,7 @@ class RepositoryManager {
     });
   }
 
-  async fetchRepositories(token: string, forceRefresh = false): Promise<void> {
+  async fetchRepositories(token: string, forceRefresh = false, userId?: string): Promise<void> {
     // 🚨 CRITICAL DEBUG: Log token information (safely)
     console.log('🔑 SINGLETON: Starting fetch with token:', {
       hasToken: !!token,
@@ -190,7 +198,7 @@ class RepositoryManager {
       this.repositories = repos;
       this.lastFetch = Date.now();
       this.isInitialized = true;
-      this.saveToCache();
+      this.saveToCache(userId);
       this.notifyListeners();
 
     } catch (error) {
@@ -281,11 +289,17 @@ class RepositoryManager {
   }
 
   // Clear cache method for token expiry scenarios
-  private clearCache(): void {
+  private clearCache(userId?: string): void {
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('github_repositories');
-      localStorage.removeItem('github_repositories_time');
-      console.log('🗑️ SINGLETON: Cache cleared due to token issues');
+      if (userId) {
+        localStorage.removeItem(`github_repositories_${userId}`);
+        localStorage.removeItem(`github_repositories_time_${userId}`);
+        console.log(`🗑️ SINGLETON: User-specific cache cleared for ${userId}`);
+      } else {
+        localStorage.removeItem('github_repositories');
+        localStorage.removeItem('github_repositories_time');
+        console.log('🗑️ SINGLETON: Global cache cleared due to token issues');
+      }
     }
   }
 }

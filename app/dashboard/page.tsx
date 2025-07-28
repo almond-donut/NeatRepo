@@ -176,19 +176,26 @@ export default function DashboardPage() {
                 console.error('❌ RECOVERY: Failed to link profile:', updateError);
               }
             } else {
-              // 🚀 AUTOMATIC RECOVERY: For users without OAuth login (like almond-donut)
-              console.log('✅ AUTO-RECOVERY: Found existing profile, auto-recovery handled by auth provider');
+              // 🔒 SECURE USER-SPECIFIC RECOVERY: Only for authenticated users
+              if (user && existingProfile.id === user.id) {
+                console.log('✅ SECURE RECOVERY: Loading data for authenticated user:', user.id);
 
-              // Store token for AI Assistant access
-              localStorage.setItem('github_token', existingProfile.github_token);
+                // Store token with user-specific key for AI Assistant access
+                localStorage.setItem(`github_token_${user.id}`, existingProfile.github_token);
 
-              // Fetch repositories with the recovered token
-              setIsLoadingRepos(true);
-              await repositoryManager.fetchRepositories(existingProfile.github_token, true);
-              setError(null);
-              setIsLoadingRepos(false);
+                // Remove old global key to prevent confusion
+                localStorage.removeItem('github_token');
 
-              console.log('✅ AUTO-RECOVERY: Repositories restored automatically');
+                // Fetch repositories with the user's token
+                setIsLoadingRepos(true);
+                await repositoryManager.fetchRepositories(existingProfile.github_token, true, user.id);
+                setError(null);
+                setIsLoadingRepos(false);
+
+                console.log('✅ SECURE RECOVERY: User-specific repositories loaded');
+              } else {
+                console.log('🚫 SECURITY: Profile does not match authenticated user, skipping recovery');
+              }
             }
           }
         } catch (error) {
@@ -1245,13 +1252,15 @@ ${successCount > 0 ? 'Your portfolio is now cleaner and more professional! 🚀'
         console.log('✅ NEW USER: Got effective token, fetching repositories...');
 
         console.log('🔄 BACKGROUND: Fetching fresh data with effective token...');
-        await repositoryManager.fetchRepositories(effectiveToken, false);
+        await repositoryManager.fetchRepositories(effectiveToken, false, user?.id);
         setError(null);
         console.log('✅ BACKGROUND: Fresh data loaded');
 
-        // Store token for background sync and AI Assistant
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('github_token', effectiveToken);
+        // Store token for background sync and AI Assistant with user-specific key
+        if (typeof window !== 'undefined' && user) {
+          localStorage.setItem(`github_token_${user.id}`, effectiveToken);
+          // Remove old global key
+          localStorage.removeItem('github_token');
         }
 
         // 🔧 Initialize AI Assistant with GitHub API (non-blocking)
@@ -2419,7 +2428,7 @@ These repositories best demonstrate the skills recruiters look for in ${jobTitle
 
                                   console.log('✅ RECOVERY: Found profile with PAT, fetching repositories...');
 
-                                  // Directly fetch repositories with the PAT
+                                  // Directly fetch repositories with the PAT (no user ID for recovery mode)
                                   await repositoryManager.fetchRepositories(existingProfile.github_token, true);
 
                                   // Store the profile data temporarily in localStorage for display

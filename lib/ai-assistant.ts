@@ -80,20 +80,21 @@ export class AIAssistantEngine {
     this.interviewState = this.loadInterviewState();
   }
 
-  // 💾 SAVE INTERVIEW STATE TO LOCALSTORAGE
-  private saveInterviewState() {
+  // 💾 SAVE INTERVIEW STATE TO LOCALSTORAGE (user-specific)
+  private saveInterviewState(userId?: string) {
     if (typeof window === 'undefined') return;
 
     try {
-      localStorage.setItem('ai_interview_state', JSON.stringify(this.interviewState));
-      console.log('💾 Interview state saved to localStorage');
+      const key = userId ? `ai_interview_state_${userId}` : 'ai_interview_state';
+      localStorage.setItem(key, JSON.stringify(this.interviewState));
+      console.log(`💾 Interview state saved to ${userId ? 'user-specific' : 'global'} localStorage`);
     } catch (error) {
       console.error('❌ Failed to save interview state:', error);
     }
   }
 
-  // 💾 LOAD INTERVIEW STATE FROM LOCALSTORAGE
-  private loadInterviewState(): InterviewState {
+  // 💾 LOAD INTERVIEW STATE FROM LOCALSTORAGE (user-specific)
+  private loadInterviewState(userId?: string): InterviewState {
     if (typeof window === 'undefined') {
       console.log('💾 Server-side rendering, using default interview state');
       return {
@@ -106,12 +107,20 @@ export class AIAssistantEngine {
     }
 
     try {
-      const saved = localStorage.getItem('ai_interview_state');
+      // Try user-specific first, then fall back to global
+      const userKey = userId ? `ai_interview_state_${userId}` : null;
+      const globalKey = 'ai_interview_state';
+
+      let saved = userKey ? localStorage.getItem(userKey) : null;
+      if (!saved) {
+        saved = localStorage.getItem(globalKey);
+      }
+
       console.log('💾 Raw localStorage value:', saved);
 
       if (saved) {
         const state = JSON.parse(saved);
-        console.log('💾 Interview state loaded from localStorage:', state);
+        console.log(`💾 Interview state loaded from ${userKey && localStorage.getItem(userKey) ? 'user-specific' : 'global'} localStorage:`, state);
         return state;
       } else {
         console.log('💾 No saved interview state found in localStorage');
@@ -130,13 +139,18 @@ export class AIAssistantEngine {
     };
   }
 
-  // 💾 CLEAR INTERVIEW STATE
-  private clearInterviewState() {
+  // 💾 CLEAR INTERVIEW STATE (user-specific)
+  private clearInterviewState(userId?: string) {
     if (typeof window === 'undefined') return;
 
     try {
-      localStorage.removeItem('ai_interview_state');
-      console.log('💾 Interview state cleared from localStorage');
+      if (userId) {
+        localStorage.removeItem(`ai_interview_state_${userId}`);
+        console.log(`💾 User-specific interview state cleared for ${userId}`);
+      } else {
+        localStorage.removeItem('ai_interview_state');
+        console.log('💾 Global interview state cleared from localStorage');
+      }
     } catch (error) {
       console.error('❌ Failed to clear interview state:', error);
     }

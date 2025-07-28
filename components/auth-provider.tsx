@@ -122,40 +122,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // 🚀 AUTOMATIC RECOVERY FOR ALL USERS
+  // 🔒 SECURE USER-SPECIFIC DATA LOADING
   useEffect(() => {
-    const attemptAutoRecovery = async () => {
-      // Only attempt auto-recovery if no user is logged in
-      if (user) return;
+    const loadUserSpecificData = async () => {
+      // Only load data if user is authenticated
+      if (!user) return;
 
-      console.log('🔧 AUTO-RECOVERY: Checking for existing user data...');
+      console.log('🔧 AUTH: Loading user-specific data for:', user.id);
 
       try {
-        // Check for known users (like almond-donut)
-        const knownUsername = 'almond-donut'; // Could be expanded to check multiple known users
+        // Load user-specific cached data only
+        const userSpecificToken = localStorage.getItem(`github_token_${user.id}`);
 
-        const { data: existingProfile } = await supabase
-          .from('user_profiles')
-          .select('*')
-          .eq('github_username', knownUsername)
-          .single();
-
-        if (existingProfile && existingProfile.github_token) {
-          console.log('✅ AUTO-RECOVERY: Found existing profile, restoring automatically');
-          setProfile(existingProfile);
-
-          // Store token for AI Assistant access
-          localStorage.setItem('github_token', existingProfile.github_token);
-
-          console.log('✅ AUTO-RECOVERY: Profile restored automatically - no user action needed');
+        if (userSpecificToken && profile?.github_token !== userSpecificToken) {
+          console.log('✅ AUTH: Found user-specific cached token');
+          // Update profile with cached token if it matches this user
+          setProfile(prev => prev ? { ...prev, github_token: userSpecificToken } : null);
         }
       } catch (error) {
-        console.log('🔍 AUTO-RECOVERY: No existing profile found for auto-recovery');
+        console.log('🔍 AUTH: No user-specific cached data found');
       }
     };
 
-    attemptAutoRecovery();
-  }, [user]);
+    loadUserSpecificData();
+  }, [user, profile]);
 
   useEffect(() => {
     const initializeSession = async () => {
@@ -296,10 +286,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // Clear any cached profile data for the previous user
             setProfile(null);
 
-            // Clear user-specific localStorage to prevent data leakage
+            // 🧹 SECURITY: Clear ALL user-specific data when user changes
             if (typeof window !== 'undefined') {
+              // Clear previous user's data
               localStorage.removeItem(`token_popup_dismissed_${user.id}`);
               localStorage.removeItem(`token_popup_skipped_permanently_${user.id}`);
+              localStorage.removeItem(`github_token_${user.id}`);
+              localStorage.removeItem(`github_repositories_${user.id}`);
+              localStorage.removeItem(`github_repositories_time_${user.id}`);
+
+              // Clear global keys that might contain mixed data
+              localStorage.removeItem('github_token');
+              localStorage.removeItem('github_repositories');
+              localStorage.removeItem('github_repositories_time');
+
+              console.log("🧹 AUTH: Cleared previous user's cached data");
             }
           }
         }
@@ -482,10 +483,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setProfile(prev => (prev ? { ...prev, github_token: token } : null));
       setShowTokenPopupState(false);
 
-      // Mark that user has provided token - clear any skip flags
+      // 🔒 SECURITY: Store token with user-specific key
       if (typeof window !== 'undefined') {
+        localStorage.setItem(`github_token_${user.id}`, token);
         localStorage.removeItem(`token_popup_dismissed_${user.id}`);
         localStorage.removeItem(`token_popup_skipped_permanently_${user.id}`);
+
+        // Remove old global token key to prevent confusion
+        localStorage.removeItem('github_token');
+
+        console.log("🔑 AUTH: Token stored with user-specific key");
       }
     } catch (error) {
       console.error('Error saving GitHub token:', error);
@@ -520,7 +527,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return profile.github_token;
     }
 
-    // Second priority: OAuth token from session (for GitHub OAuth users)
+    // Second priority: User-specific cached token
+    if (user && typeof window !== 'undefined') {
+      const userSpecificToken = localStorage.getItem(`github_token_${user.id}`);
+      if (userSpecificToken) {
+        console.log('🔑 Using user-specific cached token');
+        return userSpecificToken;
+      }
+    }
+
+    // Third priority: OAuth token from session (for GitHub OAuth users)
     try {
       const { data: { session } } = await supabase.auth.getSession();
       console.log('🔍 OAUTH DEBUG: Checking session for OAuth token...', {
