@@ -15,7 +15,10 @@ export const metadata: Metadata = {
   title: "NeatRepo - Your Personal Repository Assistant",
   description:
     "Clean up and organize your GitHub repositories before applying for jobs. Reorganize structure, bulk delete, drag & drop, and prep your repos like a pro.",
-    generator: 'v0.dev'
+  generator: 'v0.dev',
+  icons: {
+    icon: "/icon.png",
+  },
 }
 
 export default function RootLayout({
