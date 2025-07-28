@@ -97,6 +97,8 @@ export async function GET(req: NextRequest) {
           secure: process.env.NODE_ENV === 'production',
           sameSite: 'lax',
           path: '/',
+          // 🔒 CRITICAL FIX: Don't set domain for Vercel - let it default to current domain
+          // This prevents session mixing between different users/deployments
         })
       })
 

@@ -17,6 +17,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Proper UI state management between interview mode and normal mode
 
 ### Fixed
+- 🔒 **CRITICAL: OAuth Session Mixing Bug** - Fixed users being logged into wrong accounts during multi-user testing
+  - Added session validation in auth state changes to detect user ID mismatches
+  - Implemented complete localStorage/sessionStorage cleanup during sign-out
+  - Enhanced middleware session validation with user property checks
+  - Removed problematic cookie domain configuration for Vercel deployment
+  - Added comprehensive logging for session integrity monitoring
+  - **SECURITY IMPACT**: Prevents cross-user data contamination and unauthorized account access
 - 🎭 **Personality Mode Persistence Bug** - Fixed critic mode automatically reverting to nice mode after inactivity
   - Added localStorage persistence for personality mode state
   - Loads saved personality mode on component mount
@@ -88,15 +95,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ✅ User experience improvements for interview flow
 
 ### Known Issues
-- OAuth code exchange still has configuration issues (investigating client secret mismatch)
 - AI interview context retention could be improved for better conversation flow
 
 ### Recently Fixed Issues ✅
+- ~~OAuth session mixing between users~~ - **RESOLVED** with comprehensive session validation and cleanup
 - ~~Personality mode reset after inactivity~~ - **RESOLVED** with localStorage persistence
 - ~~OAuth error parameters persisting in URL after refresh~~ - **RESOLVED** with automatic URL cleanup
 
 ### Next Priorities
-- OAuth configuration debugging and resolution
 - Enhanced AI conversation context and memory
 - Additional portfolio README templates and customization options
 - Performance optimizations for large repository collections

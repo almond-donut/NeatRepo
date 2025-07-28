@@ -49,9 +49,25 @@ export async function middleware(req: NextRequest) {
 
     console.log('🔍 MIDDLEWARE: Session check:', {
       hasSession: !!session,
+      userId: session?.user?.id,
       pathname: req.nextUrl.pathname,
       isProtectedRoute,
     })
+
+    // 🔒 CRITICAL FIX: Add session validation to prevent user mixing
+    if (session?.user) {
+      console.log('🔍 MIDDLEWARE: Validating session for user:', session.user.id);
+
+      // Ensure session has required user properties
+      if (!session.user.id || !session.user.email) {
+        console.error('🚨 MIDDLEWARE: Invalid session detected - missing user properties');
+        // Clear potentially corrupted session
+        await supabase.auth.signOut({ scope: 'local' });
+        const redirectUrl = req.nextUrl.clone()
+        redirectUrl.pathname = '/'
+        return NextResponse.redirect(redirectUrl)
+      }
+    }
 
     if (isProtectedRoute && !session) {
       console.log(`🚫 MIDDLEWARE: No session, redirecting from protected route ${req.nextUrl.pathname} to home.`)

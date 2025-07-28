@@ -283,6 +283,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log("🔄 AUTH: Auth state changed:", event);
+
+        // 🔒 CRITICAL FIX: Validate session integrity to prevent user mixing
+        if (session?.user) {
+          console.log("🔍 AUTH: Validating session for user:", session.user.id);
+
+          // Check if this is a different user than expected
+          if (user && user.id !== session.user.id) {
+            console.warn("⚠️ AUTH: User ID changed - potential session mixing detected!");
+            console.warn("Previous user:", user.id, "New user:", session.user.id);
+
+            // Clear any cached profile data for the previous user
+            setProfile(null);
+
+            // Clear user-specific localStorage to prevent data leakage
+            if (typeof window !== 'undefined') {
+              localStorage.removeItem(`token_popup_dismissed_${user.id}`);
+              localStorage.removeItem(`token_popup_skipped_permanently_${user.id}`);
+            }
+          }
+        }
+
         setUser(session?.user ?? null);
 
         if (event === 'SIGNED_IN' && session?.user) {
@@ -423,8 +444,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Clear local state first
     setProfile(null);
 
-    // Sign out from Supabase
-    await supabase.auth.signOut();
+    // 🔒 CRITICAL FIX: Complete session cleanup to prevent user mixing
+    // Clear ALL user-specific data from localStorage
+    if (typeof window !== 'undefined') {
+      // Clear all localStorage data to prevent cross-user contamination
+      localStorage.clear();
+      sessionStorage.clear();
+
+      console.log("🧹 AUTH: Cleared all localStorage and sessionStorage");
+    }
+
+    // Sign out from Supabase with explicit scope
+    await supabase.auth.signOut({ scope: 'local' });
 
     // 🚀 GOOGLE-STYLE MULTI-ACCOUNT SUPPORT:
     // Redirect to our custom signout page instead of GitHub
