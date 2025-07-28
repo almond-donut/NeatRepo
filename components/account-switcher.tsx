@@ -60,18 +60,9 @@ export default function AccountSwitcher() {
         setTempRecoveryProfile(null)
       }
 
-      // 🔧 PAT AUTHENTICATION: Check for PAT-based profile when no OAuth session
-      if (!user && !recoveryData) {
-        // Since we know repositories are showing (26 repos), create PAT profile
-        const patProfileData = {
-          username: 'almond-donut',
-          avatar_url: 'https://avatars.githubusercontent.com/u/215279882?v=4',
-          display_name: 'almond-donut',
-          email: 'generalpwtx7@gmail.com'
-        };
-        setPatProfile(patProfileData);
-        console.log('🔧 PAT PROFILE: Created profile for PAT authentication');
-      }
+      // 🔧 REMOVED: Hardcoded PAT profile fallback that was causing user identity confusion
+      // The proper authentication flow should handle user identification
+      // If no user session exists, let the auth provider handle it properly
     }
   }, [user])
 
