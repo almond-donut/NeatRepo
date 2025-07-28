@@ -353,7 +353,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 console.log('✅ Successfully linked to existing profile with token');
               }
             } else {
-              // Normal upsert for new profiles or same user ID
+              // Check if profile already exists to preserve github_token
+              const { data: existingProfileById } = await supabase
+                .from('user_profiles')
+                .select('github_token')
+                .eq('id', session.user.id)
+                .single();
+
+              // Preserve existing github_token if it exists
               const { error: upsertError } = await supabase
                 .from('user_profiles')
                 .upsert({
@@ -362,11 +369,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   github_username: session.user.user_metadata?.user_name,
                   display_name: session.user.user_metadata?.full_name,
                   avatar_url: session.user.user_metadata?.avatar_url,
+                  // Preserve existing github_token if it exists
+                  ...(existingProfileById?.github_token && { github_token: existingProfileById.github_token }),
                   updated_at: new Date().toISOString(),
                 }, { onConflict: 'id' });
 
               if (upsertError) {
                 console.error("❌ AUTH: Error upserting profile:", upsertError);
+              } else {
+                console.log("✅ AUTH: Profile upserted, github_token preserved:", !!existingProfileById?.github_token);
               }
             }
 
