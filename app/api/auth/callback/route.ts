@@ -77,9 +77,30 @@ export async function GET(req: NextRequest) {
           return NextResponse.redirect(`${origin}/auth/error?error=missing_github_username`)
         }
 
-        // Extract GitHub access token from OAuth session - try multiple possible fields
-        const githubToken = session.provider_token || (session as any).provider_access_token || (session as any).access_token
-        console.log('🔑 OAUTH TOKEN: Extracting GitHub access token', {
+        // Extract GitHub access token from OAuth session - try multiple approaches
+        let githubToken = session.provider_token || (session as any).provider_access_token
+
+        // If no provider token, try to get it from the session using Supabase's method
+        if (!githubToken) {
+          try {
+            const { data: sessionData } = await supabase.auth.getSession()
+            githubToken = sessionData.session?.provider_token
+            console.log('🔍 OAUTH TOKEN: Tried getSession method', {
+              hasSessionData: !!sessionData.session,
+              hasProviderToken: !!sessionData.session?.provider_token
+            })
+          } catch (error) {
+            console.error('❌ Failed to get session for provider token:', error)
+          }
+        }
+
+        // Last resort: use the session access_token (this is the Supabase access token, not GitHub)
+        if (!githubToken) {
+          githubToken = session.access_token
+          console.log('⚠️ OAUTH TOKEN: Using session access_token as fallback (may not work for GitHub API)')
+        }
+
+        console.log('🔑 OAUTH TOKEN: Final token extraction result', {
           hasProviderToken: !!session.provider_token,
           hasProviderAccessToken: !!(session as any).provider_access_token,
           hasAccessToken: !!session.access_token,
