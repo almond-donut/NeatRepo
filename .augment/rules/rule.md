@@ -2,7 +2,7 @@
 type: "always_apply"
 ---
 
-After implementing and pushing the loading loop fix, verify that the solution is working correctly by following this validation process:
+After implementing and pushing the fix, verify that the solution is working correctly by following this validation process:
 
 1. **Push changes and wait for deployment**: Commit and push your code changes to GitHub, then wait exactly 10 minutes (5 minutes for Vercel deployment + 5 minutes safety buffer) for the deployment to complete.
 
