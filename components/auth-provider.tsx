@@ -36,6 +36,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true); // CRITICAL FIX: Start with loading true to prevent race conditions
   const [showTokenPopupState, setShowTokenPopupState] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // 🚨 EMERGENCY FIX: Force loading to false after 3 seconds to prevent infinite loading
+  useEffect(() => {
+    const emergencyTimeout = setTimeout(() => {
+      console.log('🚨 EMERGENCY: Forcing loading to false after 3 seconds to prevent infinite loading');
+      setLoading(false);
+    }, 3000);
+
+    return () => clearTimeout(emergencyTimeout);
+  }, []);
   const fetchProfile = async (userId: string) => {
     try {
       console.log("🔍 AUTH: Fetching profile for user ID:", userId);
