@@ -37,15 +37,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [showTokenPopupState, setShowTokenPopupState] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // 🚨 EMERGENCY FIX: Force loading to false after 3 seconds to prevent infinite loading
-  useEffect(() => {
-    const emergencyTimeout = setTimeout(() => {
-      console.log('🚨 EMERGENCY: Forcing loading to false after 3 seconds to prevent infinite loading');
-      setLoading(false);
-    }, 3000);
-
-    return () => clearTimeout(emergencyTimeout);
-  }, []);
+  // 🔧 REMOVED: Emergency timeout that was interfering with OAuth profile creation
+  // Users must now manually sign out to end sessions, ensuring complete session cleanup
+  // and preventing timing interference with OAuth UPSERT operations for new users
 
   // 🚨 HELPER: Create profile with proper username handling
   const createProfileWithUsername = async (user: any, githubUsername: string, githubId?: string) => {
@@ -410,6 +404,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             // 🚨 CRITICAL FIX: Use UPSERT to create/update profile with provider token
             try {
+              // 🔄 TIMING FIX: Prevent emergency timeout from interfering with OAuth profile creation
+              setIsOAuthProfileCreating(true);
+
               // Extract GitHub metadata for profile creation
               const githubUsername = session.user.user_metadata?.user_name ||
                                    session.user.user_metadata?.preferred_username ||
@@ -435,6 +432,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
               if (error) {
                 console.error('❌ AUTH: Failed to upsert profile with provider token:', error);
+                // 🔧 FALLBACK: Set profile state even if UPSERT fails to prevent "No account" state
+                setProfile(profileData);
+                console.log('🔄 AUTH: Profile state set as fallback despite UPSERT error');
               } else {
                 console.log('✅ AUTH: Profile created/updated with provider token for user:', session.user.id);
                 // 🔧 CRITICAL FIX: Set profile state immediately after successful UPSERT
@@ -444,6 +444,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               }
             } catch (error) {
               console.error('❌ AUTH: Exception upserting profile with provider token:', error);
+              // 🔧 FALLBACK: Create temporary profile state to prevent "No account" state
+              const fallbackProfileData = {
+                id: session.user.id,
+                github_username: session.user.user_metadata?.user_name || 'user',
+                github_token: session.provider_token,
+                display_name: session.user.user_metadata?.full_name || session.user.user_metadata?.user_name || 'User',
+                avatar_url: session.user.user_metadata?.avatar_url
+              };
+              setProfile(fallbackProfileData);
+              console.log('🔄 AUTH: Fallback profile state created to prevent "No account" state');
+            } finally {
+              // 🔄 TIMING FIX: Clear the OAuth profile creation flag
+              setIsOAuthProfileCreating(false);
             }
           }
         }
