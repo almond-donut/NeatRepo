@@ -6,6 +6,8 @@ CRITICAL DEBUGGING AND IMPLEMENTATION RULES:
 
 1. **NO SUMMARY-ONLY RESPONSES**: Never provide analysis or explanations without implementing actual fixes. If you identify an issue, you MUST implement the solution.
 
+make sure you push it first, you often forgot
+
 2. **MANDATORY DEBUGGING PROCESS**: When encountering any problem, you MUST follow this exact sequence:
    - Use `sequentialthinking_Sequential_thinking` to analyze the root cause thoroughly
    - Use `codebase-retrieval` to gather all relevant code context and implementation details

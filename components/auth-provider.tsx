@@ -130,6 +130,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // 🔒 CRITICAL FIX: Ensure loading is false when user is present
+  useEffect(() => {
+    if (user && loading) {
+      console.log('🚨 LOADING FIX: User detected but loading is true - fixing immediately');
+      setLoading(false);
+    }
+  }, [user, loading]);
+
   // 🔒 SECURE USER-SPECIFIC DATA LOADING
   useEffect(() => {
     const loadUserSpecificData = async () => {
@@ -371,6 +379,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // This prevents the loading loop - profile fetching happens in background
           setLoading(false);
           console.log("✅ AUTH: User signed in - UI ready immediately");
+          console.log("🔍 AUTH: Loading state after SIGNED_IN:", false);
 
           // REMOVED: No more sign-in timeouts - let the session persist naturally
 
