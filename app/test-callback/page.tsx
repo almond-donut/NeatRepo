@@ -73,7 +73,11 @@ export default function TestCallbackPage() {
 
       // Test 4: GitHub OAuth URL generation
       try {
-        const clientId = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID || "Ov23liaOcBS8zuFJCGyG"
+        const clientId = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID
+        if (!clientId) {
+          throw new Error('GitHub Client ID not configured')
+        }
+
         const redirectUri = `${window.location.origin}/api/github/callback`
         const githubUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=repo%20user`
 

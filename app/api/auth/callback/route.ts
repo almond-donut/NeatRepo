@@ -3,13 +3,13 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 export async function GET(req: NextRequest) {
   console.log('🚀 AUTH CALLBACK: Starting OAuth callback processing')
-  
+
   const { searchParams, origin } = new URL(req.url)
   const code = searchParams.get('code')
   const next = searchParams.get('next') ?? '/dashboard'
-  
-  console.log('🔍 AUTH CALLBACK: Received params:', { 
-    hasCode: !!code, 
+
+  console.log('🔍 AUTH CALLBACK: Received params:', {
+    hasCode: !!code,
     next,
     origin
   })
@@ -44,76 +44,83 @@ export async function GET(req: NextRequest) {
 
     if (error) {
       console.error('❌ AUTH CALLBACK: Error exchanging code for session:', error)
-    } else {
-      console.log('✅ AUTH CALLBACK: Successfully exchanged code for session')
+      return NextResponse.redirect(`${origin}/auth/error?error=${encodeURIComponent(error.message)}`)
+    }
 
-      // CRITICAL FIX: Store GitHub OAuth token for new users
-      if (data.session?.provider_token && data.session?.user?.app_metadata?.provider === 'github') {
-        console.log('🔑 OAUTH SUCCESS: Storing GitHub token for new user repository access')
+    console.log('✅ AUTH CALLBACK: Successfully exchanged code for session')
 
-        try {
-          // Store the OAuth token in user profile for repository access
-          const { error: updateError } = await supabase
-            .from('user_profiles')
-            .upsert({
-              id: data.session.user.id,
-              username: data.session.user.user_metadata?.user_name || data.session.user.user_metadata?.preferred_username,
-              email: data.session.user.email,
-              avatar_url: data.session.user.user_metadata?.avatar_url,
-              github_id: data.session.user.user_metadata?.sub,
-              github_token: data.session.provider_token, // Store OAuth token
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            })
+    // Store user profile information (OAuth token will be handled by Supabase session)
+    if (data.session?.user) {
+      const user = data.session.user
+      console.log('🔑 OAUTH SUCCESS: Creating/updating user profile for repository access')
 
-          if (updateError) {
-            console.error('❌ Failed to store OAuth token:', updateError)
-          } else {
-            console.log('✅ OAuth token stored successfully - NEW USER CAN NOW SEE REPOSITORIES!')
-          }
-        } catch (storeError) {
-          console.error('❌ Error storing OAuth token:', storeError)
+      try {
+        // Get GitHub user data from user metadata
+        const githubUsername = user.user_metadata?.user_name || user.user_metadata?.preferred_username
+        const githubId = user.user_metadata?.provider_id || user.identities?.find(i => i.provider === 'github')?.id
+
+        if (!githubUsername) {
+          console.error('❌ No GitHub username available in user metadata')
+          return NextResponse.redirect(`${origin}/auth/error?error=missing_github_username`)
         }
-      } else {
-        console.log('⚠️ No provider token available in session')
+
+        // Create or update user profile
+        const { error: profileError } = await supabase
+          .from('user_profiles')
+          .upsert({
+            id: user.id,
+            github_username: githubUsername,
+            github_id: githubId ? parseInt(githubId) : null,
+            display_name: user.user_metadata?.full_name || user.user_metadata?.name,
+            avatar_url: user.user_metadata?.avatar_url,
+            email: user.email,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'id'
+          })
+
+        if (profileError) {
+          console.error('❌ Failed to create/update user profile:', profileError)
+        } else {
+          console.log('✅ User profile created/updated successfully')
+        }
+      } catch (profileError) {
+        console.error('❌ Error handling user profile:', profileError)
       }
     }
-    
-    if (!error) {
-      const redirectUrl = new URL(next, origin)
-      redirectUrl.searchParams.set('auth', 'success')
 
-      console.log('🔀 AUTH CALLBACK: Redirecting to', redirectUrl.toString(), 'with session cookies')
+    // Redirect to dashboard with success indicator
+    const redirectUrl = new URL(next, origin)
+    redirectUrl.searchParams.set('auth', 'success')
 
-      // Create a proper redirect response that preserves cookies
-      const redirectResponse = NextResponse.redirect(redirectUrl.toString())
+    console.log('🔀 AUTH CALLBACK: Redirecting to', redirectUrl.toString(), 'with session cookies')
 
-      // Copy all cookies from the auth response to the redirect response
-      const cookies = res.cookies.getAll()
-      console.log('🍪 AUTH CALLBACK: Cookies being sent:', cookies.map(c => c.name))
-      cookies.forEach(cookie => {
-        redirectResponse.cookies.set(cookie.name, cookie.value, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
-          path: '/',
-          // 🔒 CRITICAL FIX: Don't set domain for Vercel - let it default to current domain
-          // This prevents session mixing between different users/deployments
-        })
+    // Create a proper redirect response that preserves cookies
+    const redirectResponse = NextResponse.redirect(redirectUrl.toString())
+
+    // Copy all cookies from the auth response to the redirect response
+    const cookies = res.cookies.getAll()
+    console.log('🍪 AUTH CALLBACK: Cookies being sent:', cookies.map(c => c.name))
+    cookies.forEach(cookie => {
+      redirectResponse.cookies.set(cookie.name, cookie.value, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        // 🔒 SECURITY: Let domain default to current domain for proper isolation
       })
+    })
 
-      return redirectResponse
-    }
+    return redirectResponse
   }
 
-  // return the user to an error page with instructions
-  console.log('❌ AUTH CALLBACK: No code provided or error occurred, redirecting to error page')
-  
-  const redirectUrl = new URL('/auth/error', origin)
-  redirectUrl.searchParams.set('error', 'OAuth callback error')
-  
-  // Untuk kasus error di luar blok if (code), kita perlu membuat respons baru
-  // karena res hanya didefinisikan di dalam blok if (code)
-  console.log('🔀 AUTH CALLBACK: Redirecting to error page:', redirectUrl.toString())
-  return NextResponse.redirect(redirectUrl)
+  // Handle case where no authorization code is provided
+  console.log('❌ AUTH CALLBACK: No authorization code provided')
+
+  const errorUrl = new URL('/auth/error', origin)
+  errorUrl.searchParams.set('error', 'No authorization code provided')
+
+  console.log('🔀 AUTH CALLBACK: Redirecting to error page:', errorUrl.toString())
+  return NextResponse.redirect(errorUrl.toString())
 }

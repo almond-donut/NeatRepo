@@ -113,7 +113,12 @@ export default function DebugPage() {
   }
 
   const testGitHubOAuth = () => {
-    const clientId = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID || "Ov23liaOcBS8zuFJCGyG"
+    const clientId = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID
+    if (!clientId) {
+      alert('GitHub Client ID not configured. Please set NEXT_PUBLIC_GITHUB_CLIENT_ID environment variable.')
+      return
+    }
+
     const redirectUri = `${window.location.origin}/api/github/callback`
     const scope = "repo user"
     const state = `debug_test_${Date.now()}`

@@ -72,18 +72,29 @@ export default function AuthForms({ onClose }: AuthFormsProps) {
     e.preventDefault()
     setIsLoading(true)
     setMessage(null)
-    
+
+    // Check if user entered a username instead of email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(signInData.email)) {
+      setMessage({
+        type: 'error',
+        text: 'Please enter a valid email address. For GitHub login, use the GitHub button below instead of entering your username here.'
+      })
+      setIsLoading(false)
+      return
+    }
+
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email: signInData.email,
         password: signInData.password
       })
-      
+
       if (error) throw error
-      
-      setMessage({ 
-        type: 'success', 
-        text: 'Signed in successfully! Redirecting...' 
+
+      setMessage({
+        type: 'success',
+        text: 'Signed in successfully! Redirecting...'
       })
       setTimeout(() => {
         window.location.href = '/dashboard'

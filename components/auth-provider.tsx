@@ -50,9 +50,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // If profile doesn't exist, create it
         if (error.code === 'PGRST116') {
           console.log('🔧 Profile not found, creating new profile...');
+
+          // Ensure we have a valid GitHub username
+          const githubUsername = user?.user_metadata?.user_name || user?.user_metadata?.preferred_username;
+          if (!githubUsername) {
+            console.error('❌ Cannot create profile: No GitHub username available');
+            throw new Error('GitHub username is required for profile creation');
+          }
+
           const newProfile = {
             id: userId,
-            github_username: user?.user_metadata?.user_name || 'user',
+            github_username: githubUsername,
             github_token: null, // Only null for truly new users
             display_name: user?.user_metadata?.full_name || user?.user_metadata?.name,
             avatar_url: user?.user_metadata?.avatar_url
@@ -519,9 +527,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setShowTokenPopupState(false);
   };
 
-  // Get effective token: PAT if available, otherwise OAuth token
+  // Get effective token: PAT if available, otherwise OAuth token from session
   const getEffectiveToken = async (): Promise<string | null> => {
-    // First priority: Personal Access Token from profile
+    // First priority: Personal Access Token from profile (for users who set up PAT)
     if (profile?.github_token) {
       console.log('🔑 Using PAT token from profile');
       return profile.github_token;
@@ -536,7 +544,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    // Third priority: OAuth token from session (for GitHub OAuth users)
+    // Third priority: OAuth token from current session (for GitHub OAuth users)
     try {
       const { data: { session } } = await supabase.auth.getSession();
       console.log('🔍 OAUTH DEBUG: Checking session for OAuth token...', {
@@ -547,41 +555,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         tokenLength: session?.provider_token?.length
       });
 
+      // Check if this is a GitHub OAuth user with a valid provider token
       if (session?.provider_token && session?.user?.app_metadata?.provider === 'github') {
-        console.log('🔑 ✅ Using OAuth token for repository access - NEW USER CAN BROWSE!');
+        console.log('🔑 ✅ Using OAuth token from session for repository access');
         return session.provider_token;
-      } else {
-        console.log('❌ No OAuth token available from Supabase session');
+      }
 
-        // CRITICAL FIX: Supabase doesn't store provider tokens by default
-        // For GitHub OAuth users, try our custom API endpoint
-        if (session?.user?.app_metadata?.provider === 'github') {
-          console.log('🔧 WORKAROUND: GitHub OAuth user detected, checking token API...');
-
-          try {
-            const response = await fetch('/api/github-token');
-            const data = await response.json();
-
-            if (response.ok && data.token) {
-              console.log('🔑 ✅ Got OAuth token from API!', { source: data.source });
-              return data.token;
-            } else {
-              console.log('❌ GitHub token API response:', data);
-              console.log('💡 NEW USER GUIDANCE: OAuth tokens not available, user should configure PAT for full functionality');
-              return null;
-            }
-          } catch (apiError) {
-            console.error('❌ GitHub token API error:', apiError);
-            console.log('💡 NEW USER GUIDANCE: Token API failed, user should configure PAT for full functionality');
-            return null;
-          }
-        }
+      // If no provider token but user is GitHub OAuth user, they may need to re-authenticate
+      if (session?.user?.app_metadata?.provider === 'github' && !session?.provider_token) {
+        console.log('⚠️ GitHub OAuth user but no provider token - session may have expired');
+        console.log('💡 User should re-authenticate or set up a Personal Access Token');
+        return null;
       }
     } catch (error) {
-      console.error('❌ Failed to get OAuth token:', error);
+      console.error('❌ Failed to get OAuth token from session:', error);
     }
 
-    console.log('❌ No token available (neither PAT nor OAuth)');
+    console.log('❌ No token available - user should authenticate or set up PAT');
     return null;
   };
 

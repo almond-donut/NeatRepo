@@ -1,19 +1,19 @@
 # GitHub OAuth Setup dengan Supabase
 
-## Masalah yang Diperbaiki
+## Production-Ready OAuth Configuration
 
-Aplikasi ini sebelumnya menggunakan implementasi OAuth kustom yang menyebabkan error "The redirect_uri is not associated with this application." Sekarang telah diperbaiki untuk menggunakan built-in OAuth Supabase.
+This application uses Supabase's built-in OAuth provider for secure GitHub authentication. All hardcoded values have been removed and proper environment variable configuration is required.
 
-## Konfigurasi yang Diperlukan
+## Required Configuration
 
 ### 1. Supabase Dashboard
 1. Buka [Supabase Dashboard](https://app.supabase.com)
 2. Pilih project Anda
 3. Pergi ke **Authentication** > **Providers**
 4. Aktifkan **GitHub** provider
-5. Masukkan:
-   - **Client ID**: `Ov23liaOcBS8zuFJCGyG` (dari screenshot)
-   - **Client Secret**: `b5e2c958fe8415f477d90afc9482d3329b6e552` (dari screenshot)
+5. Masukkan GitHub OAuth App credentials:
+   - **Client ID**: Your GitHub OAuth App Client ID
+   - **Client Secret**: Your GitHub OAuth App Client Secret
 
 ### 2. GitHub OAuth App Settings
 1. Buka [GitHub Developer Settings](https://github.com/settings/developers)
@@ -26,10 +26,18 @@ Aplikasi ini sebelumnya menggunakan implementasi OAuth kustom yang menyebabkan e
    **PENTING**: URL callback harus menggunakan format Supabase, bukan `/api/github/callback` seperti sebelumnya.
 
 ### 3. Environment Variables
-Buat file `.env.local` dengan:
+Create `.env.local` file with your project-specific values:
 ```env
-NEXT_PUBLIC_SUPABASE_URL=https://qhoqcuvdgueeisqhkqio.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFob3FjdXZkZ3VlZWlzcWhrcWlvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMxMDkxMTksImV4cCI6MjA2ODY4NTExOX0.e5ibUs6zWfPQ1et1BCWx22KWdw5Q1hhAyiLnCxQchzI
+# Supabase Configuration - Get from your Supabase project settings
+NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+
+# GitHub OAuth Configuration - Must match Supabase provider settings
+GITHUB_CLIENT_ID=your-github-client-id
+GITHUB_CLIENT_SECRET=your-github-client-secret
+
+# Optional: For debugging
+NEXT_PUBLIC_GITHUB_CLIENT_ID=your-github-client-id
 ```
 
 ## Perubahan yang Dilakukan
