@@ -1,11 +1,12 @@
-import { createClient } from "@supabase/supabase-js"
+import { createBrowserClient } from "@supabase/ssr"
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://qhoqcuvdgueeisqhkqio.supabase.co"
 const supabaseAnonKey =
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFob3FjdXZkZ3VlZWlzcWhrcWlvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMxMDkxMTksImV4cCI6MjA2ODY4NTExOX0.e5ibUs6zWfPQ1et1BCWx22KWdw5Q1hhAyiLnCxQchzI"
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// 🔧 CRITICAL FIX: Use createBrowserClient for proper session persistence in Next.js
+export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey)
 
 // Database types based on our schema
 
