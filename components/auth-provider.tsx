@@ -395,6 +395,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log("🔄 AUTH: Auth state changed:", event);
 
         // 🔑 CRITICAL: Capture provider token immediately after OAuth redirect
+        let oauthProfileUpdated = false; // Track if we've updated profile via OAuth
         if (session && session.provider_token) {
           console.log('🎯 AUTH: Provider token detected in session!', {
             hasProviderToken: !!session.provider_token,
@@ -438,6 +439,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 console.log('✅ AUTH: Profile created/updated with provider token for user:', session.user.id);
                 // 🔧 CRITICAL FIX: Set profile state immediately after successful UPSERT
                 setProfile(profileData);
+                oauthProfileUpdated = true; // Mark that we've updated the profile
                 console.log('✅ AUTH: Profile state updated with OAuth data');
               }
             } catch (error) {
@@ -580,14 +582,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
 
             console.log("✅ AUTH: Profile linking completed");
-            const fetchedProfile = await fetchProfile(session.user.id);
+
+            // 🔧 CRITICAL FIX: Only fetch profile if we haven't already updated it via OAuth
+            let fetchedProfile;
+            if (oauthProfileUpdated) {
+              console.log('🔄 AUTH: Skipping fetchProfile - already updated via OAuth');
+              fetchedProfile = profile; // Use the profile we already set
+            } else {
+              fetchedProfile = await fetchProfile(session.user.id);
+            }
 
             // Simplified PAT popup logic for GitHub OAuth users
             console.log('🔍 PAT POPUP DEBUG:', {
               isGitHubOAuth,
               hasToken: !!fetchedProfile?.github_token,
               userId: session.user.id,
-              profile: fetchedProfile
+              profile: fetchedProfile,
+              oauthProfileUpdated
             });
 
             // 🚨 FIXED: Don't show PAT popup if user already has token
