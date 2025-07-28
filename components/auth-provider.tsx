@@ -272,23 +272,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               localStorage.setItem(`oauth_provider_token_${session.user.id}`, session.provider_token);
               console.log('✅ INIT: Provider token stored for user:', session.user.id);
 
-              // Also update the user profile in database with the provider token
+              // 🚨 CRITICAL FIX: Use UPSERT to create/update profile with provider token
               try {
+                // Extract GitHub metadata for profile creation
+                const githubUsername = session.user.user_metadata?.user_name ||
+                                     session.user.user_metadata?.preferred_username ||
+                                     session.user.email?.split('@')[0] || 'user';
+                const githubId = session.user.user_metadata?.provider_id ||
+                               session.user.identities?.find(i => i.provider === 'github')?.id;
+
+                const profileData = {
+                  id: session.user.id,
+                  github_username: githubUsername,
+                  github_id: githubId,
+                  display_name: session.user.user_metadata?.full_name ||
+                               session.user.user_metadata?.name ||
+                               githubUsername,
+                  avatar_url: session.user.user_metadata?.avatar_url,
+                  github_token: session.provider_token,
+                  updated_at: new Date().toISOString()
+                };
+
                 const { error } = await supabase
                   .from('user_profiles')
-                  .update({
-                    github_token: session.provider_token,
-                    updated_at: new Date().toISOString()
-                  })
-                  .eq('id', session.user.id);
+                  .upsert(profileData, { onConflict: 'id' });
 
                 if (error) {
-                  console.error('❌ INIT: Failed to store provider token in database:', error);
+                  console.error('❌ INIT: Failed to upsert profile with provider token:', error);
                 } else {
-                  console.log('✅ INIT: Provider token stored in database for user:', session.user.id);
+                  console.log('✅ INIT: Profile created/updated with provider token for user:', session.user.id);
                 }
               } catch (error) {
-                console.error('❌ INIT: Exception storing provider token:', error);
+                console.error('❌ INIT: Exception upserting profile with provider token:', error);
               }
             }
           }
@@ -389,23 +404,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             localStorage.setItem(`oauth_provider_token_${session.user.id}`, session.provider_token);
             console.log('✅ AUTH: Provider token stored for user:', session.user.id);
 
-            // Also update the user profile in database with the provider token
+            // 🚨 CRITICAL FIX: Use UPSERT to create/update profile with provider token
             try {
+              // Extract GitHub metadata for profile creation
+              const githubUsername = session.user.user_metadata?.user_name ||
+                                   session.user.user_metadata?.preferred_username ||
+                                   session.user.email?.split('@')[0] || 'user';
+              const githubId = session.user.user_metadata?.provider_id ||
+                             session.user.identities?.find(i => i.provider === 'github')?.id;
+
+              const profileData = {
+                id: session.user.id,
+                github_username: githubUsername,
+                github_id: githubId,
+                display_name: session.user.user_metadata?.full_name ||
+                             session.user.user_metadata?.name ||
+                             githubUsername,
+                avatar_url: session.user.user_metadata?.avatar_url,
+                github_token: session.provider_token,
+                updated_at: new Date().toISOString()
+              };
+
               const { error } = await supabase
                 .from('user_profiles')
-                .update({
-                  github_token: session.provider_token,
-                  updated_at: new Date().toISOString()
-                })
-                .eq('id', session.user.id);
+                .upsert(profileData, { onConflict: 'id' });
 
               if (error) {
-                console.error('❌ AUTH: Failed to store provider token in database:', error);
+                console.error('❌ AUTH: Failed to upsert profile with provider token:', error);
               } else {
-                console.log('✅ AUTH: Provider token stored in database for user:', session.user.id);
+                console.log('✅ AUTH: Profile created/updated with provider token for user:', session.user.id);
               }
             } catch (error) {
-              console.error('❌ AUTH: Exception storing provider token:', error);
+              console.error('❌ AUTH: Exception upserting profile with provider token:', error);
             }
           }
         }
