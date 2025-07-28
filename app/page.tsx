@@ -166,8 +166,8 @@ function HomePageContent({ handleError }: { handleError: (error: string) => void
         sessionStorage.clear()
       }
 
-      // Sign out from Supabase only (no GitHub redirect)
-      await supabase.auth.signOut()
+      // Sign out from Supabase with global scope to revoke OAuth tokens
+      await supabase.auth.signOut({ scope: 'global' })
 
       // Force page reload to ensure clean state
       window.location.reload()

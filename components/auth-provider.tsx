@@ -690,8 +690,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log("🧹 AUTH: Cleared all localStorage and sessionStorage");
     }
 
-    // Sign out from Supabase with explicit scope
-    await supabase.auth.signOut({ scope: 'local' });
+    // Sign out from Supabase with global scope to revoke OAuth tokens
+    await supabase.auth.signOut({ scope: 'global' });
 
     // 🚀 GOOGLE-STYLE MULTI-ACCOUNT SUPPORT:
     // Redirect to our custom signout page instead of GitHub
