@@ -79,37 +79,18 @@ export async function GET(req: NextRequest) {
           return NextResponse.redirect(`${origin}/auth/error?error=missing_github_username`)
         }
 
-        // 🔑 CRITICAL: Extract GitHub provider token from OAuth session
-        // According to Supabase docs, provider_token is available immediately after exchangeCodeForSession
-        const githubToken = session.provider_token
+        // 🔑 PROVIDER TOKEN: Now handled on client-side via onAuthStateChange
+        // The client-side auth provider will capture provider_token from the session
+        // and store it in localStorage and database for repository access
+        console.log('✅ OAUTH CALLBACK: Provider token will be captured on client-side')
 
-        console.log('🔍 OAUTH TOKEN: Provider token extraction:', {
-          hasProviderToken: !!session.provider_token,
-          tokenLength: session.provider_token?.length,
-          tokenType: typeof session.provider_token,
-          tokenPrefix: session.provider_token?.substring(0, 10) + '...',
-          sessionProvider: user.app_metadata?.provider
-        })
-
-
-
-        if (!githubToken) {
-          console.error('❌ CRITICAL: No GitHub provider token available in session')
-          console.error('❌ This means either:')
-          console.error('   1. GitHub OAuth is not configured correctly')
-          console.error('   2. The OAuth scopes are insufficient')
-          console.error('   3. Supabase is not returning the provider token')
-          return NextResponse.redirect(`${origin}/auth/error?error=missing_github_token`)
-        }
-
-        // Create or update user profile with GitHub token
+        // Create or update user profile (GitHub token will be added by client-side auth provider)
         const { error: profileError } = await supabase
           .from('user_profiles')
           .upsert({
             id: user.id,
             github_username: githubUsername,
             github_id: githubId ? parseInt(githubId) : null,
-            github_token: githubToken,
             display_name: user.user_metadata?.full_name || user.user_metadata?.name,
             avatar_url: user.user_metadata?.avatar_url,
             email: user.email,

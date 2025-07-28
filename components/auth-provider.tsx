@@ -282,6 +282,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       async (event, session) => {
         console.log("🔄 AUTH: Auth state changed:", event);
 
+        // 🔑 CRITICAL: Capture provider token immediately after OAuth redirect
+        if (session && session.provider_token) {
+          console.log('🎯 AUTH: Provider token detected in session!', {
+            hasProviderToken: !!session.provider_token,
+            tokenLength: session.provider_token.length,
+            provider: session.user?.app_metadata?.provider
+          });
+
+          // Store provider token for this user
+          if (session.user && typeof window !== 'undefined') {
+            localStorage.setItem(`oauth_provider_token_${session.user.id}`, session.provider_token);
+            console.log('✅ AUTH: Provider token stored for user:', session.user.id);
+
+            // Also update the user profile in database with the provider token
+            try {
+              const { error } = await supabase
+                .from('user_profiles')
+                .update({
+                  github_token: session.provider_token,
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', session.user.id);
+
+              if (error) {
+                console.error('❌ AUTH: Failed to store provider token in database:', error);
+              } else {
+                console.log('✅ AUTH: Provider token stored in database for user:', session.user.id);
+              }
+            } catch (error) {
+              console.error('❌ AUTH: Exception storing provider token:', error);
+            }
+          }
+        }
+
         // 🔒 CRITICAL FIX: Validate session integrity to prevent user mixing
         if (session?.user) {
           console.log("🔍 AUTH: Validating session for user:", session.user.id);
@@ -300,15 +334,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               localStorage.removeItem(`token_popup_dismissed_${user.id}`);
               localStorage.removeItem(`token_popup_skipped_permanently_${user.id}`);
               localStorage.removeItem(`github_token_${user.id}`);
+              localStorage.removeItem(`oauth_provider_token_${user.id}`);
               localStorage.removeItem(`github_repositories_${user.id}`);
               localStorage.removeItem(`github_repositories_time_${user.id}`);
 
               // Clear global keys that might contain mixed data
               localStorage.removeItem('github_token');
+              localStorage.removeItem('oauth_provider_token');
               localStorage.removeItem('github_repositories');
               localStorage.removeItem('github_repositories_time');
 
-              console.log("🧹 AUTH: Cleared previous user's cached data");
+              console.log("🧹 AUTH: Cleared previous user's cached data including OAuth tokens");
             }
           }
         }
@@ -546,7 +582,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return profile.github_token;
     }
 
-    // Second priority: User-specific cached token
+    // Second priority: OAuth provider token stored during auth flow
+    if (user && typeof window !== 'undefined') {
+      const oauthProviderToken = localStorage.getItem(`oauth_provider_token_${user.id}`);
+      if (oauthProviderToken) {
+        console.log('🔑 Using stored OAuth provider token');
+        return oauthProviderToken;
+      }
+    }
+
+    // Third priority: User-specific cached token (legacy)
     if (user && typeof window !== 'undefined') {
       const userSpecificToken = localStorage.getItem(`github_token_${user.id}`);
       if (userSpecificToken) {
@@ -555,7 +600,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    // Third priority: OAuth token from current session (for GitHub OAuth users)
+    // Fourth priority: OAuth token from current session (fallback for immediate use)
     try {
       const { data: { session } } = await supabase.auth.getSession();
       console.log('🔍 OAUTH DEBUG: Checking session for OAuth token...', {
@@ -569,6 +614,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Check if this is a GitHub OAuth user with a valid provider token
       if (session?.provider_token && session?.user?.app_metadata?.provider === 'github') {
         console.log('🔑 ✅ Using OAuth token from session for repository access');
+
+        // Store it for future use if not already stored
+        if (user && typeof window !== 'undefined') {
+          const existingToken = localStorage.getItem(`oauth_provider_token_${user.id}`);
+          if (!existingToken) {
+            localStorage.setItem(`oauth_provider_token_${user.id}`, session.provider_token);
+            console.log('✅ AUTH: Provider token stored from session for future use');
+          }
+        }
+
         return session.provider_token;
       }
 
