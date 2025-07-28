@@ -11,21 +11,22 @@ import GitHubAuth from "@/components/github-auth"
 import { useAuth } from "@/components/auth-provider"
 import GitHubConnectPopup from "@/components/github-connect-popup"
 import { supabase } from "@/lib/supabase"
-import {
+import { 
   Github,
-  Star,
-  TrendingUp,
-  Zap,
-  Shield,
-  FileText,
-  GitBranch,
-  CheckCircle,
-  ArrowRight,
-  AlertCircle,
-  X,
-  RefreshCw,
-  LogOut,
+  Star, 
+  TrendingUp, 
+  Zap, 
+  Shield, 
+  FileText, 
+  GitBranch, 
+  CheckCircle, 
+  ArrowRight, 
+  AlertCircle, 
+  X, 
+  RefreshCw, 
+  LogOut 
 } from "lucide-react"
+import Image from "next/image"
 
 // Separate component for search params logic to avoid hydration issues
 function SearchParamsHandler({ onError }: { onError: (error: string) => void }) {
@@ -199,7 +200,7 @@ function HomePageContent({ handleError }: { handleError: (error: string) => void
       <nav className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <Github className="h-8 w-8" />
+            <Image src="/logo.png" alt="NeatRepo Logo" width={32} height={32} className="h-8 w-8" />
             <span className="text-xl font-bold">NeatRepo</span>
             <Badge variant="secondary" className="bg-secondary text-secondary-foreground">
               Production Ready
