@@ -55,6 +55,18 @@ export async function GET(req: NextRequest) {
       const session = data.session
       console.log('🔑 OAUTH SUCCESS: Creating/updating user profile for repository access')
 
+      // 🚨 DEBUG: Log complete session structure to find provider token
+      console.log('🔍 OAUTH DEBUG: Complete session structure:', {
+        hasSession: !!session,
+        sessionKeys: Object.keys(session || {}),
+        hasProviderToken: !!session.provider_token,
+        hasProviderAccessToken: !!(session as any).provider_access_token,
+        hasAccessToken: !!session.access_token,
+        userMetadata: user.user_metadata,
+        userIdentities: user.identities,
+        appMetadata: user.app_metadata
+      })
+
       try {
         // Get GitHub user data from user metadata
         const githubUsername = user.user_metadata?.user_name || user.user_metadata?.preferred_username
@@ -65,10 +77,13 @@ export async function GET(req: NextRequest) {
           return NextResponse.redirect(`${origin}/auth/error?error=missing_github_username`)
         }
 
-        // Extract GitHub access token from OAuth session
-        const githubToken = session.provider_token
+        // Extract GitHub access token from OAuth session - try multiple possible fields
+        const githubToken = session.provider_token || (session as any).provider_access_token || (session as any).access_token
         console.log('🔑 OAUTH TOKEN: Extracting GitHub access token', {
-          hasToken: !!githubToken,
+          hasProviderToken: !!session.provider_token,
+          hasProviderAccessToken: !!(session as any).provider_access_token,
+          hasAccessToken: !!session.access_token,
+          finalToken: !!githubToken,
           tokenLength: githubToken?.length,
           tokenPrefix: githubToken?.substring(0, 7) + '...'
         })
