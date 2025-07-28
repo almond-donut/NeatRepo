@@ -1141,6 +1141,63 @@ ${successCount > 0 ? 'Your portfolio is now cleaner and more professional! 🚀'
     }
   }, []);
 
+  // 🎭 PERSONALITY MODE PERSISTENCE - Fix for critic mode reset bug
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    try {
+      // Load saved personality mode on component mount
+      const savedCriticMode = localStorage.getItem('personality_critic_mode');
+      if (savedCriticMode !== null) {
+        const isEnabled = JSON.parse(savedCriticMode);
+        setIsCriticMode(isEnabled);
+        console.log('🎭 Restored personality mode from localStorage:', { criticMode: isEnabled });
+      }
+    } catch (error) {
+      console.error('❌ Failed to load personality mode:', error);
+    }
+  }, []);
+
+  // 🎭 SAVE PERSONALITY MODE WHEN IT CHANGES
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    try {
+      localStorage.setItem('personality_critic_mode', JSON.stringify(isCriticMode));
+      console.log('🎭 Saved personality mode to localStorage:', { criticMode: isCriticMode });
+    } catch (error) {
+      console.error('❌ Failed to save personality mode:', error);
+    }
+  }, [isCriticMode]);
+
+  // 🔧 OAUTH ERROR URL CLEANUP - Fix for OAuth error persistence bug
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const currentUrl = new URL(window.location.href);
+    const hasOAuthError = currentUrl.searchParams.has('error') ||
+                         currentUrl.searchParams.has('error_code') ||
+                         currentUrl.searchParams.has('error_description');
+
+    if (hasOAuthError) {
+      console.log('🔧 OAuth error parameters detected in URL, cleaning up...');
+
+      // Remove OAuth error parameters
+      currentUrl.searchParams.delete('error');
+      currentUrl.searchParams.delete('error_code');
+      currentUrl.searchParams.delete('error_description');
+
+      // Also clean up any hash-based error parameters
+      if (currentUrl.hash.includes('error=')) {
+        currentUrl.hash = '';
+      }
+
+      // Update the URL without reloading the page
+      window.history.replaceState({}, '', currentUrl.toString());
+      console.log('✅ OAuth error parameters cleaned from URL');
+    }
+  }, []); // Run only once on component mount
+
   // 🚀 INSTANT LOADING: Optimized auto-fetch with cache-first approach
   useEffect(() => {
     // Only run when we have user and profile (token optional for OAuth fallback)

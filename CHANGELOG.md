@@ -17,6 +17,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Proper UI state management between interview mode and normal mode
 
 ### Fixed
+- 🎭 **Personality Mode Persistence Bug** - Fixed critic mode automatically reverting to nice mode after inactivity
+  - Added localStorage persistence for personality mode state
+  - Loads saved personality mode on component mount
+  - Saves personality mode whenever it changes
+  - Professional state management like major web applications
+- 🔧 **OAuth Error URL Cleanup Bug** - Fixed OAuth error parameters persisting in URL after browser refresh
+  - Added automatic URL cleanup on page load
+  - Removes error, error_code, and error_description parameters
+  - Uses window.history.replaceState() for clean URL management
+  - Professional OAuth error handling similar to Facebook/Google authentication flows
 - 🔧 **JSX Syntax Errors** - Removed commented AuthGuard tags that were breaking builds
 - 🎤 **Interview Start Flow** - Fixed parsing logic to properly recognize "start interview" commands
 - 📊 **Progress Bar Display** - Added useEffect to sync interview UI state from localStorage on page load
@@ -27,6 +37,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved interview state persistence and recovery
 - Better error handling for interview flow edge cases
 - Optimized progress calculation and display
+- **Professional State Management** - Enterprise-grade localStorage persistence with error handling
+- **Clean URL Management** - Automatic OAuth error parameter cleanup for better UX
+- **Session Resilience** - User preferences persist across long inactivity periods
 
 ## [Previous Releases]
 
@@ -77,6 +90,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Known Issues
 - OAuth code exchange still has configuration issues (investigating client secret mismatch)
 - AI interview context retention could be improved for better conversation flow
+
+### Recently Fixed Issues ✅
+- ~~Personality mode reset after inactivity~~ - **RESOLVED** with localStorage persistence
+- ~~OAuth error parameters persisting in URL after refresh~~ - **RESOLVED** with automatic URL cleanup
 
 ### Next Priorities
 - OAuth configuration debugging and resolution

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personality Mode Persistence Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: #ffffff;
+        }
+        .test-section {
+            background-color: #2a2a2a;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border: 1px solid #444;
+        }
+        button {
+            background-color: #0066cc;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0052a3;
+        }
+        .critic-mode {
+            background-color: #cc3300 !important;
+        }
+        .critic-mode:hover {
+            background-color: #a32800 !important;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .success {
+            background-color: #004d00;
+            color: #00ff00;
+        }
+        .error {
+            background-color: #4d0000;
+            color: #ff0000;
+        }
+        .info {
+            background-color: #003d4d;
+            color: #00ccff;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎭 Personality Mode Persistence Test</h1>
+    <p>This test simulates the localStorage persistence functionality for the personality mode bug fix.</p>
+
+    <div class="test-section">
+        <h2>Current State</h2>
+        <div id="currentState" class="status info">Loading...</div>
+        <button id="toggleMode" onclick="togglePersonalityMode()">Toggle Mode</button>
+        <button onclick="clearStorage()">Clear Storage</button>
+        <button onclick="refreshTest()">Simulate Page Refresh</button>
+    </div>
+
+    <div class="test-section">
+        <h2>OAuth URL Cleanup Test</h2>
+        <div id="urlStatus" class="status info">Current URL is clean</div>
+        <button onclick="addOAuthErrors()">Add OAuth Errors to URL</button>
+        <button onclick="cleanOAuthErrors()">Clean OAuth Errors</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Log</h2>
+        <div id="testLog" style="background-color: #000; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 12px; max-height: 300px; overflow-y: auto;"></div>
+    </div>
+
+    <script>
+        let isCriticMode = false;
+
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            const logDiv = document.getElementById('testLog');
+            logDiv.innerHTML += `[${timestamp}] ${message}\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+
+        function updateUI() {
+            const stateDiv = document.getElementById('currentState');
+            const toggleBtn = document.getElementById('toggleMode');
+            
+            if (isCriticMode) {
+                stateDiv.textContent = '🔥 Critic Mode (Brutal)';
+                stateDiv.className = 'status error';
+                toggleBtn.textContent = 'Switch to Nice Mode';
+                toggleBtn.className = 'critic-mode';
+            } else {
+                stateDiv.textContent = '😊 Nice Mode';
+                stateDiv.className = 'status success';
+                toggleBtn.textContent = 'Switch to Critic Mode';
+                toggleBtn.className = '';
+            }
+        }
+
+        function loadPersonalityMode() {
+            try {
+                const saved = localStorage.getItem('personality_critic_mode');
+                if (saved !== null) {
+                    isCriticMode = JSON.parse(saved);
+                    log('🎭 Restored personality mode from localStorage: ' + (isCriticMode ? 'Critic' : 'Nice'));
+                } else {
+                    log('🎭 No saved personality mode found, using default (Nice)');
+                }
+            } catch (error) {
+                log('❌ Failed to load personality mode: ' + error.message);
+            }
+            updateUI();
+        }
+
+        function savePersonalityMode() {
+            try {
+                localStorage.setItem('personality_critic_mode', JSON.stringify(isCriticMode));
+                log('🎭 Saved personality mode to localStorage: ' + (isCriticMode ? 'Critic' : 'Nice'));
+            } catch (error) {
+                log('❌ Failed to save personality mode: ' + error.message);
+            }
+        }
+
+        function togglePersonalityMode() {
+            isCriticMode = !isCriticMode;
+            savePersonalityMode();
+            updateUI();
+            log('🔄 Toggled personality mode to: ' + (isCriticMode ? 'Critic' : 'Nice'));
+        }
+
+        function clearStorage() {
+            localStorage.removeItem('personality_critic_mode');
+            isCriticMode = false;
+            updateUI();
+            log('🗑️ Cleared personality mode from localStorage');
+        }
+
+        function refreshTest() {
+            log('🔄 Simulating page refresh...');
+            setTimeout(() => {
+                loadPersonalityMode();
+                log('✅ Page refresh simulation complete');
+            }, 500);
+        }
+
+        function addOAuthErrors() {
+            const url = new URL(window.location.href);
+            url.searchParams.set('error', 'server_error');
+            url.searchParams.set('error_code', 'unexpected_failure');
+            url.searchParams.set('error_description', 'Unable to exchange external code: test123');
+            window.history.replaceState({}, '', url.toString());
+            updateURLStatus();
+            log('🔧 Added OAuth error parameters to URL');
+        }
+
+        function cleanOAuthErrors() {
+            const currentUrl = new URL(window.location.href);
+            const hasOAuthError = currentUrl.searchParams.has('error') || 
+                                 currentUrl.searchParams.has('error_code') || 
+                                 currentUrl.searchParams.has('error_description');
+
+            if (hasOAuthError) {
+                log('🔧 OAuth error parameters detected in URL, cleaning up...');
+                
+                currentUrl.searchParams.delete('error');
+                currentUrl.searchParams.delete('error_code');
+                currentUrl.searchParams.delete('error_description');
+                
+                if (currentUrl.hash.includes('error=')) {
+                    currentUrl.hash = '';
+                }
+                
+                window.history.replaceState({}, '', currentUrl.toString());
+                log('✅ OAuth error parameters cleaned from URL');
+            } else {
+                log('ℹ️ No OAuth error parameters found in URL');
+            }
+            updateURLStatus();
+        }
+
+        function updateURLStatus() {
+            const url = new URL(window.location.href);
+            const hasErrors = url.searchParams.has('error') || 
+                             url.searchParams.has('error_code') || 
+                             url.searchParams.has('error_description');
+            
+            const statusDiv = document.getElementById('urlStatus');
+            if (hasErrors) {
+                statusDiv.textContent = '⚠️ OAuth error parameters detected in URL';
+                statusDiv.className = 'status error';
+            } else {
+                statusDiv.textContent = '✅ Current URL is clean';
+                statusDiv.className = 'status success';
+            }
+        }
+
+        // Initialize on page load
+        window.addEventListener('load', () => {
+            log('🚀 Personality Mode Persistence Test initialized');
+            loadPersonalityMode();
+            updateURLStatus();
+            
+            // Auto-clean OAuth errors on load (simulating the fix)
+            setTimeout(cleanOAuthErrors, 100);
+        });
+    </script>
+</body>
+</html>
