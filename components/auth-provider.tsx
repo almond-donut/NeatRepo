@@ -259,6 +259,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.log('✅ Setting user from session:', session.user.id);
           setUser(session.user);
 
+          // 🔑 CRITICAL FIX: Check for provider token during initialization (not just auth state change)
+          if (session.provider_token) {
+            console.log('🎯 INIT: Provider token detected in session during initialization!', {
+              hasProviderToken: !!session.provider_token,
+              tokenLength: session.provider_token.length,
+              provider: session.user?.app_metadata?.provider
+            });
+
+            // Store provider token for this user
+            if (typeof window !== 'undefined') {
+              localStorage.setItem(`oauth_provider_token_${session.user.id}`, session.provider_token);
+              console.log('✅ INIT: Provider token stored for user:', session.user.id);
+
+              // Also update the user profile in database with the provider token
+              try {
+                const { error } = await supabase
+                  .from('user_profiles')
+                  .update({
+                    github_token: session.provider_token,
+                    updated_at: new Date().toISOString()
+                  })
+                  .eq('id', session.user.id);
+
+                if (error) {
+                  console.error('❌ INIT: Failed to store provider token in database:', error);
+                } else {
+                  console.log('✅ INIT: Provider token stored in database for user:', session.user.id);
+                }
+              } catch (error) {
+                console.error('❌ INIT: Exception storing provider token:', error);
+              }
+            }
+          }
+
           // CRITICAL FIX: Set loading false immediately when user session is found
           // This prevents the loading loop during initial session load
           setLoading(false);
