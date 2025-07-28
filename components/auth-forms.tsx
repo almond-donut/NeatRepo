@@ -49,18 +49,12 @@ export default function AuthForms({ onClose }: AuthFormsProps) {
       
       if (error) throw error
       
-      // Always redirect to login page after signup (no email confirmation)
+      // User must manually switch to login after signup
       setMessage({
         type: 'success',
-        text: 'Account created successfully! Please login to continue.'
+        text: 'Account created successfully! Please manually switch to login to continue.'
       })
-      setTimeout(() => {
-        // Switch to login tab
-        const loginTab = document.querySelector('[value="signin"]') as HTMLElement;
-        if (loginTab) {
-          loginTab.click();
-        }
-      }, 1500)
+      // REMOVED: Automatic tab switch - user must manually choose
     } catch (error: any) {
       setMessage({ type: 'error', text: error.message })
     } finally {
@@ -94,11 +88,9 @@ export default function AuthForms({ onClose }: AuthFormsProps) {
 
       setMessage({
         type: 'success',
-        text: 'Signed in successfully! Redirecting...'
+        text: 'Signed in successfully! Please manually navigate to your desired page.'
       })
-      setTimeout(() => {
-        window.location.href = '/dashboard'
-      }, 1500)
+      // REMOVED: Automatic redirect - user must manually navigate
     } catch (error: any) {
       setMessage({ type: 'error', text: error.message })
     } finally {
@@ -114,7 +106,7 @@ export default function AuthForms({ onClose }: AuthFormsProps) {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
-          redirectTo: `${window.location.origin}/dashboard`,
+          redirectTo: `${window.location.origin}/`,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -137,7 +129,7 @@ export default function AuthForms({ onClose }: AuthFormsProps) {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/dashboard`,
+          redirectTo: `${window.location.origin}/`,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',

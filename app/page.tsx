@@ -60,10 +60,9 @@ function SearchParamsHandler({ onError }: { onError: (error: string) => void }) 
   return null
 }
 
-// Separate component to handle auth state and redirects
+// Separate component to handle auth state
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, loading, profile } = useAuth()
-  const [isRedirecting, setIsRedirecting] = useState(false)
   const [showGitHubPopup, setShowGitHubPopup] = useState(false)
 
   // DISABLED: Auto-redirect interferes with button navigation
@@ -94,23 +93,17 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 
   const handleSkipGitHub = () => {
     setShowGitHubPopup(false)
-    // Allow user to continue to dashboard without GitHub connection
-    setIsRedirecting(true)
-    const timer = setTimeout(() => {
-      window.location.href = '/dashboard'
-    }, 100)
-    return () => clearTimeout(timer)
+    // User must manually navigate to dashboard
+    console.log('🔄 USER: Skipped GitHub connection - manual navigation required')
   }
 
-  // Show loading state while auth is loading or redirecting
-  if (loading || isRedirecting) {
+  // Show loading state while auth is loading
+  if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">
-            {isRedirecting ? 'Redirecting to dashboard...' : 'Loading...'}
-          </p>
+          <p className="text-muted-foreground">Loading...</p>
         </div>
       </div>
     )

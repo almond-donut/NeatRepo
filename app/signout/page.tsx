@@ -9,28 +9,13 @@ import { Card, CardContent } from '@/components/ui/card';
 export default function SignoutPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [countdown, setCountdown] = useState(3);
-  
+
   // Get user info from URL parameters
   const username = searchParams.get('username') || 'User';
   const email = searchParams.get('email') || '';
   const avatar = searchParams.get('avatar') || '';
 
-  useEffect(() => {
-    // Countdown timer (display only - no automatic redirect)
-    const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          // REMOVED: Automatic redirect - user must manually navigate
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [router]);
+  // REMOVED: Countdown timer and automatic redirect logic
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -95,14 +80,14 @@ export default function SignoutPage() {
         {/* Status message */}
         <div className="text-center space-y-3">
           <div className="flex items-center justify-center space-x-2">
-            <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
+            <CheckCircle className="w-4 h-4 text-green-600" />
             <span className="text-sm text-muted-foreground">
-              Logging out...
+              Sign out complete
             </span>
           </div>
-          
+
           <p className="text-xs text-muted-foreground">
-            Redirecting to homepage in {countdown} second{countdown !== 1 ? 's' : ''}
+            Choose where to go next - no automatic redirection
           </p>
         </div>
 

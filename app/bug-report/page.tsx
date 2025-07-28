@@ -170,7 +170,7 @@ export default function BugReportPage() {
               Thank you for helping us improve NeatRepo. We'll review your report and get back to you if needed.
             </p>
             <p className="text-sm text-muted-foreground">
-              Redirecting to dashboard in 3 seconds...
+              You can now manually navigate to your desired page.
             </p>
           </CardContent>
         </Card>

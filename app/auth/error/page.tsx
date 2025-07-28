@@ -16,13 +16,17 @@ export default function AuthErrorPage() {
   }, [searchParams])
 
   const handleRetry = () => {
-    // Clear any existing auth state - user must manually navigate
+    // User must manually navigate to retry authentication
     console.log('🔄 AUTH ERROR: User requested retry - manual navigation required')
+    // Show message to user about manual navigation
+    alert('Please manually navigate to the homepage to retry authentication.')
   }
 
   const handleGoHome = () => {
     // User must manually navigate to homepage
     console.log('🏠 AUTH ERROR: User requested home - manual navigation required')
+    // Show message to user about manual navigation
+    alert('Please manually navigate to the homepage.')
   }
 
   return (
@@ -55,24 +59,31 @@ export default function AuthErrorPage() {
 
           {/* Action Buttons */}
           <div className="space-y-3">
-            <Button 
-              onClick={handleRetry} 
+            <Button
+              onClick={handleRetry}
               className="w-full"
               size="lg"
             >
               <RefreshCw className="mr-2 h-4 w-4" />
-              Try Again
+              Manual Retry Required
             </Button>
-            
-            <Button 
-              onClick={handleGoHome} 
-              variant="outline" 
+
+            <Button
+              onClick={handleGoHome}
+              variant="outline"
               className="w-full"
               size="lg"
             >
               <Home className="mr-2 h-4 w-4" />
-              Go Home
+              Manual Navigation Required
             </Button>
+          </div>
+
+          {/* Manual Navigation Notice */}
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+            <p className="text-sm text-yellow-800 dark:text-yellow-200">
+              <strong>Note:</strong> Automatic redirects have been disabled. You must manually navigate to your desired page.
+            </p>
           </div>
 
           {/* Help Text */}
