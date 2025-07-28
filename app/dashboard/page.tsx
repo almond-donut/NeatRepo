@@ -1247,6 +1247,34 @@ ${successCount > 0 ? 'Your portfolio is now cleaner and more professional! 🚀'
     }
   }, []); // Run only once on component mount
 
+  // 🚨 CRITICAL FIX: Force repository fetch for OAuth users
+  useEffect(() => {
+    const forceOAuthFetch = async () => {
+      if (user && !loading) {
+        console.log('🚨 OAUTH FETCH: Checking for OAuth token for user:', user.id);
+
+        // Try to get OAuth token directly from localStorage
+        const oauthToken = localStorage.getItem(`oauth_provider_token_${user.id}`);
+        if (oauthToken && repositories.length === 0) {
+          console.log('🚨 OAUTH FETCH: Found OAuth token, fetching repositories...');
+          try {
+            setIsLoadingRepos(true);
+            await repositoryManager.fetchRepositories(oauthToken, true, user.id);
+            console.log('✅ OAUTH FETCH: Repository fetch completed');
+          } catch (error) {
+            console.error('❌ OAUTH FETCH: Repository fetch failed:', error);
+          } finally {
+            setIsLoadingRepos(false);
+          }
+        }
+      }
+    };
+
+    // Delay the force fetch to ensure auth is fully initialized
+    const delayTimeout = setTimeout(forceOAuthFetch, 1000);
+    return () => clearTimeout(delayTimeout);
+  }, [user, loading, repositories.length]);
+
   // 🚀 INSTANT LOADING: Optimized auto-fetch with cache-first approach
   useEffect(() => {
     // Only run when we have user and profile (token optional for OAuth fallback)
