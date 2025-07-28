@@ -1206,6 +1206,29 @@ ${successCount > 0 ? 'Your portfolio is now cleaner and more professional! 🚀'
                          currentUrl.searchParams.has('error_description');
 
     if (hasOAuthError) {
+      // 🚨 CRITICAL DEBUG: Log actual OAuth error details before cleaning
+      const errorDetails = {
+        error: currentUrl.searchParams.get('error'),
+        error_code: currentUrl.searchParams.get('error_code'),
+        error_description: currentUrl.searchParams.get('error_description'),
+        fullUrl: currentUrl.toString(),
+        hash: currentUrl.hash
+      };
+
+      console.error('🚨 OAUTH ERROR DETECTED:', errorDetails);
+      console.error('🔍 OAUTH ERROR ANALYSIS:', {
+        errorType: errorDetails.error,
+        errorCode: errorDetails.error_code,
+        description: errorDetails.error_description,
+        possibleCauses: [
+          'GitHub OAuth app configuration mismatch',
+          'Supabase GitHub provider settings incorrect',
+          'OAuth callback URL mismatch',
+          'Environment variables missing or incorrect',
+          'OAuth scopes not matching configuration'
+        ]
+      });
+
       console.log('🔧 OAuth error parameters detected in URL, cleaning up...');
 
       // Remove OAuth error parameters
