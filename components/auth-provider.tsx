@@ -207,6 +207,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.log('✅ Setting user from session:', session.user.id);
           setUser(session.user);
 
+          // CRITICAL FIX: Set loading false immediately when user session is found
+          // This prevents the loading loop during initial session load
+          setLoading(false);
+          console.log("✅ AUTH: User session found - UI ready immediately");
+
           // GitHub connection check is now handled by AuthGuard component
           // This prevents conflicts between multiple redirect attempts
 
@@ -267,7 +272,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(null);
         }
 
-        setLoading(false); // Set loading false after session check to prevent hydration mismatch
+        // Only set loading false if no user was found (already set above if user exists)
+        if (!session?.user) {
+          setLoading(false);
+        }
         console.log('✅ AUTH: INSTANT initialization completed - UI ready!');
       } catch (err) {
         console.error('❌ AUTH: Session initialization error:', err);
