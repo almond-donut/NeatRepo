@@ -131,10 +131,10 @@ export default function AccountSwitcher() {
 
   // Use currentAccount from hook or fallback - prioritize recovery profile, then PAT profile
   const displayAccount = tempRecoveryProfile || patProfile || currentAccount || {
-    id: user?.id || 'pat-user',
-    email: user?.email || 'generalpwtx7@gmail.com',
-    username: profile?.github_username || 'almond-donut',
-    avatar_url: user?.user_metadata?.avatar_url || 'https://avatars.githubusercontent.com/u/215279882?v=4',
+    id: user?.id || 'unknown-user',
+    email: user?.email || 'unknown@example.com',
+    username: profile?.github_username || user?.user_metadata?.user_name || 'unknown-user',
+    avatar_url: user?.user_metadata?.avatar_url || 'https://avatars.githubusercontent.com/u/0?v=4',
     last_used: new Date().toISOString()
   }
 
