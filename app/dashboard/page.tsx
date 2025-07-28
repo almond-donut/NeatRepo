@@ -1600,7 +1600,7 @@ What would you like to start with? 🚀`;
       }
 
       if (effectiveToken) {
-        const username = profile?.github_username || effectiveProfile?.github_username || 'almond-donut';
+        const username = profile?.github_username || effectiveProfile?.github_username || currentUser?.user_metadata?.user_name || 'user';
         aiAssistant.initializeGitHub(effectiveToken, username);
         console.log('🔧 AI Assistant GitHub API initialized with effective token for:', username);
       } else {
