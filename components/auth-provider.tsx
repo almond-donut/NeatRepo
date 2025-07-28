@@ -359,8 +359,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null);
 
         if (event === 'SIGNED_IN' && session?.user) {
-          // CRITICAL FIX: Don't set loading true - this causes the loading loop
-          // setLoading(true);
+          // CRITICAL FIX: Set loading false immediately when user is signed in
+          // This prevents the loading loop - profile fetching happens in background
+          setLoading(false);
+          console.log("✅ AUTH: User signed in - UI ready immediately");
 
           // REMOVED: No more sign-in timeouts - let the session persist naturally
 
@@ -459,11 +461,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               console.log('❌ PAT POPUP: Not showing - either not GitHub OAuth or already has token');
             }
 
-            setLoading(false);
-            console.log("✅ AUTH: Sign-in process completed");
+            console.log("✅ AUTH: Sign-in background process completed");
           } catch (error) {
-            console.error("❌ AUTH: Sign-in process error:", error);
-            setLoading(false);
+            console.error("❌ AUTH: Sign-in background process error:", error);
+            // Don't set loading false here - it's already set above
           }
         } else if (event === 'SIGNED_OUT') {
           console.log("👋 AUTH: User signed out");
