@@ -521,10 +521,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 console.error('❌ Background profile fetch failed after provider-token user fetch:', err);
               });
             } else {
-              console.log('❌ AUTH: No user returned from getUser despite provider token');
-              setAwaitingUserFetch(false);
-              setUser(null);
-              setLoading(false);
+               console.log('⚠️ AUTH: getUser returned null – attempting refreshSession()');
+               try {
+                 const { data: refreshData, error: refreshErr } = await supabase.auth.refreshSession();
+                 if (refreshErr) {
+                   console.error('❌ AUTH: refreshSession error:', refreshErr);
+                 }
+                 if (refreshData?.session?.user) {
+                   console.log('✅ AUTH: User obtained after refreshSession:', refreshData.session.user.id);
+                   setUser(refreshData.session.user);
+                   setAwaitingUserFetch(false);
+                   setLoading(false);
+                   // background profile
+                   fetchProfile(refreshData.session.user.id).catch(err => console.error('profile fetch fail after refresh', err));
+                 } else {
+                   console.warn('⚠️ AUTH: refreshSession still no user');
+                   setAwaitingUserFetch(false);
+                   setUser(null);
+                   setLoading(false);
+                 }
+               } catch (refreshEx) {
+                 console.error('❌ AUTH: Exception during refreshSession():', refreshEx);
+                 setAwaitingUserFetch(false);
+                 setUser(null);
+                 setLoading(false);
+               }
             }
           } catch (fetchErr) {
             console.error('❌ AUTH: Exception during getUser():', fetchErr);
