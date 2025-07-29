@@ -38,7 +38,39 @@ export async function GET(request: NextRequest) {
       }
     )
 
-    console.log('🔄 AUTH CALLBACK: Exchanging code for session...')
+    // Use the same Supabase client to both exchange the code and write the
+      // resulting session cookies to the outbound response. Because the
+      // cookies.set handler writes to `response`, the auth helper will
+      // automatically persist the session for the browser.
+      const response = NextResponse.redirect(`${origin}${next}`)
+      const supabaseWithResponse = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            get(name: string) {
+              return request.cookies.get(name)?.value
+            },
+            set(name: string, value: string, options: CookieOptions) {
+              response.cookies.set({ name, value, ...options })
+            },
+            remove(name: string, options: CookieOptions) {
+              response.cookies.set({ name, value: '', ...options })
+            }
+          }
+        }
+      )
+
+      console.log('🔄 AUTH CALLBACK: Exchanging code for session (and setting cookies)...')
+      const { error: exchangeError } = await supabaseWithResponse.auth.exchangeCodeForSession(code)
+
+      if (exchangeError) {
+        console.error('❌ AUTH CALLBACK: Error exchanging code for session:', exchangeError)
+        return NextResponse.redirect(`${origin}/auth/error?error=${encodeURIComponent(exchangeError.message)}`)
+      }
+
+      console.log('✅ AUTH CALLBACK: Session cookies set – redirecting user')
+      return response
     console.log('🔍 AUTH CALLBACK: Environment check:', {
       supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 30) + '...',
       hasAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
