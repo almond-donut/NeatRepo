@@ -14,6 +14,9 @@ export default function DashboardHeader() {
   const router = useRouter()
   const { theme } = useTheme()
 
+  // Prefer avatar from profile, fallback to metadata
+  const avatarSrc = profile?.avatar_url || user?.user_metadata?.avatar_url;
+
   const handleSignOut = async () => {
     await signOut();
     // Redirect is handled within the AuthProvider's signOut implementation
@@ -55,10 +58,10 @@ export default function DashboardHeader() {
             {/* User Menu with Profile Settings */}
             {user ? (
               <div className="flex items-center space-x-2">
-                {profile?.avatar_url ? (
+                                {avatarSrc ? (
                   <img
-                    src={profile.avatar_url}
-                    alt={profile.username || 'User'}
+                    src={avatarSrc}
+                    alt={profile?.username || user?.user_metadata?.user_name || 'User'}
                     className="w-6 h-6 rounded-full"
                   />
                 ) : (
