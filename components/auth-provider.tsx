@@ -244,11 +244,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         console.log('🚀 AUTH: INSTANT LOADING - Starting optimized initialization...');
 
-        // 🔧 CRITICAL FIX: Detect and clear corrupted session state
+        // 🔧 SIMPLIFIED: Detect and clear corrupted session state
         if (typeof window !== 'undefined') {
           const corruptionIndicators = [
             localStorage.getItem('github_token') && !localStorage.getItem('github_repositories_time'),
-            localStorage.getItem('neatrepo_accounts') && localStorage.getItem('neatrepo_accounts').includes('undefined'),
             localStorage.getItem('temp_recovery_profile')
           ];
 
@@ -257,10 +256,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // Clear specific corrupted keys but preserve valid user-specific data
             localStorage.removeItem('github_token');
             localStorage.removeItem('temp_recovery_profile');
-            const accounts = localStorage.getItem('neatrepo_accounts');
-            if (accounts && accounts.includes('undefined')) {
-              localStorage.removeItem('neatrepo_accounts');
-            }
           }
         }
 
@@ -561,8 +556,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         }
 
-        // 🔒 CRITICAL FIX: Validate session integrity to prevent user mixing
-        // BUT: Don't interfere with OAuth login flow
+        // 🔒 SIMPLIFIED: Handle user changes without multi-account complexity
         if (session?.user && user && user.id !== session.user.id) {
           console.log("🔍 AUTH: User change detected:", {
             previousUser: user.id,
@@ -570,15 +564,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             event: event
           });
 
-          // 🚨 OAUTH FIX: Don't clear data during OAuth login - it's not a "user change"
-          // OAuth events like SIGNED_IN are fresh logins, not account switching
-          if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-            console.log("✅ AUTH: OAuth login detected - preserving session data");
-          } else {
-            console.warn("⚠️ AUTH: Actual user switching detected - clearing previous user data");
-
-            // Clear any cached profile data for the previous user
-            setProfile(null);
+          // Clear any cached profile data for the previous user
+          setProfile(null);
 
             // 🧹 SECURITY: Clear ALL user-specific data when user changes
             if (typeof window !== 'undefined') {
@@ -780,15 +767,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       "Are you sure you want to sign out?\n\n" +
       "This will:\n" +
       "• Sign you out from NeatRepo\n" +
-      "• Sign you out from GitHub (to allow account switching)\n" +
-      "• Clear all saved account data"
+      "• Clear all saved data"
     );
 
     if (!confirmed) {
       return; // User cancelled
     }
 
-    // 🎯 GOOGLE-STYLE SIGNOUT: Store user info before clearing for signout page
+    // Store user info before clearing for signout page
     const userInfo = {
       username: user?.user_metadata?.user_name || user?.user_metadata?.preferred_username || 'User',
       email: user?.email || '',
@@ -830,9 +816,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Sign out from Supabase with global scope to revoke OAuth tokens
     await supabase.auth.signOut({ scope: 'global' });
 
-    // 🚀 GOOGLE-STYLE MULTI-ACCOUNT SUPPORT:
-    // Redirect to our custom signout page instead of GitHub
-    // This keeps users on our platform with professional UX
+    // Redirect to our custom signout page
     const signoutUrl = new URL('/signout', window.location.origin);
     signoutUrl.searchParams.set('username', userInfo.username);
     signoutUrl.searchParams.set('email', userInfo.email);

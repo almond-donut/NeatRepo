@@ -159,9 +159,8 @@ function HomePageContent({ handleError }: { handleError: (error: string) => void
     try {
       setIsLoading(true)
 
-      // Clear all localStorage data including account switcher data
+      // Clear all localStorage data
       if (typeof window !== 'undefined') {
-        localStorage.removeItem('neatrepo_accounts')
         localStorage.clear()
         sessionStorage.clear()
       }

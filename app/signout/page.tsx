@@ -26,9 +26,6 @@ export default function SignoutPage() {
             <Github className="h-8 w-8 text-primary" />
             <div className="flex flex-col">
               <span className="text-xl font-bold">NeatRepo</span>
-              <Badge variant="outline" className="text-xs">
-                Multi-Account
-              </Badge>
             </div>
           </div>
           <h1 className="text-2xl font-bold">Account signed out</h1>

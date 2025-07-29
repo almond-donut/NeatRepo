@@ -78,10 +78,6 @@ export default function GitHubAuth({ onClose }: GitHubAuthProps) {
           {/* Features Grid */}
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div className="flex items-center space-x-3">
-              <Users className="h-4 w-4 text-blue-500" />
-              <span>Multi-Account Support</span>
-            </div>
-            <div className="flex items-center space-x-3">
               <Zap className="h-4 w-4 text-yellow-500" />
               <span>Lightning Fast</span>
             </div>
@@ -93,17 +89,21 @@ export default function GitHubAuth({ onClose }: GitHubAuthProps) {
               <GitBranch className="h-4 w-4 text-purple-500" />
               <span>Bulk Operations</span>
             </div>
+            <div className="flex items-center space-x-3">
+              <Users className="h-4 w-4 text-blue-500" />
+              <span>Repository Management</span>
+            </div>
           </div>
-          
-          {/* Multi-Account Highlight */}
+
+          {/* Professional Features Highlight */}
           <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 p-4 rounded-lg border">
             <div className="flex items-center space-x-2 mb-2">
               <Star className="h-4 w-4 text-yellow-500" />
-              <span className="font-semibold text-sm">Facebook-Style Multi-Account</span>
-              <Badge variant="secondary" className="text-xs">New</Badge>
+              <span className="font-semibold text-sm">Professional Repository Management</span>
+              <Badge variant="secondary" className="text-xs">Production Ready</Badge>
             </div>
             <p className="text-sm text-muted-foreground">
-              Switch between multiple GitHub accounts seamlessly. Perfect for developers managing personal and work repositories.
+              Organize, manage, and optimize your GitHub repositories with powerful bulk operations and AI assistance.
             </p>
           </div>
           
