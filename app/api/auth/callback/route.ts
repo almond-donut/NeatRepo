@@ -69,16 +69,62 @@ export async function GET(request: NextRequest) {
         hasProviderToken: !!data.session.provider_token
       })
 
-      const forwardedHost = request.headers.get('x-forwarded-host') // original origin before load balancer
+      // Create response with proper cookie handling
+      const forwardedHost = request.headers.get('x-forwarded-host')
       const isLocalEnv = process.env.NODE_ENV === 'development'
+
+      let redirectUrl: string
       if (isLocalEnv) {
-        // we can be sure that there is no load balancer in between, so no need to watch for X-Forwarded-Host
-        return NextResponse.redirect(`${origin}${next}`)
+        redirectUrl = `${origin}${next}`
       } else if (forwardedHost) {
-        return NextResponse.redirect(`https://${forwardedHost}${next}`)
+        redirectUrl = `https://${forwardedHost}${next}`
       } else {
-        return NextResponse.redirect(`${origin}${next}`)
+        redirectUrl = `${origin}${next}`
       }
+
+      console.log('🔄 AUTH CALLBACK: Redirecting to:', redirectUrl)
+
+      // Create response with proper session cookies
+      const response = NextResponse.redirect(redirectUrl)
+
+      // Ensure session cookies are properly set
+      const sessionCookies = [
+        'sb-ldfjlbxbnmxdryhuyfmd-auth-token',
+        'sb-ldfjlbxbnmxdryhuyfmd-auth-token.0',
+        'sb-ldfjlbxbnmxdryhuyfmd-auth-token.1'
+      ]
+
+      // Set session cookies from the established session
+      if (data.session) {
+        try {
+          // Force cookie setting through supabase client
+          const cookieClient = createServerClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            {
+              cookies: {
+                get(name: string) {
+                  return request.cookies.get(name)?.value
+                },
+                set(name: string, value: string, options: CookieOptions) {
+                  response.cookies.set({ name, value, ...options })
+                },
+                remove(name: string, options: CookieOptions) {
+                  response.cookies.set({ name, value: '', ...options })
+                },
+              },
+            }
+          )
+
+          // Trigger cookie setting by calling getSession
+          await cookieClient.auth.getSession()
+          console.log('✅ AUTH CALLBACK: Session cookies set in response')
+        } catch (cookieError) {
+          console.error('⚠️ AUTH CALLBACK: Cookie setting error:', cookieError)
+        }
+      }
+
+      return response
     } else {
       console.error('❌ AUTH CALLBACK: Error exchanging code for session:', error)
       console.error('❌ AUTH CALLBACK: Full error details:', {

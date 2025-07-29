@@ -1250,84 +1250,71 @@ ${successCount > 0 ? 'Your portfolio is now cleaner and more professional! 🚀'
     }
   }, []); // Run only once on component mount
 
-  // 🚨 CRITICAL FIX: Handle OAuth callback and ensure proper initialization
+  // 🚨 CRITICAL FIX: Improved OAuth session detection and initialization
   useEffect(() => {
-    const handleOAuthCallback = async () => {
-      // Check if this is an OAuth callback (URL contains code parameter)
-      const urlParams = new URLSearchParams(window.location.search);
-      const oauthCode = urlParams.get('code');
+    const handleAuthInitialization = async () => {
+      // Skip if still loading or no user
+      if (loading || !user) {
+        console.log('⏳ AUTH INIT: Waiting for authentication...', { loading, hasUser: !!user });
+        return;
+      }
 
-      if (oauthCode) {
-        console.log('🔄 OAUTH CALLBACK: Processing OAuth callback with code:', oauthCode);
+      console.log('🚀 AUTH INIT: Starting initialization for user:', user.id);
+
+      // Check if this is a fresh OAuth login (user just authenticated)
+      const isOAuthUser = user.app_metadata?.provider === 'github';
+      const hasRepositories = repositories.length > 0;
+
+      if (isOAuthUser && !hasRepositories) {
+        console.log('🔄 OAUTH INIT: Detected OAuth user without repositories, initializing...');
         setIsProcessingOAuthCallback(true);
 
-        // Wait for authentication to be fully established
-        let retries = 0;
-        const maxRetries = 10;
+        try {
+          // Wait a moment for session to fully establish
+          await new Promise(resolve => setTimeout(resolve, 1000));
 
-        while (retries < maxRetries) {
-          if (user && !loading) {
-            console.log('✅ OAUTH CALLBACK: Authentication established, proceeding with initialization');
-
-            // Clean up the URL by removing the code parameter
-            urlParams.delete('code');
-            const cleanUrl = `${window.location.pathname}${urlParams.toString() ? '?' + urlParams.toString() : ''}`;
-            window.history.replaceState({}, '', cleanUrl);
-
-            // Force a fresh fetch of repositories
-            try {
-              const effectiveToken = await getEffectiveToken();
-              if (effectiveToken) {
-                console.log('🚀 OAUTH CALLBACK: Fetching repositories with fresh token');
-                setIsLoadingRepos(true);
-                await repositoryManager.fetchRepositories(effectiveToken, true, user.id);
-                console.log('✅ OAUTH CALLBACK: Repository fetch completed');
-              }
-            } catch (error) {
-              console.error('❌ OAUTH CALLBACK: Repository fetch failed:', error);
-              setError('Failed to load repositories after authentication. Please refresh the page.');
-            } finally {
-              setIsLoadingRepos(false);
-              setIsProcessingOAuthCallback(false);
-            }
-            break;
+          const effectiveToken = await getEffectiveToken();
+          if (effectiveToken) {
+            console.log('🚀 OAUTH INIT: Fetching repositories with OAuth token');
+            setIsLoadingRepos(true);
+            await repositoryManager.fetchRepositories(effectiveToken, true, user.id);
+            console.log('✅ OAUTH INIT: Repository fetch completed');
+          } else {
+            console.error('❌ OAUTH INIT: No effective token available');
+            setError('Unable to access GitHub repositories. Please try signing out and signing in again.');
           }
-
-          // Wait before retrying
-          await new Promise(resolve => setTimeout(resolve, 500));
-          retries++;
-          console.log(`⏳ OAUTH CALLBACK: Waiting for authentication... (${retries}/${maxRetries})`);
-        }
-
-        if (retries >= maxRetries) {
-          console.error('❌ OAUTH CALLBACK: Timeout waiting for authentication');
-          setError('Authentication timeout. Please refresh the page and try again.');
+        } catch (error) {
+          console.error('❌ OAUTH INIT: Repository fetch failed:', error);
+          setError('Failed to load repositories. Please try refreshing the page.');
+        } finally {
+          setIsLoadingRepos(false);
           setIsProcessingOAuthCallback(false);
         }
-      } else if (user && !loading) {
+      } else if (!isOAuthUser) {
         // Regular initialization for non-OAuth users
-        console.log('🚨 OAUTH FETCH: Checking for OAuth token for user:', user.id);
+        console.log('🔧 REGULAR INIT: Checking for cached token for user:', user.id);
 
-        // Try to get OAuth token directly from localStorage
-        const oauthToken = localStorage.getItem(`oauth_provider_token_${user.id}`);
-        if (oauthToken && repositories.length === 0) {
-          console.log('🚨 OAUTH FETCH: Found OAuth token, fetching repositories...');
+        const cachedToken = localStorage.getItem(`github_token_${user.id}`);
+        if (cachedToken && !hasRepositories) {
+          console.log('🔧 REGULAR INIT: Found cached token, fetching repositories...');
           try {
             setIsLoadingRepos(true);
-            await repositoryManager.fetchRepositories(oauthToken, true, user.id);
-            console.log('✅ OAUTH FETCH: Repository fetch completed');
+            await repositoryManager.fetchRepositories(cachedToken, true, user.id);
+            console.log('✅ REGULAR INIT: Repository fetch completed');
           } catch (error) {
-            console.error('❌ OAUTH FETCH: Repository fetch failed:', error);
+            console.error('❌ REGULAR INIT: Repository fetch failed:', error);
           } finally {
             setIsLoadingRepos(false);
           }
         }
+      } else {
+        console.log('✅ AUTH INIT: User already has repositories loaded');
       }
     };
 
-    // Delay the callback handling to ensure auth is fully initialized
-    const delayTimeout = setTimeout(handleOAuthCallback, 1000);
-    return () => clearTimeout(delayTimeout);
+    // Run initialization after a short delay to ensure auth state is stable
+    const initTimeout = setTimeout(handleAuthInitialization, 500);
+    return () => clearTimeout(initTimeout);
   }, [user, loading, repositories.length, getEffectiveToken]);
 
   // 🚀 INSTANT LOADING: Optimized auto-fetch with cache-first approach

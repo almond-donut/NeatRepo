@@ -253,6 +253,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.log('✅ Setting user from session:', session.user.id);
           setUser(session.user);
 
+          // 🔧 CRITICAL FIX: Ensure loading is set to false immediately when user is detected
+          setLoading(false);
+
           // 🔑 CRITICAL FIX: Check for provider token during initialization (not just auth state change)
           if (session.provider_token) {
             console.log('🎯 INIT: Provider token detected in session during initialization!', {
@@ -387,6 +390,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log("🔄 AUTH: Auth state changed:", event);
+
+        // 🔧 CRITICAL FIX: Set loading to false on any auth state change
+        setLoading(false);
 
         // 🔑 CRITICAL: Capture provider token immediately after OAuth redirect
         let oauthProfileUpdated = false; // Track if we've updated profile via OAuth
