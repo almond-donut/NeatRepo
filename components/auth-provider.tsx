@@ -284,15 +284,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         }
 
-        const { data: { session }, error } = await supabase.auth.getSession();
-        console.log('🔍 Session check:', { session: !!session, user: !!session?.user, error });
+        // 🔧 CRITICAL FIX: Add retry mechanism for session loading to prevent intermittent failures
+        let session = null;
+        let sessionError = null;
+        let retryCount = 0;
+        const maxRetries = 3;
+
+        while (retryCount < maxRetries && !session) {
+          try {
+            const { data, error } = await supabase.auth.getSession();
+            session = data.session;
+            sessionError = error;
+
+            if (session || retryCount === maxRetries - 1) {
+              break;
+            }
+
+            if (!session && retryCount < maxRetries - 1) {
+              console.log(`🔄 Session not found, retrying... (${retryCount + 1}/${maxRetries})`);
+              await new Promise(resolve => setTimeout(resolve, 100)); // Wait 100ms before retry
+            }
+          } catch (err) {
+            sessionError = err;
+            console.error(`❌ Session check error (attempt ${retryCount + 1}):`, err);
+          }
+          retryCount++;
+        }
+
+        console.log('🔍 Session check:', {
+          session: !!session,
+          user: !!session?.user,
+          error: sessionError,
+          retryCount
+        });
 
         if (session?.user) {
           console.log('✅ Setting user from session:', session.user.id);
           setUser(session.user);
 
-          // 🔧 CRITICAL FIX: Ensure loading is set to false immediately when user is detected
-          setLoading(false);
+          // 🔧 CRITICAL FIX: Only set loading false AFTER user is set
+          // This prevents race condition where loading=false but user=null
+
+          // 🔧 CRITICAL FIX: Set loading false only after user state is properly set
+          // Use setTimeout to ensure user state is updated before loading becomes false
+          setTimeout(() => {
+            setLoading(false);
+            console.log('✅ AUTH: Loading set to false after user state update');
+          }, 0);
 
           // 🔑 CRITICAL FIX: Check for provider token during initialization (not just auth state change)
           if (session.provider_token) {
@@ -346,10 +384,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
           }
 
-          // CRITICAL FIX: Set loading false immediately when user session is found
-          // This prevents the loading loop during initial session load
-          setLoading(false);
-          console.log("✅ AUTH: User session found - UI ready immediately");
+          // CRITICAL FIX: Set loading false only after user state is properly set
+          // This prevents race condition where loading=false but user=null
+          setTimeout(() => {
+            setLoading(false);
+            console.log("✅ AUTH: User session found - UI ready immediately");
+          }, 0);
 
           // GitHub connection check is now handled by AuthGuard component
           // This prevents conflicts between multiple redirect attempts
@@ -413,6 +453,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         // Only set loading false if no user was found (already set above if user exists)
         if (!session?.user) {
+          console.log('❌ No user in session - setting loading false');
           setLoading(false);
         }
         console.log('✅ AUTH: INSTANT initialization completed - UI ready!');
@@ -429,8 +470,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       async (event, session) => {
         console.log("🔄 AUTH: Auth state changed:", event);
 
-        // 🔧 CRITICAL FIX: Set loading to false on any auth state change
-        setLoading(false);
+        // 🔧 CRITICAL FIX: Only set loading to false after user state is properly updated
+        // This prevents race condition where loading=false but user state is inconsistent
 
         // 🔑 CRITICAL: Capture provider token immediately after OAuth redirect
         let oauthProfileUpdated = false; // Track if we've updated profile via OAuth
@@ -542,10 +583,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         setUser(session?.user ?? null);
 
-        if (event === 'SIGNED_IN' && session?.user) {
-          // CRITICAL FIX: Set loading false immediately when user is signed in
-          // This prevents the loading loop - profile fetching happens in background
+        // 🔧 CRITICAL FIX: Set loading false after user state is updated
+        setTimeout(() => {
           setLoading(false);
+          console.log("✅ AUTH: Loading set to false after user state update in auth change");
+        }, 0);
+
+        if (event === 'SIGNED_IN' && session?.user) {
           console.log("✅ AUTH: User signed in - UI ready immediately");
           console.log("🔍 AUTH: Loading state after SIGNED_IN:", false);
           console.log("🔍 AUTH: New user details:", {
