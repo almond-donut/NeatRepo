@@ -2312,19 +2312,18 @@ These repositories best demonstrate the skills recruiters look for in ${jobTitle
                   </Select>
                 </div>
 
-                {/* ➕ ADD REPOSITORY BUTTON */}
+                {/* ADD REPOSITORY BUTTON */}
                 <Button
                   variant="outline"
-                  size="sm"
+                  size="icon"
                   onClick={() => setShowAddRepoModal(true)}
-                  className="flex items-center gap-2"
-                  title="Create new repository"
+                  title="Add Repository"
                 >
                   <Plus className="h-4 w-4" />
-                  Add Repo
+                  <span className="sr-only">Add Repository</span>
                 </Button>
 
-                {/* 🎯 JOB TEMPLATE BUTTON */}
+                {/* JOB TEMPLATE BUTTON */}
                 <Button
                   variant="outline"
                   size="sm"
