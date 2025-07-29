@@ -252,7 +252,7 @@ export class AIAssistantEngine {
       },
       "confidence": 0.0-1.0
     }
-    
+
     Action Types:
     - create_repo: User wants to create a new repository
       Parameters: { name, description?, private?, gitignore?, license? }
@@ -262,14 +262,16 @@ export class AIAssistantEngine {
       Parameters: { name, confirm?: boolean }
     - sort_repos: User wants to sort/organize repositories
       Parameters: { criteria: "complexity" | "date" | "cv" | "alphabetical", order?: "asc" | "desc" }
-    - analyze_complexity: User wants complexity analysis
+    - analyze_complexity: User wants to analyze repository structure, complexity, or technical details
       Parameters: { repo?, all?: boolean }
+      IMPORTANT: Use this for "analyze structure", "analyze complexity", "analyze my repositories", etc.
     - cv_recommendations: User wants CV/resume optimization
       Parameters: { targetJob?, focus? }
     - generate_portfolio_readme: User wants a comprehensive portfolio README
       Parameters: { includePersonal?: boolean }
-    - start_interview: User wants to start portfolio interview for personalized README
+    - start_interview: ONLY when user explicitly asks to "start interview" or "begin interview"
       Parameters: { mode?: "quick" | "detailed" }
+      IMPORTANT: Do NOT use this for analysis requests - only for explicit interview commands
     - interview_answer: User is answering an interview question
       Parameters: { answer: string, questionId?: string }
     - general_response: General conversation or help
@@ -657,7 +659,7 @@ export class AIAssistantEngine {
   private async handleAnalyzeComplexity(params: any): Promise<AIResponse> {
     if (!this.githubAPI) {
       return {
-        message: "GitHub integration is not set up. Please connect your GitHub account first.",
+        message: "🔑 **GitHub Personal Access Token Required**\n\nTo analyze your repository structure and complexity, I need access to your GitHub repositories through a Personal Access Token (PAT).\n\n**How to set up your PAT:**\n1. Go to your **Profile page** in the top navigation\n2. Click **\"Add Token\"** in the GitHub Token Management section\n3. Follow the instructions to create and save your GitHub PAT\n\nOnce your PAT is configured, I'll be able to analyze your repositories, provide complexity insights, and help optimize your GitHub profile! 🚀",
         success: false,
       };
     }
@@ -667,7 +669,7 @@ export class AIAssistantEngine {
 
     if (!repos || repos.length === 0) {
       return {
-        message: "No repositories found to analyze. Please make sure your repositories are loaded.",
+        message: "📂 **No Repositories Found**\n\nI couldn't find any repositories to analyze. This might happen if:\n\n• Your GitHub PAT token needs to be refreshed\n• Your repositories are still loading\n• You don't have any public repositories\n\nPlease check your **Profile page** to ensure your GitHub token is properly configured, or wait a moment for your repositories to load.",
         success: false,
       };
     }
@@ -1048,6 +1050,16 @@ What would you like me to help you with?`;
         intent: 'CV optimization recommendations',
         parameters: {},
         confidence: 0.8,
+      };
+    }
+
+    // 🧠 ANALYZE COMPLEXITY/STRUCTURE
+    if (lowerMessage.includes('analyze') && (lowerMessage.includes('complex') || lowerMessage.includes('structure') || lowerMessage.includes('repository'))) {
+      return {
+        type: 'analyze_complexity',
+        intent: 'Analyze repository complexity and structure',
+        parameters: { all: true },
+        confidence: 0.9,
       };
     }
 
