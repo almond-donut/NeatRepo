@@ -494,6 +494,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               }
             }
           });
+        } else if (session?.provider_token) {
+          // 🛠️ NEW: Session has provider token but missing user object – fetch user explicitly
+          console.log('🧐 AUTH: Provider token present but user missing – fetching user data');
+          try {
+            const { data: userData, error: userError } = await supabase.auth.getUser();
+            if (userError) {
+              console.error('❌ AUTH: Failed to fetch user with provider token:', userError);
+            }
+            if (userData?.user) {
+              console.log('✅ AUTH: User fetched successfully via provider token:', userData.user.id);
+              // Persist user & continue normal flow
+              setUser(userData.user);
+              // Ensure loading state resolves
+              setLoading(false);
+
+              // Trigger background profile load similar to normal path
+              fetchProfile(userData.user.id).catch(err => {
+                console.error('❌ Background profile fetch failed after provider-token user fetch:', err);
+              });
+            } else {
+              console.log('❌ AUTH: No user returned from getUser despite provider token');
+              setUser(null);
+              setLoading(false);
+            }
+          } catch (fetchErr) {
+            console.error('❌ AUTH: Exception during getUser():', fetchErr);
+            setUser(null);
+            setLoading(false);
+          }
         } else {
           console.log('❌ No user in session');
           setUser(null);
