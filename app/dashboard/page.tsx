@@ -440,7 +440,8 @@ export default function DashboardPage() {
   const confirmDeleteRepo = async () => {
     if (!repoToDelete) return;
 
-    if (!effectiveProfile.github_token) {
+    const token = await getEffectiveToken();
+    if (!token) {
       addChatMessage({
         id: Date.now().toString(),
         role: "assistant",
@@ -458,7 +459,7 @@ export default function DashboardPage() {
       const response = await fetch(`https://api.github.com/repos/${repoToDelete.full_name}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `token ${effectiveProfile.github_token}`,
+          'Authorization': `token ${token}`,
           'Accept': 'application/vnd.github.v3+json',
           'User-Agent': 'GitHub-Tailored-AI/1.0',
           'Content-Type': 'application/json',
@@ -516,6 +517,18 @@ Super quick and easy! 🚀`,
     const reposToDelete = repositories.filter(repo => selectedRepos.has(repo.id));
     console.log(`🗑️ BULK DELETE: ${reposToDelete.length} repositories`);
 
+    // Retrieve token once for bulk operation
+    const token = await getEffectiveToken();
+    if (!token) {
+      addChatMessage({
+        id: Date.now().toString(),
+        role: "assistant",
+        content: `🔑 To delete repositories, please set up your GitHub Personal Access Token first. Click the 'Setup GitHub Token' button above.`,
+      });
+      showTokenPopup();
+      return;
+    }
+
     // Show confirmation for bulk delete
     const confirmMessage = `Are you sure you want to delete ${reposToDelete.length} repositories? This action cannot be undone.`;
     if (window.confirm(confirmMessage)) {
@@ -534,7 +547,7 @@ Super quick and easy! 🚀`,
             const response = await fetch(`https://api.github.com/repos/${repo.full_name}`, {
               method: 'DELETE',
               headers: {
-                'Authorization': `token ${effectiveProfile.github_token}`,
+                'Authorization': `token ${token}`,
                 'Accept': 'application/vnd.github.v3+json',
                 'User-Agent': 'GitHub-Tailored-AI/1.0',
                 'Content-Type': 'application/json',
@@ -576,8 +589,8 @@ ${successCount > 0 ? 'Your portfolio is now cleaner and more professional! 🚀'
         setIsDeleteMode(false);
 
         // Force refresh repositories
-        if (effectiveProfile.github_token) {
-          await repositoryManager.fetchRepositories(effectiveProfile.github_token, true);
+        if (token) {
+          await repositoryManager.fetchRepositories(token, true);
         }
 
       } catch (error) {
