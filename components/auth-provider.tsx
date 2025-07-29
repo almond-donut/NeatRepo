@@ -561,6 +561,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         // 🔑 CRITICAL: Capture provider token immediately after OAuth redirect
         let oauthProfileUpdated = false; // Track if we've updated profile via OAuth
+        // 🆕 Handle case: provider_token present without full user object (happens on fresh tab)
+        if (session?.provider_token && !session?.user) {
+          console.log('🧐 AUTH: provider_token present but no user in INITIAL/LOGIN event – fetching user');
+          try {
+            setAwaitingUserFetch(true);
+            const { data: userResp, error: userErr } = await supabase.auth.getUser();
+            if (userErr) {
+              console.error('❌ AUTH: getUser failed inside auth state change:', userErr);
+            }
+            if (userResp?.user) {
+              // Mutate session.user so downstream logic proceeds consistently
+              // @ts-ignore
+              session.user = userResp.user;
+              console.log('✅ AUTH: Fetched user via getUser during auth change');
+            } else {
+              console.warn('⚠️ AUTH: getUser returned null during auth change');
+            }
+          } finally {
+            setAwaitingUserFetch(false);
+          }
+        }
+
         if (session && session.provider_token) {
           console.log('🎯 AUTH: Provider token detected in session!', {
             hasProviderToken: !!session.provider_token,
