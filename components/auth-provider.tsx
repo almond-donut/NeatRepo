@@ -864,16 +864,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     window.location.href = signoutUrl.toString();
   };
 
+// 🔐 SAVE GITHUB PAT (handles first-time users too)
 const updateToken = async (token: string) => {
   if (!user) return;
   setIsSubmitting(true);
   try {
-    const { error } = await supabase
-      .from('user_profiles')
-      .upsert(
-        { id: user.id, github_pat_token: token, updated_at: new Date().toISOString() },
-        { onConflict: 'id' }
-      );
+    // Build a safe payload for upsert. For first-time users we need to satisfy NOT NULL constraints (e.g. github_username)
+const basePayload: any = {
+  id: user.id,
+  github_pat_token: token,
+  updated_at: new Date().toISOString(),
+};
+
+// If the profile hasn’t been created yet (or is missing critical fields) include sensible fallbacks
+if (!profile) {
+  const fallbackUsername =
+    user.user_metadata?.user_name ||
+    user.user_metadata?.preferred_username ||
+    user.email?.split("@")[0] ||
+    "user";
+
+  basePayload.github_username = fallbackUsername;
+  // GitHub user ID might be unavailable for non-GitHub auth – use null which is accepted by our DB
+  basePayload.github_user_id = user.user_metadata?.user_id || null;
+  basePayload.display_name =
+    user.user_metadata?.full_name || user.user_metadata?.name || fallbackUsername;
+}
+
+const { error } = await supabase.from("user_profiles").upsert(basePayload, {
+  onConflict: "id",
+});
 
     if (error) throw error;
 
