@@ -44,11 +44,11 @@ export default function ProfilePage() {
     try {
       const { error } = await supabase
         .from('user_profiles')
-        .update({ 
+        .upsert({ 
+          id: user.id,
           github_token: token, 
           updated_at: new Date().toISOString() 
-        })
-        .eq('id', user.id);
+        }, { onConflict: 'id' });
 
       if (error) throw error;
       

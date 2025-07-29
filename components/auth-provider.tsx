@@ -839,39 +839,39 @@ github_token: null,
     window.location.href = signoutUrl.toString();
   };
 
-  const handleTokenSubmit = async (token: string) => {
-    if (!user) return;
-    setIsSubmitting(true);
-    try {
-      const { error } = await supabase
-        .from('user_profiles')
-        .update({ github_token: token, updated_at: new Date().toISOString() })
-        .eq('id', user.id);
+const handleTokenSubmit = async (token: string) => {
+  if (!user) return;
+  setIsSubmitting(true);
+  try {
+    const { error } = await supabase
+      .from('user_profiles')
+      .upsert(
+        { id: user.id, github_token: token, updated_at: new Date().toISOString() },
+        { onConflict: 'id' }
+      );
 
-      if (error) throw error;
+    if (error) throw error;
 
-      setProfile(prev => (prev ? { ...prev, github_token: token } : null));
-      setShowTokenPopupState(false);
+    setProfile(prev => (prev ? { ...prev, github_token: token } : null));
+    setShowTokenPopupState(false);
 
-      // 🔒 SECURITY: Store token with user-specific key
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(`github_token_${user.id}`, token);
-        localStorage.removeItem(`token_popup_dismissed_${user.id}`);
-        localStorage.removeItem(`token_popup_skipped_permanently_${user.id}`);
-
-        // Remove old global token key to prevent confusion
-        localStorage.removeItem('github_token');
-
-        console.log("🔑 AUTH: Token stored with user-specific key");
-      }
-    } catch (error) {
-      console.error('Error saving GitHub token:', error);
-      // Show error to user but don't close popup
-      alert('Failed to save token. Please try again.');
-    } finally {
-      setIsSubmitting(false);
+    // 🔒 SECURITY: Store token with user-specific key
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`github_token_${user.id}`, token);
+      localStorage.removeItem(`token_popup_dismissed_${user.id}`);
+      localStorage.removeItem(`token_popup_skipped_permanently_${user.id}`);
+      // Remove old global token key to prevent confusion
+      localStorage.removeItem('github_token');
+      console.log('🔑 AUTH: Token stored with user-specific key');
     }
-  };
+  } catch (error) {
+    console.error('Error saving GitHub token:', error);
+    // Show error to user but don't close popup
+    alert('Failed to save token. Please try again.');
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   const handleSkipToken = () => {
     if (user && typeof window !== 'undefined') {
