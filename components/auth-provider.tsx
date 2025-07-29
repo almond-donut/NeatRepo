@@ -18,6 +18,8 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   showTokenPopup: () => void;
   getEffectiveToken: () => Promise<string | null>;
+  updateToken: (token: string) => Promise<void>;
+  deleteToken: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -839,7 +841,7 @@ github_token: null,
     window.location.href = signoutUrl.toString();
   };
 
-const handleTokenSubmit = async (token: string) => {
+const updateToken = async (token: string) => {
   if (!user) return;
   setIsSubmitting(true);
   try {
@@ -873,13 +875,38 @@ const handleTokenSubmit = async (token: string) => {
   }
 };
 
-  const handleSkipToken = () => {
+  const deleteToken = async () => {
+    if (!user) return;
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({ github_token: null, updated_at: new Date().toISOString() })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      setProfile(prev => (prev ? { ...prev, github_token: null } : null));
+      // Clear token from storage
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(`github_token_${user.id}`);
+        console.log('🔑 AUTH: Token removed from local storage');
+      }
+    } catch (error) {
+      console.error('Error deleting GitHub token:', error);
+      alert('Failed to delete token. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+   const handleSkipToken = () => {
     if (user && typeof window !== 'undefined') {
       // Mark that user permanently skipped token setup - don't show popup again
       localStorage.setItem(`token_popup_skipped_permanently_${user.id}`, 'true');
     }
     setShowTokenPopupState(false);
-  };
+};
 
   const handleTokenPopupClose = () => {
     if (user && typeof window !== 'undefined') {
@@ -964,13 +991,15 @@ const handleTokenSubmit = async (token: string) => {
     showTokenPopup: () => setShowTokenPopupState(true),
     hasToken: !!profile?.github_token,
     getEffectiveToken,
+    updateToken,
+    deleteToken,
   };
 
   return (
     <AuthContext.Provider value={value}>
       {showTokenPopupState && (
         <GitHubTokenPopup
-          onTokenSubmit={handleTokenSubmit}
+          onTokenSubmit={updateToken}
           isSubmitting={isSubmitting}
           onClose={handleTokenPopupClose}
           onSkip={handleSkipToken}

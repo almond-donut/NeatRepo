@@ -29,11 +29,11 @@ import {
   AlertTriangle,
   Key
 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, updateToken, deleteToken } = useAuth();
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateMessage, setUpdateMessage] = useState('');
 
@@ -42,15 +42,7 @@ export default function ProfilePage() {
     
     setIsUpdating(true);
     try {
-      const { error } = await supabase
-        .from('user_profiles')
-        .upsert({ 
-          id: user.id,
-          github_token: token, 
-          updated_at: new Date().toISOString() 
-        }, { onConflict: 'id' });
-
-      if (error) throw error;
+      await updateToken(token);
       
       setUpdateMessage('✅ GitHub token updated successfully!');
       setTimeout(() => setUpdateMessage(''), 3000);
@@ -68,15 +60,7 @@ export default function ProfilePage() {
     
     setIsUpdating(true);
     try {
-      const { error } = await supabase
-        .from('user_profiles')
-        .update({ 
-          github_token: null, 
-          updated_at: new Date().toISOString() 
-        })
-        .eq('id', user.id);
-
-      if (error) throw error;
+      await deleteToken();
       
       setUpdateMessage('✅ GitHub token deleted successfully!');
       setTimeout(() => setUpdateMessage(''), 3000);
