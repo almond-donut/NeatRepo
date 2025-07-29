@@ -1250,7 +1250,7 @@ ${successCount > 0 ? 'Your portfolio is now cleaner and more professional! 🚀'
     }
   }, []); // Run only once on component mount
 
-  // 🚨 CRITICAL FIX: Improved OAuth session detection and initialization
+  // 🚨 CRITICAL FIX: Simplified OAuth session detection and initialization
   useEffect(() => {
     const handleAuthInitialization = async () => {
       // Skip if still loading or no user
@@ -1270,9 +1270,8 @@ ${successCount > 0 ? 'Your portfolio is now cleaner and more professional! 🚀'
         setIsProcessingOAuthCallback(true);
 
         try {
-          // Wait a moment for session to fully establish
-          await new Promise(resolve => setTimeout(resolve, 1000));
-
+          // REMOVED: Artificial 1-second delay that causes race conditions
+          // Immediately attempt to get token and fetch repositories
           const effectiveToken = await getEffectiveToken();
           if (effectiveToken) {
             console.log('🚀 OAUTH INIT: Fetching repositories with OAuth token');
@@ -2076,38 +2075,25 @@ These repositories best demonstrate the skills recruiters look for in ${jobTitle
   //   );
   // }
 
-  // 🔧 CRITICAL FIX: Add timeout to prevent infinite "Getting ready" state
+  // 🔧 SIMPLIFIED: Single timeout to prevent infinite "Getting ready" state
   useEffect(() => {
     if (loading || isProcessingOAuthCallback) {
-      // Set a maximum timeout to prevent infinite loading
+      // Set a reasonable timeout to prevent infinite loading
       const loadingTimeout = setTimeout(() => {
-        console.log('⚠️ LOADING TIMEOUT: Forcing loading to false after 10 seconds');
+        console.log('⚠️ LOADING TIMEOUT: Forcing OAuth callback processing to complete after 8 seconds');
         setIsProcessingOAuthCallback(false);
         // Don't set loading false here as it's managed by auth provider
-      }, 10000); // 10 second timeout
+      }, 8000); // 8 second timeout - reduced from 10s for faster recovery
 
       return () => clearTimeout(loadingTimeout);
     }
   }, [loading, isProcessingOAuthCallback]);
 
-  // 🔧 EMERGENCY RECOVERY: Force dashboard render if stuck too long
-  useEffect(() => {
-    const emergencyTimeout = setTimeout(() => {
-      if (loading && user) {
-        console.log('🚨 EMERGENCY: User exists but loading stuck - this may indicate auth provider issues');
-        console.log('🚨 EMERGENCY: Consider refreshing page or clearing browser cache');
-      }
-    }, 15000); // 15 second emergency timeout
-
-    return () => clearTimeout(emergencyTimeout);
-  }, [loading, user]);
-
-  // 🚀 INSTANT LOADING: Skip loading screen for better UX
-  // Show dashboard immediately and load data progressively
+  // 🚀 IMPROVED LOADING: Better user feedback and faster resolution
   if (loading || isProcessingOAuthCallback) {
     // Show specific loading message for OAuth callback processing
     const loadingMessage = isProcessingOAuthCallback
-      ? "Completing authentication..."
+      ? "Loading your repositories..."
       : "Getting ready...";
 
     return (
@@ -2117,7 +2103,7 @@ These repositories best demonstrate the skills recruiters look for in ${jobTitle
           <p className="text-muted-foreground">{loadingMessage}</p>
           {isProcessingOAuthCallback && (
             <p className="text-xs text-muted-foreground mt-2">
-              Please wait while we set up your account...
+              Fetching your GitHub repositories...
             </p>
           )}
           <p className="text-xs text-muted-foreground mt-4">
