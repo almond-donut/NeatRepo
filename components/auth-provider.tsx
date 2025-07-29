@@ -48,9 +48,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const effectiveTimeout = awaitingUserFetch ? 15000 : 8000; // 15s if awaiting user fetch
 
-    const timer = setTimeout(() => {
+    const timer = setTimeout(async () => {
       if (loading) {
-        console.warn('⚠️ AUTH: Fallback timeout reached, forcing loading=false');
+        console.warn('⚠️ AUTH: Fallback timeout reached – attempting final refreshSession');
+        try {
+          const { data: refData, error: refErr } = await supabase.auth.refreshSession();
+          if (refErr) {
+            console.error('❌ AUTH: refreshSession error in fallback:', refErr);
+          }
+          if (refData?.session?.user) {
+            console.log('✅ AUTH: User recovered during fallback refresh:', refData.session.user.id);
+            setUser(refData.session.user);
+          } else {
+            console.warn('⚠️ AUTH: Still no user after fallback refresh');
+          }
+        } catch (fallbackEx) {
+          console.error('❌ AUTH: Exception during fallback refreshSession:', fallbackEx);
+        }
         setLoading(false);
       }
     }, effectiveTimeout);
