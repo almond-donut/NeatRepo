@@ -443,15 +443,19 @@ github_token: null,
             // Check if this is a GitHub OAuth user
             const isGitHubOAuth = session.user.app_metadata?.provider === 'github';
             
+            // Also check for PAT cached in localStorage
+            const cachedPatToken = typeof window !== 'undefined' ? localStorage.getItem(`github_token_${session.user.id}`) : null;
+
             console.log('🔍 INITIAL PAT POPUP DEBUG:', {
               isGitHubOAuth,
-              hasToken: !!fetchedProfile?.github_token,
+              profileToken: !!fetchedProfile?.github_token,
+              cachedPatToken: !!cachedPatToken,
               userId: session.user.id,
               profile: fetchedProfile
             });
 
             // Show PAT popup for GitHub OAuth users who don't have a token
-            if (isGitHubOAuth && !fetchedProfile?.github_token && typeof window !== 'undefined') {
+            if (isGitHubOAuth && !fetchedProfile?.github_token && !cachedPatToken && typeof window !== 'undefined') {
               const permanentlySkipped = localStorage.getItem(`token_popup_skipped_permanently_${session.user.id}`);
               
               console.log('🔍 INITIAL PAT POPUP STORAGE DEBUG:', {
@@ -743,20 +747,24 @@ github_token: null,
             }
 
             // Simplified PAT popup logic for GitHub OAuth users
+            // Also check for PAT cached locally
+            const cachedPatToken = typeof window !== 'undefined' ? localStorage.getItem(`github_token_${session.user.id}`) : null;
+
             console.log('🔍 PAT POPUP DEBUG:', {
               isGitHubOAuth,
-              hasToken: !!fetchedProfile?.github_token,
+              profileToken: !!fetchedProfile?.github_token,
+              cachedPatToken: !!cachedPatToken,
               userId: session.user.id,
               profile: fetchedProfile,
               oauthProfileUpdated
             });
 
             // 🚨 FIXED: Don't show PAT popup if user already has token
-            if (isGitHubOAuth && fetchedProfile?.github_token) {
+            if (isGitHubOAuth && (fetchedProfile?.github_token || cachedPatToken)) {
               console.log('✅ PAT POPUP: User has token, marking as permanently skipped');
               // Mark as permanently skipped since user already has token
               localStorage.setItem(`token_popup_skipped_permanently_${session.user.id}`, 'true');
-            } else if (isGitHubOAuth && !fetchedProfile?.github_token) {
+            } else if (isGitHubOAuth && !fetchedProfile?.github_token && !cachedPatToken) {
               const permanentlySkipped = localStorage.getItem(`token_popup_skipped_permanently_${session.user.id}`);
 
               console.log('🔍 PAT POPUP STORAGE DEBUG:', {
