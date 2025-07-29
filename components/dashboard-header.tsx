@@ -6,16 +6,15 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 
 import { useAuth } from "@/components/auth-provider"
-import { supabase } from "@/lib/supabase"
 import { useRouter } from "next/navigation"
 
 export default function DashboardHeader() {
-  const { user, profile, loading } = useAuth()
+  const { user, profile, loading, signOut } = useAuth()
   const router = useRouter()
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut()
-    window.location.href = '/'
+    await signOut();
+    // Redirect is handled within the AuthProvider's signOut implementation
   }
 
   const handleSignIn = () => {
