@@ -619,14 +619,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         if (session && session.provider_token) {
-          console.log('🎯 AUTH: Provider token detected in session!', {
-            hasProviderToken: !!session.provider_token,
-            tokenLength: session.provider_token.length,
-            provider: session.user?.app_metadata?.provider
-          });
+           console.log('🎯 AUTH: Provider token detected in session!', {
+             hasProviderToken: !!session.provider_token,
+             tokenLength: session.provider_token.length,
+             provider: session.user?.app_metadata?.provider
+           });
 
-          // Store provider token for this user
-          if (session.user && typeof window !== 'undefined') {
+           // Store provider token for this user
+           if (session.user && typeof window !== 'undefined') {
+             // 🚑 CRITICAL: Set user and clear loading IMMEDIATELY when we have a valid session
+             setUser(session.user);
+             setLoading(false);
+             console.log('✅ AUTH: User and loading state set immediately for provider token session');
             localStorage.setItem(`oauth_provider_token_${session.user.id}`, session.provider_token);
             console.log('✅ AUTH: Provider token stored for user:', session.user.id);
 
@@ -717,13 +721,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         }
 
-        setUser(session?.user ?? null);
-
-        // 🔧 CRITICAL FIX: Set loading false after user state is updated
-        setTimeout(() => {
+        // 🚑 User and loading state already set above if provider token exists
+        // For non-provider-token sessions, set user and loading here
+        if (!session?.provider_token) {
+          setUser(session?.user ?? null);
           setLoading(false);
-          console.log("✅ AUTH: Loading set to false after user state update in auth change");
-        }, 0);
+          console.log('✅ AUTH: User and loading set for non-provider session');
+        }
 
         if (event === 'SIGNED_IN' && session?.user) {
           console.log("✅ AUTH: User signed in - UI ready immediately");
