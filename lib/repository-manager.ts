@@ -115,17 +115,43 @@ class RepositoryManager {
       forceRefresh
     });
 
-    // Validate token before proceeding
+    // Validate token before proceeding – if missing, try public-repo fallback instead of hard-erroring
     if (!token || token.trim() === '') {
-      console.error('❌ SINGLETON: No valid token provided for repository fetch');
+      console.warn(' SINGLETON: No GitHub token – attempting public-repo fallback');
+
+      // If we have the GitHub username cached we can still show public repos (read-only)
+      if (typeof window !== 'undefined') {
+        const cachedUsername =
+          (userId ? localStorage.getItem(`github_username_${userId}`) : null) ||
+          localStorage.getItem('github_username');
+
+        if (cachedUsername) {
+          try {
+            const res = await fetch(`https://api.github.com/users/${cachedUsername}/repos?per_page=100`);
+            if (res.ok) {
+              this.repositories = await res.json();
+              console.log(` SINGLETON: Loaded public repos for ${cachedUsername} (count: ${this.repositories.length})`);
+              this.saveToCache(userId);
+              this.notifyListeners();
+              return; // Success – no token required
+            }
+            console.error(' SINGLETON: Public-repo fetch failed', res.status);
+          } catch (publicErr) {
+            console.error(' SINGLETON: Exception during public-repo fetch', publicErr);
+          }
+        }
+      }
+
+      // Still no data – propagate original error
       throw new Error('No GitHub token available for repository access');
     }
 
-    // 🚀 IMPROVED UX: Always fetch fresh data unless explicitly using cache
+    // IMPROVED UX: Always fetch fresh data unless explicitly using cache
     // Only skip if we have recent data (less than 5 minutes old) and not forced
     if (!forceRefresh && this.repositories.length > 0) {
       const timeSinceLastFetch = Date.now() - this.lastFetch;
       if (timeSinceLastFetch < 300000) { // 5 minutes
+        console.log(' SINGLETON: Using recent data, INSTANT LOAD!');
         console.log('⚡ SINGLETON: Using recent data, INSTANT LOAD!');
         return;
       } else {

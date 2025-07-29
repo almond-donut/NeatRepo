@@ -190,6 +190,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           } else {
             console.log('✅ Profile created successfully');
             setProfile(createdProfile);
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('github_username', createdProfile.github_username);
+              localStorage.setItem(`github_username_${userId}`, createdProfile.github_username);
+            }
             return createdProfile;
           }
         }
@@ -223,6 +227,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           avatar_url: data.avatar_url
         });
         setProfile(data);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('github_username', data.github_username);
+          localStorage.setItem(`github_username_${userId}`, data.github_username);
+        }
         return data;
       }
     } catch (err) {
