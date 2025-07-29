@@ -24,7 +24,8 @@ export default function GitHubAuth({ onClose }: GitHubAuthProps) {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
-          redirectTo: `${window.location.origin}/dashboard`,
+          // Use custom OAuth callback route to handle session exchange server-side
+          redirectTo: `${window.location.origin}/api/auth/callback?next=/dashboard`,
           scopes: 'repo read:user',
           queryParams: {
             access_type: 'offline',
