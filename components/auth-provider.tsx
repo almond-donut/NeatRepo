@@ -228,9 +228,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       try {
         // Load user-specific cached data only
-        const userSpecificToken = localStorage.getItem(`github_token_${user.id}`);
+        let userSpecificToken = localStorage.getItem(`github_token_${user.id}`);
 
-        if (userSpecificToken && profile?.github_token !== userSpecificToken) {
+        // 🧹 MIGRATION: remove leftover OAuth token accidentally cached as PAT
+        if (userSpecificToken?.startsWith('gho_')) {
+          console.log('🧹 AUTH: Removing legacy cached OAuth token stored under github_token key');
+          localStorage.removeItem(`github_token_${user.id}`);
+          userSpecificToken = null;
+        }
+
+        if (userSpecificToken && !userSpecificToken.startsWith('gho_') && profile?.github_token !== userSpecificToken) {
           console.log('✅ AUTH: Found user-specific cached token');
           // Update profile with cached token if it matches this user
           setProfile(prev => prev ? { ...prev, github_token: userSpecificToken } : null);
