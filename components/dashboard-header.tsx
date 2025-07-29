@@ -1,7 +1,8 @@
 "use client"
 
-import { Github, User, LogOut, Settings } from "lucide-react"
+import { User, LogOut, Settings } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { useTheme } from "next-themes"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 
@@ -11,6 +12,7 @@ import { useRouter } from "next/navigation"
 export default function DashboardHeader() {
   const { user, profile, loading, signOut } = useAuth()
   const router = useRouter()
+  const { theme } = useTheme()
 
   const handleSignOut = async () => {
     await signOut();
@@ -31,7 +33,11 @@ export default function DashboardHeader() {
         <div className="flex items-center justify-between">
           {/* Logo & Brand */}
           <div className="flex items-center space-x-3">
-            <Github className="h-8 w-8 text-primary" />
+            <img 
+              src={theme === 'dark' ? '/logo-dark.png' : '/logo-light.png'}
+              alt="NeatRepo Logo"
+              className="h-8 w-8"
+            />
             <div className="flex flex-col">
               <span className="text-xl font-bold">NeatRepo</span>
               <div className="flex items-center space-x-2">
