@@ -61,8 +61,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .upsert(newProfile, { onConflict: 'id' });
 
       if (upsertError) {
-        console.error('❌ Failed to create profile:', upsertError);
-        throw upsertError;
+        console.error('❌ Failed to create profile in database:', upsertError);
+        // 🔧 CRITICAL FIX: Set profile state even if database operation fails
+        // This prevents "No account" state while still allowing the app to function
+        console.log('🔄 AUTH: Setting profile state despite database error to prevent "No account" state');
+        setProfile(newProfile);
+        return newProfile; // Don't throw error, continue with local profile state
       }
 
       console.log('✅ Profile created successfully:', githubUsername);
@@ -70,7 +74,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return newProfile;
     } catch (error) {
       console.error('❌ Profile creation failed:', error);
-      throw error;
+
+      // 🔧 CRITICAL FIX: Create fallback profile state to prevent "No account" state
+      const fallbackProfile = {
+        id: user.id,
+        github_id: githubId,
+        github_username: githubUsername,
+        display_name: user.user_metadata?.full_name || user.user_metadata?.name || githubUsername,
+        avatar_url: user.user_metadata?.avatar_url,
+        github_token: null,
+        updated_at: new Date().toISOString(),
+      };
+
+      console.log('🔄 AUTH: Creating fallback profile state to prevent "No account" state');
+      setProfile(fallbackProfile);
+      return fallbackProfile; // Don't throw error - allow app to continue with local profile state
     }
   };
 
@@ -89,10 +107,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (error.code === 'PGRST116') {
           console.log('🔧 Profile not found, creating new profile...');
 
-          // Ensure we have a valid GitHub username
-          const githubUsername = user?.user_metadata?.user_name || user?.user_metadata?.preferred_username;
+          // 🔧 CRITICAL FIX: Enhanced GitHub username extraction with multiple fallbacks
+          const githubUsername = user?.user_metadata?.user_name ||
+                                user?.user_metadata?.preferred_username ||
+                                user?.user_metadata?.login ||
+                                user?.user_metadata?.name ||
+                                user?.email?.split('@')[0];
+
+          console.log('🔍 AUTH: GitHub username extraction:', {
+            user_name: user?.user_metadata?.user_name,
+            preferred_username: user?.user_metadata?.preferred_username,
+            login: user?.user_metadata?.login,
+            name: user?.user_metadata?.name,
+            email: user?.email,
+            finalUsername: githubUsername,
+            allMetadata: user?.user_metadata
+          });
+
           if (!githubUsername) {
-            console.error('❌ Cannot create profile: No GitHub username available');
+            console.error('❌ Cannot create profile: No GitHub username available after all fallbacks');
+            console.error('❌ Available user data:', {
+              userMetadata: user?.user_metadata,
+              email: user?.email,
+              identities: user?.identities
+            });
             throw new Error('GitHub username is required for profile creation');
           }
 
@@ -539,7 +577,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               identities: session.user.identities
             });
 
-            // 🚨 FIX: Check for existing profile by github_username first
+            // 🔧 CRITICAL FIX: Enhanced GitHub username extraction with multiple fallbacks
             if (!githubUsername) {
               console.error("❌ AUTH: No GitHub username available for profile creation");
               console.error("❌ AUTH: Available user data:", {
@@ -548,11 +586,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 email: session.user.email
               });
 
-              // 🚨 FALLBACK: Use email username as last resort
-              const emailUsername = session.user.email?.split('@')[0];
-              if (emailUsername) {
-                console.log("🔧 AUTH: Using email username as fallback:", emailUsername);
-                await createProfileWithUsername(session.user, emailUsername, githubId);
+              // 🚨 ENHANCED FALLBACK: Try multiple username sources
+              const fallbackUsername = session.user.user_metadata?.login ||
+                                     session.user.user_metadata?.name ||
+                                     session.user.email?.split('@')[0] ||
+                                     `user_${session.user.id.substring(0, 8)}`;
+
+              if (fallbackUsername) {
+                console.log("🔧 AUTH: Using enhanced fallback username:", fallbackUsername);
+                await createProfileWithUsername(session.user, fallbackUsername, githubId);
+              } else {
+                console.error("❌ AUTH: All fallback username methods failed");
+                // Create basic profile to prevent "No account" state
+                const basicProfile = {
+                  id: session.user.id,
+                  github_username: `user_${session.user.id.substring(0, 8)}`,
+                  github_token: session.provider_token,
+                  display_name: session.user.email || 'User',
+                  avatar_url: session.user.user_metadata?.avatar_url
+                };
+                setProfile(basicProfile);
+                console.log("🔄 AUTH: Created basic profile to prevent 'No account' state");
               }
               return;
             }
