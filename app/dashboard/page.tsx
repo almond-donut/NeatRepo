@@ -2371,8 +2371,8 @@ These repositories best demonstrate the skills recruiters look for in ${jobTitle
                   variant={isDeleteMode ? "destructive" : "outline"}
                   size="sm"
                   onClick={!currentProfile?.github_pat_token ? undefined : toggleDeleteMode}
-                  
-                  className={`flex items-center gap-2 ${!currentProfile?.github_pat_token ? 'cursor-default hover:cursor-not-allowed' : ''}`}
+                  disabled={!currentProfile?.github_pat_token}
+                  className={`flex items-center gap-2 ${!currentProfile?.github_pat_token ? 'hover:cursor-not-allowed' : ''}`}
                   
                   title={
                     !currentProfile?.github_pat_token
