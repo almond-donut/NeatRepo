@@ -79,7 +79,7 @@ export default function ProfilePage() {
   };
 
   // Show loading while auth or profile is initializing
-  if (loading || (user && !profile)) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
