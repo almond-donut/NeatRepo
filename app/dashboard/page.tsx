@@ -642,6 +642,26 @@ ${successCount > 0 ? 'Your portfolio is now cleaner and more professional! 🚀'
   const [isTypingWelcome, setIsTypingWelcome] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState("");
   const [isCriticMode, setIsCriticMode] = useState(false);
+  // 🚀 NEW: Chat reset handler to exit interview mode and clear messages
+  const handleResetChat = () => {
+    if (window.confirm('Reset the chat and exit Interview mode?')) {
+      // Clear AI interview state stored in localStorage (user-specific when possible)
+      try {
+        const storageKey = user ? `ai_interview_state_${user.id}` : 'ai_interview_state';
+        localStorage.removeItem(storageKey);
+        console.log('🧹 Interview state cleared from localStorage:', storageKey);
+      } catch (err) {
+        console.error('❌ Failed clearing interview state:', err);
+      }
+
+      // Reset local UI state
+      setIsInterviewMode(false);
+      setInterviewProgress(0);
+      setChatMessages([]);
+      setGeneratedReadme(null);
+      console.log('♻️ Chat and interview state reset');
+    }
+  };
   const [isInitialized, setIsInitialized] = useState(false);
   const [storageInitialized, setStorageInitialized] = useState(false);
   const [isInterviewMode, setIsInterviewMode] = useState(false);
@@ -2937,6 +2957,17 @@ These repositories best demonstrate the skills recruiters look for in ${jobTitle
                       className={`text-xs ${isCriticMode ? 'text-red-400 bg-red-500/20' : 'text-gray-400'}`}
                     >
                       {isCriticMode ? '🔥' : '😊'} {isCriticMode ? 'Brutal' : 'Nice'}
+                    </Button>
+
+                    {/* NEW: Reset/Exit button */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleResetChat}
+                      className="text-xs text-yellow-400 bg-yellow-500/20 hover:bg-yellow-500/30"
+                      title="Reset chat & exit interview"
+                    >
+                      🔄 Reset
                     </Button>
 
                     {generatedReadme && (
