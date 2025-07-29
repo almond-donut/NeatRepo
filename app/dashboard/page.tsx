@@ -140,7 +140,7 @@ export default function DashboardPage() {
       const authenticatedUsername = currentUser.user_metadata.user_name;
 
       // Check if we need recovery (no profile for authenticated user)
-      // Note: github_token is optional - users can access dashboard without it
+      // Note: github_pat_token is optional - users can access dashboard without it
       const needsRecovery = !currentProfile;
 
       if (!needsRecovery) return;
@@ -158,7 +158,7 @@ export default function DashboardPage() {
             .eq('github_username', authenticatedUsername)
             .single();
 
-          if (existingProfile && existingProfile.github_token) {
+          if (existingProfile && existingProfile.github_pat_token) {
             // 🔧 AUTOMATIC RECOVERY: Handle both OAuth and non-OAuth users
             if (currentUser && existingProfile.id !== currentUser.id) {
               console.log('🔧 RECOVERY: Found existing profile with token, linking...', existingProfile);
@@ -187,14 +187,14 @@ export default function DashboardPage() {
                 console.log('✅ SECURE RECOVERY: Loading data for authenticated user:', user.id);
 
                 // Store token with user-specific key for AI Assistant access
-                localStorage.setItem(`github_token_${user.id}`, existingProfile.github_token);
+                localStorage.setItem(`github_pat_token_${user.id}`, existingProfile.github_pat_token);
 
                 // Remove old global key to prevent confusion
-                localStorage.removeItem('github_token');
+                localStorage.removeItem('github_pat_token');
 
                 // Fetch repositories with the user's token
                 setIsLoadingRepos(true);
-                await repositoryManager.fetchRepositories(existingProfile.github_token, true, user.id);
+                await repositoryManager.fetchRepositories(existingProfile.github_pat_token, true, user.id);
                 setError(null);
                 setIsLoadingRepos(false);
 
@@ -207,7 +207,7 @@ export default function DashboardPage() {
         } catch (error) {
           console.error('❌ RECOVERY: Profile recovery failed:', error);
         }
-      } else if (currentProfile?.github_token) {
+      } else if (currentProfile?.github_pat_token) {
         // If user has token, mark popup as permanently skipped
         console.log('✅ RECOVERY: User has token, marking popup as skipped');
         localStorage.setItem(`token_popup_skipped_permanently_${currentUser.id}`, 'true');
@@ -221,7 +221,7 @@ export default function DashboardPage() {
   const fallbackProfile = currentProfile || {
     id: currentUser?.id || 'unknown',
     github_username: currentUser?.user_metadata?.user_name || 'unknown-user',
-    github_token: '', // Token will be set through profile management or OAuth
+    github_pat_token: '', // Token will be set through profile management or OAuth
     display_name: currentUser?.user_metadata?.full_name || currentUser?.user_metadata?.user_name || 'User',
     avatar_url: currentUser?.user_metadata?.avatar_url || ''
   };
@@ -275,7 +275,7 @@ export default function DashboardPage() {
   // ➕ CREATE REPOSITORY FUNCTION
   const createRepository = async () => {
     if (!newRepoName.trim()) return;
-    if (!profile?.github_token) {
+    if (!profile?.github_pat_token) {
       addChatMessage({
         id: Date.now().toString(),
         role: "assistant",
@@ -290,7 +290,7 @@ export default function DashboardPage() {
       const response = await fetch('https://api.github.com/user/repos', {
         method: 'POST',
         headers: {
-          'Authorization': `token ${profile.github_token}`,
+          'Authorization': `token ${profile.github_pat_token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -372,7 +372,7 @@ export default function DashboardPage() {
   // ✏️ RENAME REPOSITORY FUNCTION
   const renameRepository = async () => {
     if (!repoToRename || !newRepoNameForRename.trim()) return;
-    if (!profile?.github_token) {
+    if (!profile?.github_pat_token) {
       addChatMessage({
         id: Date.now().toString(),
         role: "assistant",
@@ -387,7 +387,7 @@ export default function DashboardPage() {
       const response = await fetch(`https://api.github.com/repos/${repoToRename.full_name}`, {
         method: 'PATCH',
         headers: {
-          'Authorization': `token ${profile.github_token}`,
+          'Authorization': `token ${profile.github_pat_token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -731,7 +731,7 @@ ${successCount > 0 ? 'Your portfolio is now cleaner and more professional! 🚀'
 
         if (currentUser && hasRepos) {
           console.log('🔄 SINGLETON: Background sync starting...');
-          const token = localStorage.getItem('github_token');
+          const token = localStorage.getItem('github_pat_token');
           if (token) {
             repositoryManager.backgroundSync(token);
           }
@@ -1051,7 +1051,7 @@ ${successCount > 0 ? 'Your portfolio is now cleaner and more professional! 🚀'
       }
       
       // Force refresh all data
-      const token = currentProfile?.github_token;
+      const token = currentProfile?.github_pat_token;
       if (token) {
         setIsLoadingRepos(true);
         await repositoryManager.fetchRepositories(token, true);
@@ -1067,7 +1067,7 @@ ${successCount > 0 ? 'Your portfolio is now cleaner and more professional! 🚀'
     console.log('🔄 MEDIUM RECOVERY: Checking session and refreshing data...');
     
     try {
-      const token = currentProfile?.github_token;
+      const token = currentProfile?.github_pat_token;
       if (token) {
         // Background sync without showing loading
         await repositoryManager.backgroundSync(token);
@@ -1081,7 +1081,7 @@ ${successCount > 0 ? 'Your portfolio is now cleaner and more professional! 🚀'
     console.log('🔄 SHORT RECOVERY: Light refresh...');
     
     try {
-      const token = currentProfile?.github_token;
+      const token = currentProfile?.github_pat_token;
       if (token) {
         await repositoryManager.backgroundSync(token);
       }
@@ -1093,7 +1093,7 @@ ${successCount > 0 ? 'Your portfolio is now cleaner and more professional! 🚀'
   const checkSystemHealth = async () => {
     try {
       // Test GitHub API connectivity
-      const token = currentProfile?.github_token;
+      const token = currentProfile?.github_pat_token;
       if (token) {
         const response = await fetch("https://api.github.com/user", {
           headers: { Authorization: `token ${token}` },
@@ -1154,9 +1154,9 @@ ${successCount > 0 ? 'Your portfolio is now cleaner and more professional! 🚀'
     const handlePopState = (event: PopStateEvent) => {
       console.log('🔄 BROWSER: Back/Forward navigation detected');
       // Refresh data if user navigates back/forward
-      if (currentProfile?.github_token) {
+      if (currentProfile?.github_pat_token) {
         setIsLoadingRepos(true);
-        repositoryManager.fetchRepositories(currentProfile.github_token, false)
+        repositoryManager.fetchRepositories(currentProfile.github_pat_token, false)
           .then(() => setIsLoadingRepos(false))
           .catch(() => setIsLoadingRepos(false));
       }
@@ -1164,10 +1164,10 @@ ${successCount > 0 ? 'Your portfolio is now cleaner and more professional! 🚀'
 
     // Handle page visibility change (tab switching, minimize/restore)
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && currentProfile?.github_token) {
+      if (document.visibilityState === 'visible' && currentProfile?.github_pat_token) {
         console.log('🔄 VISIBILITY: Page became visible, checking for updates');
         // Soft refresh when user returns to tab
-        repositoryManager.fetchRepositories(currentProfile.github_token, false);
+        repositoryManager.fetchRepositories(currentProfile.github_pat_token, false);
       }
     };
 
@@ -1178,7 +1178,7 @@ ${successCount > 0 ? 'Your portfolio is now cleaner and more professional! 🚀'
       window.removeEventListener('popstate', handlePopState);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [currentProfile?.github_token]); // Depend on token to re-setup listeners
+  }, [currentProfile?.github_pat_token]); // Depend on token to re-setup listeners
 
   // 🔄 SYNC INTERVIEW STATE FROM LOCALSTORAGE ON LOAD
   useEffect(() => {
@@ -1326,7 +1326,7 @@ ${successCount > 0 ? 'Your portfolio is now cleaner and more professional! 🚀'
         // Regular initialization for non-OAuth users
         console.log('🔧 REGULAR INIT: Checking for cached token for user:', user.id);
 
-        const cachedToken = localStorage.getItem(`github_token_${user.id}`);
+        const cachedToken = localStorage.getItem(`github_pat_token_${user.id}`);
         if (cachedToken && !hasRepositories) {
           console.log('🔧 REGULAR INIT: Found cached token, fetching repositories...');
           try {
@@ -1414,9 +1414,9 @@ ${successCount > 0 ? 'Your portfolio is now cleaner and more professional! 🚀'
 
         // Store token for background sync and AI Assistant with user-specific key
         if (typeof window !== 'undefined' && user) {
-          localStorage.setItem(`github_token_${user.id}`, effectiveToken);
+          localStorage.setItem(`github_pat_token_${user.id}`, effectiveToken);
           // Remove old global key
-          localStorage.removeItem('github_token');
+          localStorage.removeItem('github_pat_token');
         }
 
         // 🔧 Initialize AI Assistant with GitHub API (non-blocking)
@@ -1731,7 +1731,7 @@ What would you like to start with? 🚀`;
 
       // 🔧 FALLBACK: Check localStorage for PAT token (used during recovery)
       if (!effectiveToken && typeof window !== 'undefined') {
-        const localToken = localStorage.getItem('github_token');
+        const localToken = localStorage.getItem('github_pat_token');
         if (localToken) {
           effectiveToken = localToken;
           console.log('🔧 AI Assistant: Using PAT token from localStorage (recovery mode)');
@@ -2180,7 +2180,7 @@ These repositories best demonstrate the skills recruiters look for in ${jobTitle
         <div className="grid grid-cols-3 gap-8">
           <div className="col-span-2">
             {/* GitHub Token Warning */}
-            {!currentProfile?.github_token && (
+            {!currentProfile?.github_pat_token && (
               <GitHubTokenWarning onSetupToken={showTokenPopup} />
             )}
 

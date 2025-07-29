@@ -7,7 +7,7 @@ import { supabase } from "@/lib/supabase";
 
 interface UserProfile {
   id: string;
-  github_token?: string;
+  github_pat_token?: string;
   [key: string]: any;
 }
 
@@ -65,7 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const newProfile = {
         id: user.id,
-        github_id: githubId,
+        github_user_id: githubId,
         github_username: githubUsername,
         display_name: user.user_metadata?.full_name || user.user_metadata?.name || githubUsername,
         avatar_url: user.user_metadata?.avatar_url,
@@ -95,7 +95,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // 🔧 CRITICAL FIX: Create fallback profile state to prevent "No account" state
       const fallbackProfile = {
         id: user.id,
-        github_id: githubId,
+        github_user_id: githubId,
         github_username: githubUsername,
         display_name: user.user_metadata?.full_name || user.user_metadata?.name || githubUsername,
         avatar_url: user.user_metadata?.avatar_url,
@@ -188,20 +188,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const basicProfile = {
           id: userId,
           github_username: user?.user_metadata?.user_name || 'user',
-          github_token: null // Only null if no existing profile
+          github_pat_token: null // Only null if no existing profile
         };
         setProfile(basicProfile);
         return basicProfile;
       } else {
         // Sanitize profile token: treat OAuth tokens (gho_ prefix) as no PAT
-        if (data && data.github_token?.startsWith('gho_')) {
-          data.github_token = null;
+        if (data && data.github_pat_token?.startsWith('gho_')) {
+          data.github_pat_token = null;
         }
         console.log("✅ AUTH: Profile fetched successfully:", {
           id: data.id,
           github_username: data.github_username,
-          hasToken: !!data.github_token,
-          tokenLength: data.github_token?.length,
+          hasToken: !!data.github_pat_token,
+          tokenLength: data.github_pat_token?.length,
           avatar_url: data.avatar_url
         });
         setProfile(data);
@@ -220,7 +220,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const basicProfile = {
         id: userId,
         github_username: user?.user_metadata?.user_name || 'user',
-        github_token: null
+        github_pat_token: null
       };
       setProfile(basicProfile);
       return basicProfile;
@@ -245,19 +245,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       try {
         // Load user-specific cached data only
-        let userSpecificToken = localStorage.getItem(`github_token_${user.id}`);
+        let userSpecificToken = localStorage.getItem(`github_pat_token_${user.id}`);
 
         // 🧹 MIGRATION: remove leftover OAuth token accidentally cached as PAT
         if (userSpecificToken?.startsWith('gho_')) {
-          console.log('🧹 AUTH: Removing legacy cached OAuth token stored under github_token key');
-          localStorage.removeItem(`github_token_${user.id}`);
+          console.log('🧹 AUTH: Removing legacy cached OAuth token stored under github_pat_token key');
+          localStorage.removeItem(`github_pat_token_${user.id}`);
           userSpecificToken = null;
         }
 
-        if (userSpecificToken && !userSpecificToken.startsWith('gho_') && profile?.github_token !== userSpecificToken) {
+        if (userSpecificToken && !userSpecificToken.startsWith('gho_') && profile?.github_pat_token !== userSpecificToken) {
           console.log('✅ AUTH: Found user-specific cached token');
           // Update profile with cached token if it matches this user
-          setProfile(prev => prev ? { ...prev, github_token: userSpecificToken } : null);
+          setProfile(prev => prev ? { ...prev, github_pat_token: userSpecificToken } : null);
         }
       } catch (error) {
         console.log('🔍 AUTH: No user-specific cached data found');
@@ -275,14 +275,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // 🔧 SIMPLIFIED: Detect and clear corrupted session state
         if (typeof window !== 'undefined') {
           const corruptionIndicators = [
-            localStorage.getItem('github_token') && !localStorage.getItem('github_repositories_time'),
+            localStorage.getItem('github_pat_token') && !localStorage.getItem('github_repositories_time'),
             localStorage.getItem('temp_recovery_profile')
           ];
 
           if (corruptionIndicators.some(indicator => indicator)) {
             console.log('🧹 CORRUPTION DETECTED: Clearing potentially corrupted cache data');
             // Clear specific corrupted keys but preserve valid user-specific data
-            localStorage.removeItem('github_token');
+            localStorage.removeItem('github_pat_token');
             localStorage.removeItem('temp_recovery_profile');
           }
         }
@@ -400,7 +400,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 const profileData = {
                   id: session.user.id,
                   github_username: githubUsername,
-                  github_id: githubId,
+                  github_user_id: githubId,
                   display_name: session.user.user_metadata?.full_name ||
                                session.user.user_metadata?.name ||
                                githubUsername,
@@ -444,18 +444,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const isGitHubOAuth = session.user.app_metadata?.provider === 'github';
             
             // Also check for PAT cached in localStorage
-            const cachedPatToken = typeof window !== 'undefined' ? localStorage.getItem(`github_token_${session.user.id}`) : null;
+            const cachedPatToken = typeof window !== 'undefined' ? localStorage.getItem(`github_pat_token_${session.user.id}`) : null;
 
             console.log('🔍 INITIAL PAT POPUP DEBUG:', {
               isGitHubOAuth,
-              profileToken: !!fetchedProfile?.github_token,
+              profileToken: !!fetchedProfile?.github_pat_token,
               cachedPatToken: !!cachedPatToken,
               userId: session.user.id,
               profile: fetchedProfile
             });
 
             // Show PAT popup for GitHub OAuth users who don't have a token
-            if (isGitHubOAuth && !fetchedProfile?.github_token && !cachedPatToken && typeof window !== 'undefined') {
+            if (isGitHubOAuth && !fetchedProfile?.github_pat_token && !cachedPatToken && typeof window !== 'undefined') {
               const permanentlySkipped = localStorage.getItem(`token_popup_skipped_permanently_${session.user.id}`);
               
               console.log('🔍 INITIAL PAT POPUP STORAGE DEBUG:', {
@@ -480,7 +480,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const basicProfile = {
               id: session.user.id,
               github_username: session.user.user_metadata?.user_name || 'user',
-              github_token: null // Always null to force popup
+              github_pat_token: null // Always null to force popup
             };
             setProfile(basicProfile);
 
@@ -548,7 +548,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               const profileData = {
                 id: session.user.id,
                 github_username: githubUsername,
-                github_id: githubId,
+                github_user_id: githubId,
                 display_name: session.user.user_metadata?.full_name ||
                              session.user.user_metadata?.name ||
                              githubUsername,
@@ -607,13 +607,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // Clear previous user's data
             localStorage.removeItem(`token_popup_dismissed_${user.id}`);
             localStorage.removeItem(`token_popup_skipped_permanently_${user.id}`);
-            localStorage.removeItem(`github_token_${user.id}`);
+            localStorage.removeItem(`github_pat_token_${user.id}`);
             localStorage.removeItem(`oauth_provider_token_${user.id}`);
             localStorage.removeItem(`github_repositories_${user.id}`);
             localStorage.removeItem(`github_repositories_time_${user.id}`);
 
             // Clear global keys that might contain mixed data
-            localStorage.removeItem('github_token');
+            localStorage.removeItem('github_pat_token');
             localStorage.removeItem('oauth_provider_token');
             localStorage.removeItem('github_repositories');
             localStorage.removeItem('github_repositories_time');
@@ -717,7 +717,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 .from('user_profiles')
                 .update({
                   id: session.user.id,
-                  github_id: githubId,
+                  github_user_id: githubId,
                   display_name: session.user.user_metadata?.full_name,
                   avatar_url: session.user.user_metadata?.avatar_url,
                   updated_at: new Date().toISOString(),
@@ -748,11 +748,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             // Simplified PAT popup logic for GitHub OAuth users
             // Also check for PAT cached locally
-            const cachedPatToken = typeof window !== 'undefined' ? localStorage.getItem(`github_token_${session.user.id}`) : null;
+            const cachedPatToken = typeof window !== 'undefined' ? localStorage.getItem(`github_pat_token_${session.user.id}`) : null;
 
             console.log('🔍 PAT POPUP DEBUG:', {
               isGitHubOAuth,
-              profileToken: !!fetchedProfile?.github_token,
+              profileToken: !!fetchedProfile?.github_pat_token,
               cachedPatToken: !!cachedPatToken,
               userId: session.user.id,
               profile: fetchedProfile,
@@ -760,11 +760,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             });
 
             // 🚨 FIXED: Don't show PAT popup if user already has token
-            if (isGitHubOAuth && (fetchedProfile?.github_token || cachedPatToken)) {
+            if (isGitHubOAuth && (fetchedProfile?.github_pat_token || cachedPatToken)) {
               console.log('✅ PAT POPUP: User has token, marking as permanently skipped');
               // Mark as permanently skipped since user already has token
               localStorage.setItem(`token_popup_skipped_permanently_${session.user.id}`, 'true');
-            } else if (isGitHubOAuth && !fetchedProfile?.github_token && !cachedPatToken) {
+            } else if (isGitHubOAuth && !fetchedProfile?.github_pat_token && !cachedPatToken) {
               const permanentlySkipped = localStorage.getItem(`token_popup_skipped_permanently_${session.user.id}`);
 
               console.log('🔍 PAT POPUP STORAGE DEBUG:', {
@@ -871,22 +871,22 @@ const updateToken = async (token: string) => {
     const { error } = await supabase
       .from('user_profiles')
       .upsert(
-        { id: user.id, github_token: token, updated_at: new Date().toISOString() },
+        { id: user.id, github_pat_token: token, updated_at: new Date().toISOString() },
         { onConflict: 'id' }
       );
 
     if (error) throw error;
 
-    setProfile(prev => (prev ? { ...prev, github_token: token } : null));
+    setProfile(prev => (prev ? { ...prev, github_pat_token: token } : null));
     setShowTokenPopupState(false);
 
     // 🔒 SECURITY: Store token with user-specific key
     if (typeof window !== 'undefined') {
-      localStorage.setItem(`github_token_${user.id}`, token);
+      localStorage.setItem(`github_pat_token_${user.id}`, token);
       localStorage.removeItem(`token_popup_dismissed_${user.id}`);
       localStorage.removeItem(`token_popup_skipped_permanently_${user.id}`);
       // Remove old global token key to prevent confusion
-      localStorage.removeItem('github_token');
+      localStorage.removeItem('github_pat_token');
       console.log('🔑 AUTH: Token stored with user-specific key');
     }
   } catch (error) {
@@ -904,15 +904,15 @@ const updateToken = async (token: string) => {
     try {
       const { error } = await supabase
         .from('user_profiles')
-        .update({ github_token: null, updated_at: new Date().toISOString() })
+        .update({ github_pat_token: null, updated_at: new Date().toISOString() })
         .eq('id', user.id);
 
       if (error) throw error;
 
-      setProfile(prev => (prev ? { ...prev, github_token: null } : null));
+      setProfile(prev => (prev ? { ...prev, github_pat_token: null } : null));
       // Clear token from storage
       if (typeof window !== 'undefined') {
-        localStorage.removeItem(`github_token_${user.id}`);
+        localStorage.removeItem(`github_pat_token_${user.id}`);
         console.log('🔑 AUTH: Token removed from local storage');
       }
     } catch (error) {
@@ -942,9 +942,9 @@ const updateToken = async (token: string) => {
   // Get effective token: PAT if available, otherwise OAuth token from session
   const getEffectiveToken = async (): Promise<string | null> => {
     // First priority: Personal Access Token from profile (for users who set up PAT)
-    if (profile?.github_token) {
+    if (profile?.github_pat_token) {
       console.log('🔑 Using PAT token from profile');
-      return profile.github_token;
+      return profile.github_pat_token;
     }
 
     // Second priority: OAuth provider token stored during auth flow
@@ -958,7 +958,7 @@ const updateToken = async (token: string) => {
 
     // Third priority: User-specific cached token (legacy)
     if (user && typeof window !== 'undefined') {
-      const userSpecificToken = localStorage.getItem(`github_token_${user.id}`);
+      const userSpecificToken = localStorage.getItem(`github_pat_token_${user.id}`);
       if (userSpecificToken) {
         console.log('🔑 Using user-specific cached token');
         return userSpecificToken;
@@ -1012,7 +1012,7 @@ const updateToken = async (token: string) => {
     loading,
     signOut,
     showTokenPopup: () => setShowTokenPopupState(true),
-    hasToken: !!profile?.github_token,
+    hasToken: !!profile?.github_pat_token,
     getEffectiveToken,
     updateToken,
     deleteToken,

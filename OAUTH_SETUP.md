@@ -87,7 +87,7 @@ Pastikan tabel `user_profiles` memiliki struktur:
 CREATE TABLE user_profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id),
   github_username TEXT,
-  github_id BIGINT,
+  github_user_id BIGINT,
   display_name TEXT,
   avatar_url TEXT,
   bio TEXT,

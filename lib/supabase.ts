@@ -16,8 +16,8 @@ export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey)
 export interface UserProfile {
   id: string
   github_username: string
-  github_id: number
-  github_token?: string
+  github_user_id: number
+  github_pat_token?: string
   display_name?: string
   avatar_url?: string
   bio?: string
@@ -88,7 +88,7 @@ export interface ChatSession {
   id: string
   user_id: string
   title?: string
-  repository_id?: number
+  repository_id?: number // GitHub repository ID (bigint)
   messages?: ChatMessage[]
   context?: Record<string, any>
   created_at: string
@@ -111,7 +111,7 @@ export interface ChatMessage {
 export interface GeneratedContent {
   id: string
   user_id: string
-  repository_id: string
+  repository_id: string // This should be a UUID from the repositories table
   content_type: "readme" | "file" | "folder"
   content: Record<string, any>
   status: "draft" | "applied" | "rejected"
@@ -123,7 +123,7 @@ export interface GeneratedContent {
 export const createUserProfile = async (userData: {
   id: string
   github_username: string
-  github_id: number
+  github_user_id: number
   display_name?: string
   avatar_url?: string
   bio?: string

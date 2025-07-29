@@ -225,7 +225,7 @@ export default function ProfilePage() {
             </CardHeader>
             <CardContent>
               <TokenManagement
-                currentToken={profile?.github_token}
+                currentToken={profile?.github_pat_token}
                 onTokenUpdate={handleTokenUpdate}
                 onTokenDelete={handleTokenDelete}
               />
