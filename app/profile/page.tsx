@@ -33,7 +33,7 @@ import {
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { user, profile, signOut, updateToken, deleteToken } = useAuth();
+  const { user, profile, loading, signOut, updateToken, deleteToken } = useAuth();
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateMessage, setUpdateMessage] = useState('');
 
@@ -78,8 +78,8 @@ export default function ProfilePage() {
     router.push('/');
   };
 
-  // Show loading while auth is initializing
-  if (!user && !profile) {
+  // Show loading while auth or profile is initializing
+  if (loading || (user && !profile)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
