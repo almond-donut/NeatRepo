@@ -124,12 +124,24 @@ export default function TokenManagement({ currentToken, onTokenUpdate, onTokenDe
               🔧 Token Issues? Common Solutions:
             </h4>
             <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
+              <li>• <strong>Lost access after system update?</strong> Recent authentication improvements may require re-entering your PAT</li>
               <li>• <strong>Delete not working?</strong> Generate new token with all 4 scopes</li>
               <li>• <strong>Wrong scopes selected?</strong> Delete current token and create new one</li>
               <li>• <strong>Token expired?</strong> GitHub tokens can expire, create a fresh one</li>
               <li>• <strong>Permission denied?</strong> Make sure you have admin access to repositories</li>
             </ul>
           </div>
+
+          {/* Recovery Notice */}
+          {!currentToken && (
+            <Alert className="border-amber-200 bg-amber-50 dark:bg-amber-900/20">
+              <AlertTriangle className="h-4 w-4 text-amber-600" />
+              <AlertDescription className="text-amber-800 dark:text-amber-200">
+                <strong>Need to re-enter your PAT?</strong> Recent system improvements may have reset authentication settings.
+                This is a one-time setup to restore your repository access. Your data is safe and secure.
+              </AlertDescription>
+            </Alert>
+          )}
         </CardContent>
       </Card>
 

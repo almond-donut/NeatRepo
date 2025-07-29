@@ -11,22 +11,25 @@ import {
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu"
-import { 
-  ChevronDown, 
-  Plus, 
-  Settings, 
-  LogOut, 
+import {
+  ChevronDown,
+  Plus,
+  Settings,
+  LogOut,
   Check,
   User,
   AlertTriangle,
-  Loader2
+  Loader2,
+  UserCog
 } from "lucide-react"
 import { useAuth } from "@/components/auth-provider"
 import { useAccountSwitcher } from "@/hooks/useAccountSwitcher"
 import AccountManagementDialog from "./account-management-dialog"
+import { useRouter } from "next/navigation"
 
 export default function AccountSwitcher() {
   const { user, profile, loading } = useAuth()
+  const router = useRouter()
   const {
     accounts,
     currentAccount,
@@ -83,6 +86,11 @@ export default function AccountSwitcher() {
   const handleManageAccounts = () => {
     setIsOpen(false)
     setShowManageDialog(true)
+  }
+
+  const handleProfileSettings = () => {
+    setIsOpen(false)
+    router.push('/profile')
   }
 
   // 🔄 Show loading state during authentication initialization
@@ -260,7 +268,16 @@ export default function AccountSwitcher() {
             Add another account
           </DropdownMenuItem>
           
-          <DropdownMenuItem 
+          <DropdownMenuItem
+            onClick={handleProfileSettings}
+            className="cursor-pointer"
+            disabled={isLoading}
+          >
+            <UserCog className="w-4 h-4 mr-2" />
+            Profile Settings
+          </DropdownMenuItem>
+
+          <DropdownMenuItem
             onClick={handleManageAccounts}
             className="cursor-pointer"
             disabled={isLoading}
@@ -268,7 +285,7 @@ export default function AccountSwitcher() {
             <Settings className="w-4 h-4 mr-2" />
             Manage accounts
           </DropdownMenuItem>
-          
+
           <DropdownMenuSeparator />
           
           <DropdownMenuItem 
