@@ -2371,8 +2371,15 @@ These repositories best demonstrate the skills recruiters look for in ${jobTitle
                   variant={isDeleteMode ? "destructive" : "outline"}
                   size="sm"
                   onClick={toggleDeleteMode}
+                  disabled={!currentProfile?.github_pat_token}
                   className="flex items-center gap-2"
-                  title={isDeleteMode ? "Exit delete mode" : "Enter delete mode - Clean up your portfolio!"}
+                  title={
+                    !currentProfile?.github_pat_token
+                      ? "GitHub Personal Access Token required for delete operations"
+                      : isDeleteMode
+                        ? "Exit delete mode"
+                        : "Enter delete mode - Clean up your portfolio!"
+                  }
                 >
                   <Trash2 className="h-4 w-4" />
                   <span>{isDeleteMode ? "Exit delete mode" : "Enter delete mode"}</span>
