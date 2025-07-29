@@ -900,67 +900,67 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signOut = async () => {
-    // Show confirmation dialog before signing out
+    // Ask for confirmation first
     const confirmed = window.confirm(
       "Are you sure you want to sign out?\n\n" +
-      "This will:\n" +
-      "• Sign you out from NeatRepo\n" +
-      "• Clear all saved data"
+        "This will:\n" +
+        "• Sign you out from NeatRepo\n" +
+        "• Clear all saved data"
     );
+    if (!confirmed) return;
 
-    if (!confirmed) {
-      return; // User cancelled
-    }
-
-    // Store user info before clearing for signout page
+    // Preserve a minimum set of user info for the farewell page BEFORE we wipe caches
     const userInfo = {
-      username: user?.user_metadata?.user_name || user?.user_metadata?.preferred_username || 'User',
-      email: user?.email || '',
-      avatar: user?.user_metadata?.avatar_url || ''
+      username:
+        user?.user_metadata?.user_name ||
+        user?.user_metadata?.preferred_username ||
+        "User",
+      email: user?.email || "",
+      avatar: user?.user_metadata?.avatar_url || "",
     };
 
-    // Clear dismiss tracking on sign out so popup shows for next login
-    if (user) {
-      localStorage.removeItem(`token_popup_dismissed_${user.id}`);
-      localStorage.removeItem(`token_popup_skipped_permanently_${user.id}`);
-    }
+    try {
+      // Reset state so UI reflects sign-out immediately
+      setProfile(null);
 
-    // Clear local state first
-    setProfile(null);
-
-    // 🔒 CRITICAL FIX: Complete session cleanup to prevent user mixing
-    // Clear ALL user-specific data from localStorage
-    if (typeof window !== 'undefined') {
-      // Clear all localStorage data to prevent cross-user contamination
-      localStorage.clear();
-      sessionStorage.clear();
-
-      // Also clear any IndexedDB or other storage that might cause conflicts
-      try {
-        if ('caches' in window) {
-          caches.keys().then(names => {
-            names.forEach(name => {
-              caches.delete(name);
-            });
-          });
-        }
-      } catch (error) {
-        console.log('Cache clearing failed:', error);
+      // Remove any popup tracking so it re-appears next sign-in
+      if (user) {
+        localStorage.removeItem(`token_popup_dismissed_${user.id}`);
+        localStorage.removeItem(`token_popup_skipped_permanently_${user.id}`);
       }
 
-      console.log("🧹 AUTH: Cleared all localStorage, sessionStorage, and caches");
+      // ---- Client-side storage/caches clean-up ----
+      if (typeof window !== "undefined") {
+        localStorage.clear();
+        sessionStorage.clear();
+
+        if ("caches" in window) {
+          try {
+            const names = await caches.keys();
+            await Promise.all(names.map((n) => caches.delete(n)));
+          } catch (err) {
+            console.error("❌ Failed to clear caches", err);
+          }
+        }
+        console.log("🧹 AUTH: Cleared localStorage, sessionStorage and caches");
+      }
+
+      // ---- Supabase sign-out ----
+      try {
+        await supabase.auth.signOut({ scope: "global" });
+      } catch (err) {
+        // A network error here should NOT block the UX – log and continue
+        console.error("❌ Supabase signOut failed – proceeding with redirect", err);
+      }
+    } finally {
+      // ---- Redirect (always) ----
+      const signoutUrl = new URL("/signout", window.location.origin);
+      signoutUrl.searchParams.set("username", userInfo.username);
+      signoutUrl.searchParams.set("email", userInfo.email);
+      signoutUrl.searchParams.set("avatar", userInfo.avatar);
+
+      window.location.href = signoutUrl.toString();
     }
-
-    // Sign out from Supabase with global scope to revoke OAuth tokens
-    await supabase.auth.signOut({ scope: 'global' });
-
-    // Redirect to our custom signout page
-    const signoutUrl = new URL('/signout', window.location.origin);
-    signoutUrl.searchParams.set('username', userInfo.username);
-    signoutUrl.searchParams.set('email', userInfo.email);
-    signoutUrl.searchParams.set('avatar', userInfo.avatar);
-
-    window.location.href = signoutUrl.toString();
   };
 
 // 🔐 SAVE GITHUB PAT (handles first-time users too)
