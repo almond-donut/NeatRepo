@@ -650,6 +650,7 @@ ${successCount > 0 ? 'Your portfolio is now cleaner and more professional! 🚀'
   const [isPageVisible, setIsPageVisible] = useState(true);
   const [lastVisibilityChange, setLastVisibilityChange] = useState(Date.now());
   const [isLoadingRepos, setIsLoadingRepos] = useState(false);
+  const [isProcessingOAuthCallback, setIsProcessingOAuthCallback] = useState(false);
   const [lastFetchTime, setLastFetchTime] = useState(0);
   const [persistentState, setPersistentState] = useState({
     dataLoaded: false,
@@ -1249,10 +1250,62 @@ ${successCount > 0 ? 'Your portfolio is now cleaner and more professional! 🚀'
     }
   }, []); // Run only once on component mount
 
-  // 🚨 CRITICAL FIX: Force repository fetch for OAuth users
+  // 🚨 CRITICAL FIX: Handle OAuth callback and ensure proper initialization
   useEffect(() => {
-    const forceOAuthFetch = async () => {
-      if (user && !loading) {
+    const handleOAuthCallback = async () => {
+      // Check if this is an OAuth callback (URL contains code parameter)
+      const urlParams = new URLSearchParams(window.location.search);
+      const oauthCode = urlParams.get('code');
+
+      if (oauthCode) {
+        console.log('🔄 OAUTH CALLBACK: Processing OAuth callback with code:', oauthCode);
+        setIsProcessingOAuthCallback(true);
+
+        // Wait for authentication to be fully established
+        let retries = 0;
+        const maxRetries = 10;
+
+        while (retries < maxRetries) {
+          if (user && !loading) {
+            console.log('✅ OAUTH CALLBACK: Authentication established, proceeding with initialization');
+
+            // Clean up the URL by removing the code parameter
+            urlParams.delete('code');
+            const cleanUrl = `${window.location.pathname}${urlParams.toString() ? '?' + urlParams.toString() : ''}`;
+            window.history.replaceState({}, '', cleanUrl);
+
+            // Force a fresh fetch of repositories
+            try {
+              const effectiveToken = await getEffectiveToken();
+              if (effectiveToken) {
+                console.log('🚀 OAUTH CALLBACK: Fetching repositories with fresh token');
+                setIsLoadingRepos(true);
+                await repositoryManager.fetchRepositories(effectiveToken, true, user.id);
+                console.log('✅ OAUTH CALLBACK: Repository fetch completed');
+              }
+            } catch (error) {
+              console.error('❌ OAUTH CALLBACK: Repository fetch failed:', error);
+              setError('Failed to load repositories after authentication. Please refresh the page.');
+            } finally {
+              setIsLoadingRepos(false);
+              setIsProcessingOAuthCallback(false);
+            }
+            break;
+          }
+
+          // Wait before retrying
+          await new Promise(resolve => setTimeout(resolve, 500));
+          retries++;
+          console.log(`⏳ OAUTH CALLBACK: Waiting for authentication... (${retries}/${maxRetries})`);
+        }
+
+        if (retries >= maxRetries) {
+          console.error('❌ OAUTH CALLBACK: Timeout waiting for authentication');
+          setError('Authentication timeout. Please refresh the page and try again.');
+          setIsProcessingOAuthCallback(false);
+        }
+      } else if (user && !loading) {
+        // Regular initialization for non-OAuth users
         console.log('🚨 OAUTH FETCH: Checking for OAuth token for user:', user.id);
 
         // Try to get OAuth token directly from localStorage
@@ -1272,10 +1325,10 @@ ${successCount > 0 ? 'Your portfolio is now cleaner and more professional! 🚀'
       }
     };
 
-    // Delay the force fetch to ensure auth is fully initialized
-    const delayTimeout = setTimeout(forceOAuthFetch, 1000);
+    // Delay the callback handling to ensure auth is fully initialized
+    const delayTimeout = setTimeout(handleOAuthCallback, 1000);
     return () => clearTimeout(delayTimeout);
-  }, [user, loading, repositories.length]);
+  }, [user, loading, repositories.length, getEffectiveToken]);
 
   // 🚀 INSTANT LOADING: Optimized auto-fetch with cache-first approach
   useEffect(() => {
@@ -2038,14 +2091,22 @@ These repositories best demonstrate the skills recruiters look for in ${jobTitle
 
   // 🚀 INSTANT LOADING: Skip loading screen for better UX
   // Show dashboard immediately and load data progressively
-  if (loading) {
-    // Only show loading for very brief moment (auth check)
-    // Most of the time this won't even be visible
+  if (loading || isProcessingOAuthCallback) {
+    // Show specific loading message for OAuth callback processing
+    const loadingMessage = isProcessingOAuthCallback
+      ? "Completing authentication..."
+      : "Getting ready...";
+
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Getting ready...</p>
+          <p className="text-muted-foreground">{loadingMessage}</p>
+          {isProcessingOAuthCallback && (
+            <p className="text-xs text-muted-foreground mt-2">
+              Please wait while we set up your account...
+            </p>
+          )}
         </div>
       </div>
     );
