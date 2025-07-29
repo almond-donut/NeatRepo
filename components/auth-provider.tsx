@@ -244,6 +244,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         console.log('🚀 AUTH: INSTANT LOADING - Starting optimized initialization...');
 
+        // 🔧 CRITICAL FIX: Detect and clear corrupted session state
+        if (typeof window !== 'undefined') {
+          const corruptionIndicators = [
+            localStorage.getItem('github_token') && !localStorage.getItem('github_repositories_time'),
+            localStorage.getItem('neatrepo_accounts') && localStorage.getItem('neatrepo_accounts').includes('undefined'),
+            localStorage.getItem('temp_recovery_profile')
+          ];
+
+          if (corruptionIndicators.some(indicator => indicator)) {
+            console.log('🧹 CORRUPTION DETECTED: Clearing potentially corrupted cache data');
+            // Clear specific corrupted keys but preserve valid user-specific data
+            localStorage.removeItem('github_token');
+            localStorage.removeItem('temp_recovery_profile');
+            const accounts = localStorage.getItem('neatrepo_accounts');
+            if (accounts && accounts.includes('undefined')) {
+              localStorage.removeItem('neatrepo_accounts');
+            }
+          }
+        }
+
         // 🔥 CRITICAL FIX: Handle OAuth callback tokens in URL FIRST
         if (typeof window !== 'undefined') {
           const hashParams = new URLSearchParams(window.location.hash.substring(1));
@@ -791,7 +811,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.clear();
       sessionStorage.clear();
 
-      console.log("🧹 AUTH: Cleared all localStorage and sessionStorage");
+      // Also clear any IndexedDB or other storage that might cause conflicts
+      try {
+        if ('caches' in window) {
+          caches.keys().then(names => {
+            names.forEach(name => {
+              caches.delete(name);
+            });
+          });
+        }
+      } catch (error) {
+        console.log('Cache clearing failed:', error);
+      }
+
+      console.log("🧹 AUTH: Cleared all localStorage, sessionStorage, and caches");
     }
 
     // Sign out from Supabase with global scope to revoke OAuth tokens

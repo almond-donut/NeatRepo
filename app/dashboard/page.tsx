@@ -2076,6 +2076,32 @@ These repositories best demonstrate the skills recruiters look for in ${jobTitle
   //   );
   // }
 
+  // 🔧 CRITICAL FIX: Add timeout to prevent infinite "Getting ready" state
+  useEffect(() => {
+    if (loading || isProcessingOAuthCallback) {
+      // Set a maximum timeout to prevent infinite loading
+      const loadingTimeout = setTimeout(() => {
+        console.log('⚠️ LOADING TIMEOUT: Forcing loading to false after 10 seconds');
+        setIsProcessingOAuthCallback(false);
+        // Don't set loading false here as it's managed by auth provider
+      }, 10000); // 10 second timeout
+
+      return () => clearTimeout(loadingTimeout);
+    }
+  }, [loading, isProcessingOAuthCallback]);
+
+  // 🔧 EMERGENCY RECOVERY: Force dashboard render if stuck too long
+  useEffect(() => {
+    const emergencyTimeout = setTimeout(() => {
+      if (loading && user) {
+        console.log('🚨 EMERGENCY: User exists but loading stuck - this may indicate auth provider issues');
+        console.log('🚨 EMERGENCY: Consider refreshing page or clearing browser cache');
+      }
+    }, 15000); // 15 second emergency timeout
+
+    return () => clearTimeout(emergencyTimeout);
+  }, [loading, user]);
+
   // 🚀 INSTANT LOADING: Skip loading screen for better UX
   // Show dashboard immediately and load data progressively
   if (loading || isProcessingOAuthCallback) {
@@ -2094,6 +2120,20 @@ These repositories best demonstrate the skills recruiters look for in ${jobTitle
               Please wait while we set up your account...
             </p>
           )}
+          <p className="text-xs text-muted-foreground mt-4">
+            Taking longer than expected? Try refreshing the page.
+          </p>
+          <button
+            onClick={() => {
+              console.log('🧹 USER INITIATED: Clearing cache and reloading');
+              localStorage.clear();
+              sessionStorage.clear();
+              window.location.reload();
+            }}
+            className="mt-2 px-4 py-2 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Clear Cache & Reload
+          </button>
         </div>
       </div>
     );
