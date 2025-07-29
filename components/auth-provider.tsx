@@ -32,12 +32,27 @@ export const useAuth = () => {
   return context;
 };
 
+// 🌟 AUTH PROVIDER: Main context provider component
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true); // CRITICAL FIX: Start with loading true to prevent race conditions
   const [showTokenPopupState, setShowTokenPopupState] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // ⏰ FAIL-SAFE: Force loading to false after 8 seconds if it somehow stays true
+  useEffect(() => {
+    if (!loading) return; // Already resolved
+
+    const timer = setTimeout(() => {
+      if (loading) {
+        console.warn('⚠️ AUTH: Fallback timeout reached, forcing loading=false');
+        setLoading(false);
+      }
+    }, 8000); // 8-second safety net
+
+    return () => clearTimeout(timer);
+  }, [loading]);
 
   // 🔧 REMOVED: Emergency timeout that was interfering with OAuth profile creation
   // Users must now manually sign out to end sessions, ensuring complete session cleanup
