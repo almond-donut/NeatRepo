@@ -281,7 +281,7 @@ export default function DashboardPage() {
       addChatMessage({
         id: Date.now().toString(),
         role: "assistant",
-        content: `🔑 To create repositories, please set up your GitHub Personal Access Token first. Click the 'Setup GitHub Token' button above.`,
+        content: `To create repositories, please set up your GitHub Personal Access Token first. Click the 'Setup GitHub Token' button above.`,
       });
       showTokenPopup(); // Automatically show the token setup popup
       return;
@@ -364,7 +364,7 @@ export default function DashboardPage() {
       addChatMessage({
         id: Date.now().toString(),
         role: "assistant",
-        content: `❌ Failed to create repository. Please check your GitHub token permissions and try again.`,
+        content: `Failed to create repository. Please check your GitHub token permissions and try again.`,
       });
     } finally {
       setIsCreatingRepo(false);
@@ -378,7 +378,7 @@ export default function DashboardPage() {
       addChatMessage({
         id: Date.now().toString(),
         role: "assistant",
-        content: `🔑 To rename repositories, please set up your GitHub Personal Access Token first. Click the 'Setup GitHub Token' button above.`,
+        content: `To rename repositories, please set up your GitHub Personal Access Token first. Click the 'Setup GitHub Token' button above.`,
       });
       showTokenPopup(); // Automatically show the token setup popup
       return;
@@ -426,7 +426,7 @@ export default function DashboardPage() {
       addChatMessage({
         id: Date.now().toString(),
         role: "assistant",
-        content: `❌ Failed to rename repository. Please check your GitHub token permissions and try again.`,
+        content: `Failed to rename repository. Please check your GitHub token permissions and try again.`,
       });
     } finally {
       setIsRenamingRepo(false);
@@ -447,7 +447,7 @@ export default function DashboardPage() {
       addChatMessage({
         id: Date.now().toString(),
         role: "assistant",
-        content: `🔑 To delete repositories, please set up your GitHub Personal Access Token first. Click the 'Setup GitHub Token' button above.`,
+        content: `To delete repositories, please set up your GitHub Personal Access Token first. Click the 'Setup GitHub Token' button above.`,
       });
       setShowDeleteConfirm(false);
       showTokenPopup(); // Automatically show the token setup popup
@@ -477,11 +477,11 @@ export default function DashboardPage() {
         const successMessage: ChatMessage = {
           id: Date.now().toString(),
           role: 'assistant',
-          content: `🗑️ **Repository Deleted Successfully!**
+          content: `**Repository Deleted Successfully**
 
 "${repoToDelete.name}" has been permanently deleted from your GitHub account.
 
-This is part of cleaning up your portfolio for a more professional appearance! 🚀`,
+This is part of cleaning up your portfolio for a more professional appearance.`,
           timestamp: new Date()
         };
         setChatMessages(prev => [...prev, successMessage]);
@@ -498,11 +498,11 @@ This is part of cleaning up your portfolio for a more professional appearance! �
       const errorMessage: ChatMessage = {
         id: Date.now().toString(),
         role: 'assistant',
-        content: `✅ **Done! Opening GitHub for you...**
+        content: `**Opening GitHub for you**
 
 Just click "Delete this repository" in the new tab that opened.
 
-Super quick and easy! 🚀`,
+Quick and easy manual deletion.`,
         timestamp: new Date()
       };
       setChatMessages(prev => [...prev, errorMessage]);
@@ -525,7 +525,7 @@ Super quick and easy! 🚀`,
       addChatMessage({
         id: Date.now().toString(),
         role: "assistant",
-        content: `🔑 To delete repositories, please set up your GitHub Personal Access Token first. Click the 'Setup GitHub Token' button above.`,
+        content: `To delete repositories, please set up your GitHub Personal Access Token first. Click the 'Setup GitHub Token' button above.`,
       });
       showTokenPopup();
       return;
@@ -576,12 +576,12 @@ Super quick and easy! 🚀`,
         const resultMessage: ChatMessage = {
           id: Date.now().toString(),
           role: 'assistant',
-          content: `🗑️ **Bulk Delete Results**
+          content: `**Bulk Delete Results**
 
-✅ **Successfully deleted:** ${successCount} repositories
-${failedRepos.length > 0 ? `❌ **Failed to delete:** ${failedRepos.join(', ')}` : ''}
+**Successfully deleted:** ${successCount} repositories
+${failedRepos.length > 0 ? `**Failed to delete:** ${failedRepos.join(', ')}` : ''}
 
-${successCount > 0 ? 'Your portfolio is now cleaner and more professional! 🚀' : ''}`,
+${successCount > 0 ? 'Your portfolio is now cleaner and more professional.' : ''}`,
           timestamp: new Date()
         };
         setChatMessages(prev => [...prev, resultMessage]);

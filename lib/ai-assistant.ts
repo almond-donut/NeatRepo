@@ -613,16 +613,16 @@ export class AIAssistantEngine {
 
     if (mode === 'cv') {
       // CV Mode: Prioritize recent activity
-      if (isRecent && isComplex) return '⭐';
-      if (isRecent) return '🚀';
-      if (isFullstack) return '👨‍💻';
-      return '📁';
+      if (isRecent && isComplex) return 'Featured';
+      if (isRecent) return 'Recent';
+      if (isFullstack) return 'Full-stack';
+      return '';
     } else {
       // Portfolio Mode: Show progression
-      if (isFullstack) return '👨‍💻';
-      if (isComplex) return '⭐';
-      if (isRecent) return '🚀';
-      return '📁';
+      if (isFullstack) return 'Full-stack';
+      if (isComplex) return 'Advanced';
+      if (isRecent) return 'Recent';
+      return '';
     }
   }
 
@@ -677,22 +677,22 @@ export class AIAssistantEngine {
     // Analyze repository complexity based on real data
     const analysis = this.analyzeRepositoryComplexity(repos);
 
-    const message = `🧠 **Repository Complexity Analysis Complete!**
+    const message = `**Repository Analysis Complete**
 
-📊 **Overview:**
+**Overview:**
 • Total Repositories: ${repos.length}
 • Languages Found: ${analysis.languages.join(', ')}
 • Average Complexity Score: ${analysis.averageComplexity}/10
 
-🏆 **Most Complex Repositories:**
+**Most Complex Repositories:**
 ${analysis.mostComplex.map((repo, i) => `${i + 1}. **${repo.name}** (${repo.complexity}/10) - ${repo.language || 'Unknown'}`).join('\n')}
 
-📈 **Complexity Breakdown:**
+**Complexity Breakdown:**
 • High Complexity (8-10): ${analysis.highComplexity} repos
 • Medium Complexity (5-7): ${analysis.mediumComplexity} repos
 • Low Complexity (1-4): ${analysis.lowComplexity} repos
 
-💡 **Insights:**
+**Key Insights:**
 ${analysis.insights.join('\n')}
 
 This analysis is based on repository size, language complexity, recent activity, and project structure.`;
@@ -787,8 +787,8 @@ This analysis is based on repository size, language complexity, recent activity,
         rec.repositories.forEach((repo, index) => {
           message += `${index + 1}. **${repo.name}**`;
           if (repo.complexity) message += ` (${repo.complexity.level} - Score: ${repo.complexity.score})`;
-          if (repo.description) message += `\n   📝 ${repo.description}`;
-          if (repo.complexity?.factors.length) message += `\n   🔧 ${repo.complexity.factors.join(', ')}`;
+          if (repo.description) message += `\n   Description: ${repo.description}`;
+          if (repo.complexity?.factors.length) message += `\n   Key factors: ${repo.complexity.factors.join(', ')}`;
           message += '\n\n';
         });
       }
@@ -987,21 +987,21 @@ ${portfolioReadme}
 
   // 💬 GENERAL RESPONSE ACTION
   private async handleGeneralResponse(params: any): Promise<AIResponse> {
-    const helpMessage = `🤖 **AI Assistant Ready**
+    const helpMessage = `**AI Assistant Ready**
 
 I'm your GitHub repository assistant! I can help you with:
 
-🚀 **Repository Management:**
+**Repository Management:**
 • "Create a new repo named [name]"
 • "Create a README file in my [repo] repository"
 • "Sort my repos by complexity"
 
-📊 **Analysis & Optimization:**
+**Analysis & Optimization:**
 • "Analyze my repository complexity"
 • "Sort repos for my CV"
 • "Give me CV recommendations"
 
-🎯 **Smart Organization:**
+**Smart Organization:**
 • Drag & drop to reorder repositories
 • Intelligent sorting algorithms
 • CV-optimized recommendations
@@ -1227,19 +1227,19 @@ What would you like me to help you with?`;
     const passion = data.codingPassion || "building innovative solutions";
     const hobbies = data.hobbies ? ` When I'm not coding, ${data.hobbies.toLowerCase()}.` : "";
 
-    let readme = `# Hey, I'm ${name}! 👋\n\n`;
+    let readme = `# Hi, I'm ${name}\n\n`;
 
     // Personal intro
     readme += `I'm a passionate developer who loves ${passion}.${hobbies}\n\n`;
 
     // What drives me section
     if (data.careerGoals) {
-      readme += `## 🚀 What drives me\n`;
+      readme += `## What drives me\n`;
       readme += `${data.careerGoals}\n\n`;
     }
 
     // Tech journey
-    readme += `## 💻 My Tech Journey\n`;
+    readme += `## My Tech Journey\n`;
     if (data.techFocus) {
       readme += `I'm currently focused on ${data.techFocus}. `;
     }
@@ -1251,12 +1251,12 @@ What would you like me to help you with?`;
 
     // Recent projects
     if (data.recentExcitement) {
-      readme += `## 🔥 What I'm excited about lately\n`;
+      readme += `## What I'm excited about lately\n`;
       readme += `${data.recentExcitement}\n\n`;
     }
 
     if (recentProjects.length > 0) {
-      readme += `## 🚀 Recent Projects\n\n`;
+      readme += `## Recent Projects\n\n`;
       recentProjects.forEach(project => {
         readme += `**${project.name}** - ${project.description || "An exciting project I've been working on"}\n`;
       });
