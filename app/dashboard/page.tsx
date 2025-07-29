@@ -2372,8 +2372,8 @@ These repositories best demonstrate the skills recruiters look for in ${jobTitle
                   size="sm"
                   onClick={!currentProfile?.github_pat_token ? undefined : toggleDeleteMode}
                   disabled={!currentProfile?.github_pat_token}
-                  className={`flex items-center gap-2 ${!currentProfile?.github_pat_token ? '!cursor-not-allowed hover:!cursor-not-allowed' : ''}`}
-                  style={!currentProfile?.github_pat_token ? { cursor: 'not-allowed' } : {}}
+                  className={`flex items-center gap-2 ${!currentProfile?.github_pat_token ? 'hover:cursor-not-allowed' : ''}`}
+                  
                   title={
                     !currentProfile?.github_pat_token
                       ? "GitHub Personal Access Token required for delete operations"
