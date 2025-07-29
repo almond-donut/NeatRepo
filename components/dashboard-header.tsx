@@ -1,14 +1,23 @@
 "use client"
 
-import { Github, User, LogOut } from "lucide-react"
+import { Github, User, LogOut, Settings } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu"
 import { useAuth } from "@/components/auth-provider"
 import { supabase } from "@/lib/supabase"
+import { useRouter } from "next/navigation"
 
 export default function DashboardHeader() {
   const { user, profile, loading } = useAuth()
+  const router = useRouter()
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
@@ -17,6 +26,10 @@ export default function DashboardHeader() {
 
   const handleSignIn = () => {
     window.location.href = '/'
+  }
+
+  const handleProfileSettings = () => {
+    router.push('/profile')
   }
 
   return (
@@ -40,28 +53,47 @@ export default function DashboardHeader() {
           <div className="flex items-center space-x-4">
             <ThemeToggle />
 
-            {/* Simple Sign In/Out Button */}
+            {/* User Menu with Profile Settings */}
             {user ? (
-              <Button
-                variant="ghost"
-                onClick={handleSignOut}
-                className="flex items-center space-x-2"
-                disabled={loading}
-              >
-                {profile?.avatar_url ? (
-                  <img
-                    src={profile.avatar_url}
-                    alt={profile.username || 'User'}
-                    className="w-6 h-6 rounded-full"
-                  />
-                ) : (
-                  <User className="w-4 h-4" />
-                )}
-                <span className="text-sm">
-                  {profile?.username || user.email || 'User'}
-                </span>
-                <LogOut className="w-4 h-4" />
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="flex items-center space-x-2"
+                    disabled={loading}
+                  >
+                    {profile?.avatar_url ? (
+                      <img
+                        src={profile.avatar_url}
+                        alt={profile.username || 'User'}
+                        className="w-6 h-6 rounded-full"
+                      />
+                    ) : (
+                      <User className="w-4 h-4" />
+                    )}
+                    <span className="text-sm">
+                      {profile?.username || user.email || 'User'}
+                    </span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuItem
+                    onClick={handleProfileSettings}
+                    className="cursor-pointer"
+                  >
+                    <Settings className="w-4 h-4 mr-2" />
+                    Profile Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={handleSignOut}
+                    className="cursor-pointer text-red-600"
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             ) : (
               <Button
                 variant="ghost"
