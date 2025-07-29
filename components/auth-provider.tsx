@@ -567,24 +567,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Clear any cached profile data for the previous user
           setProfile(null);
 
-            // 🧹 SECURITY: Clear ALL user-specific data when user changes
-            if (typeof window !== 'undefined') {
-              // Clear previous user's data
-              localStorage.removeItem(`token_popup_dismissed_${user.id}`);
-              localStorage.removeItem(`token_popup_skipped_permanently_${user.id}`);
-              localStorage.removeItem(`github_token_${user.id}`);
-              localStorage.removeItem(`oauth_provider_token_${user.id}`);
-              localStorage.removeItem(`github_repositories_${user.id}`);
-              localStorage.removeItem(`github_repositories_time_${user.id}`);
+          // 🧹 SECURITY: Clear ALL user-specific data when user changes
+          if (typeof window !== 'undefined') {
+            // Clear previous user's data
+            localStorage.removeItem(`token_popup_dismissed_${user.id}`);
+            localStorage.removeItem(`token_popup_skipped_permanently_${user.id}`);
+            localStorage.removeItem(`github_token_${user.id}`);
+            localStorage.removeItem(`oauth_provider_token_${user.id}`);
+            localStorage.removeItem(`github_repositories_${user.id}`);
+            localStorage.removeItem(`github_repositories_time_${user.id}`);
 
-              // Clear global keys that might contain mixed data
-              localStorage.removeItem('github_token');
-              localStorage.removeItem('oauth_provider_token');
-              localStorage.removeItem('github_repositories');
-              localStorage.removeItem('github_repositories_time');
+            // Clear global keys that might contain mixed data
+            localStorage.removeItem('github_token');
+            localStorage.removeItem('oauth_provider_token');
+            localStorage.removeItem('github_repositories');
+            localStorage.removeItem('github_repositories_time');
 
-              console.log("🧹 AUTH: Cleared previous user's cached data including OAuth tokens");
-            }
+            console.log("🧹 AUTH: Cleared previous user's cached data including OAuth tokens");
           }
         }
 
