@@ -34,7 +34,7 @@ export default function DashboardHeader() {
           {/* Logo & Brand */}
           <div className="flex items-center space-x-3">
             <img 
-              src={theme === 'dark' ? '/src/logo/neatrepowhitestrokes.png' : '/src/logo/neatrepoblackstroke.png'}
+              src={theme === 'dark' ? '/logo-dark.png' : '/logo-light.png'}
               alt="NeatRepo Logo"
               className="h-8 w-8"
             />
