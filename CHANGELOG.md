@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+- 🗑️ **Multi-Account Switcher System** - **COMPLETELY REMOVED** ✅
+  - **REASON**: Non-functional feature causing confusion and complexity
+  - **COMPONENTS REMOVED**:
+    - ✅ `hooks/useAccountSwitcher.ts` - Multi-account switching logic
+    - ✅ `components/account-switcher.tsx` - Account switcher dropdown UI
+    - ✅ `components/account-management-dialog.tsx` - Account management modal
+  - **SIMPLIFIED AUTHENTICATION**:
+    - ✅ **Dashboard Header**: Replaced complex switcher with simple sign-in/sign-out button
+    - ✅ **User Display**: Shows avatar and username when authenticated
+    - ✅ **Clean Branding**: Removed "Multi-Account" badges and marketing copy
+    - ✅ **Auth Provider**: Removed multi-account localStorage management
+    - ✅ **Single-Account Flow**: Streamlined authentication without account switching confusion
+  - **PRODUCTION BENEFITS**:
+    - ✅ **Simplified UX**: Clear single-account experience without confusing options
+    - ✅ **Reduced Complexity**: 779 lines of code removed, easier to maintain and debug
+    - ✅ **Better Performance**: No multi-account state management overhead
+    - ✅ **Focus on Core Features**: Repository management without distracting non-working features
+  - **USER IMPACT**: Clean, professional single-account authentication focused on repository management
+
 ### Fixed
 - 🚨 **CRITICAL: OAuth "Getting Ready" Race Condition** - **COMPLETELY RESOLVED** ✅
   - **ROOT CAUSE IDENTIFIED**: Artificial 1-second delay in OAuth initialization created timing dependencies
@@ -98,8 +118,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Previous Releases]
 
 ### Core Features (Production Ready)
-- 🔄 **Multi-Account GitHub Management** - Facebook/Google-style account switching for work/hobby accounts
-- 🔐 **Flexible Authentication** - Support for both OAuth and Personal Access Tokens
+- 🔐 **Streamlined Authentication** - Clean OAuth and Personal Access Token support
 - 📊 **Repository Management** - View, sort, and manage repositories with bulk operations
 - 🗑️ **Bulk Delete Functionality** - Delete multiple repositories with confirmation dialogs
 - 🎨 **Personality Modes** - Different UI personalities for enhanced user experience
