@@ -239,10 +239,7 @@ export default function DashboardPage() {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [expandedRepos, setExpandedRepos] = useState<Set<number>>(new Set());
 
-  // 🛠 AUTH INITIALIZATION EFFECT - ensure repositories load after auth stabilizes
-  useEffect(() => {
-    handleAuthInitialization();
-  }, [loading, user, repositories.length]);
+  
 
   // Helper function to add chat messages
   const addChatMessage = (message: Omit<ChatMessage, 'timestamp'>) => {
