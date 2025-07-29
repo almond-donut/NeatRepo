@@ -383,81 +383,72 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.log('✅ Setting user from session:', session.user.id);
           setUser(session.user);
 
-          // 🔧 CRITICAL FIX: Only set loading false AFTER user is set
-          // This prevents race condition where loading=false but user=null
+           // 🔧 CRITICAL FIX: Only set loading false AFTER user is set
+           // This prevents race condition where loading=false but user=null
 
-          // 🔧 CRITICAL FIX: Set loading false only after user state is properly set
-          // Use setTimeout to ensure user state is updated before loading becomes false
-          setTimeout(() => {
-            setLoading(false);
-            console.log('✅ AUTH: Loading set to false after user state update');
-          }, 0);
+           // 🖑 CRITICAL FIX: Check for provider token during initialization (not just auth state change)
+           if (session.provider_token) {
+             console.log('🎯 INIT: Provider token detected in session during initialization!', {
+               hasProviderToken: !!session.provider_token,
+               tokenLength: session.provider_token.length,
+               provider: session.user?.app_metadata?.provider
+             });
 
-          // 🔑 CRITICAL FIX: Check for provider token during initialization (not just auth state change)
-          if (session.provider_token) {
-            console.log('🎯 INIT: Provider token detected in session during initialization!', {
-              hasProviderToken: !!session.provider_token,
-              tokenLength: session.provider_token.length,
-              provider: session.user?.app_metadata?.provider
-            });
+             // Store provider token for this user
+             if (typeof window !== 'undefined') {
+               localStorage.setItem(`oauth_provider_token_${session.user.id}`, session.provider_token);
+               console.log('✅ INIT: Provider token stored for user:', session.user.id);
 
-            // Store provider token for this user
-            if (typeof window !== 'undefined') {
-              localStorage.setItem(`oauth_provider_token_${session.user.id}`, session.provider_token);
-              console.log('✅ INIT: Provider token stored for user:', session.user.id);
+               // 🚨 CRITICAL FIX: Use UPSERT to create/update profile with provider token
+               try {
+                 // Extract GitHub metadata for profile creation
+                 const githubUsername = session.user.user_metadata?.user_name ||
+                                      session.user.user_metadata?.preferred_username ||
+                                      session.user.email?.split('@')[0] || 'user';
+                 const githubId = session.user.user_metadata?.provider_id ||
+                                session.user.identities?.find(i => i.provider === 'github')?.id;
 
-              // 🚨 CRITICAL FIX: Use UPSERT to create/update profile with provider token
-              try {
-                // Extract GitHub metadata for profile creation
-                const githubUsername = session.user.user_metadata?.user_name ||
-                                     session.user.user_metadata?.preferred_username ||
-                                     session.user.email?.split('@')[0] || 'user';
-                const githubId = session.user.user_metadata?.provider_id ||
-                               session.user.identities?.find(i => i.provider === 'github')?.id;
+                 const profileData = {
+                   id: session.user.id,
+                   github_username: githubUsername,
+                   github_user_id: githubId,
+                   display_name: session.user.user_metadata?.full_name ||
+                                session.user.user_metadata?.name ||
+                                githubUsername,
+                   avatar_url: session.user.user_metadata?.avatar_url,
+                   // Do not store OAuth provider token as PAT
 
-                const profileData = {
-                  id: session.user.id,
-                  github_username: githubUsername,
-                  github_user_id: githubId,
-                  display_name: session.user.user_metadata?.full_name ||
-                               session.user.user_metadata?.name ||
-                               githubUsername,
-                  avatar_url: session.user.user_metadata?.avatar_url,
-                  // Do not store OAuth provider token as PAT
+                   updated_at: new Date().toISOString()
+                 };
 
-                  updated_at: new Date().toISOString()
-                };
+                 const { error } = await supabase
+                   .from('user_profiles')
+                   .upsert(profileData, { onConflict: 'id' });
 
-                const { error } = await supabase
-                  .from('user_profiles')
-                  .upsert(profileData, { onConflict: 'id' });
+                 if (error) {
+                   console.error('❌ INIT: Failed to upsert profile with provider token:', error);
+                 } else {
+                   console.log('✅ INIT: Profile created/updated with provider token for user:', session.user.id);
+                   // 🔧 CRITICAL FIX: Set profile state immediately after successful UPSERT
+                   setProfile(profileData);
+                   console.log('✅ INIT: Profile state updated with OAuth data');
+                 }
+               } catch (error) {
+                 console.error('❌ INIT: Exception upserting profile with provider token:', error);
+               }
+             }
+           }
 
-                if (error) {
-                  console.error('❌ INIT: Failed to upsert profile with provider token:', error);
-                } else {
-                  console.log('✅ INIT: Profile created/updated with provider token for user:', session.user.id);
-                  // 🔧 CRITICAL FIX: Set profile state immediately after successful UPSERT
-                  setProfile(profileData);
-                  console.log('✅ INIT: Profile state updated with OAuth data');
-                }
-              } catch (error) {
-                console.error('❌ INIT: Exception upserting profile with provider token:', error);
-              }
-            }
-          }
-
-          // CRITICAL FIX: Set loading false only after user state is properly set
-          // This prevents race condition where loading=false but user=null
-          setTimeout(() => {
-            setLoading(false);
-            console.log("✅ AUTH: User session found - UI ready immediately");
-          }, 0);
-
-          // GitHub connection check is now handled by AuthGuard component
-          // This prevents conflicts between multiple redirect attempts
-
-          // 🚀 PARALLEL: Fetch profile in background without blocking UI
-          fetchProfile(session.user.id).then((fetchedProfile) => {
+           // 🚀 CRITICAL FIX: Fetch profile BEFORE clearing loading to prevent PAT inconsistency
+           fetchProfile(session.user.id).then((fetchedProfile) => {
+             console.log('✅ INIT: Profile loaded before clearing loading state:', {
+               hasProfile: !!fetchedProfile,
+               hasPAT: !!fetchedProfile?.github_pat_token
+             });
+             
+             // Now it's safe to clear loading since both user and profile are ready
+             setLoading(false);
+             console.log('✅ AUTH: Loading cleared after both user and profile are ready');
             // Check if this is a GitHub OAuth user
             const isGitHubOAuth = session.user.app_metadata?.provider === 'github';
             
@@ -491,9 +482,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             } else {
               console.log('❌ INITIAL PAT POPUP: Not showing - either not GitHub OAuth or already has token');
             }
-            console.log('✅ Profile loaded in background');
-          }).catch((error) => {
-            console.error('❌ Background profile fetch failed:', error);
+           }).catch((error) => {
+             console.error('❌ INIT: Profile fetch failed, but clearing loading anyway:', error);
+             // Clear loading even if profile fetch fails, but log it
+             setLoading(false);
+             console.log('⚠️ AUTH: Loading cleared despite profile fetch failure');
+             console.error('❌ INIT: Profile fetch failed after user setup:', error);
             // Create basic profile as fallback
             const basicProfile = {
               id: session.user.id,

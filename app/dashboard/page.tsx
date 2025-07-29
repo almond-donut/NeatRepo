@@ -2114,11 +2114,24 @@ These repositories best demonstrate the skills recruiters look for in ${jobTitle
   useEffect(() => {
     if (loading || isProcessingOAuthCallback) {
       // Set a reasonable timeout to prevent infinite loading
-      const loadingTimeout = setTimeout(() => {
-        console.log('⚠️ LOADING TIMEOUT: Forcing OAuth callback processing to complete after 8 seconds');
+      const loadingTimeout = setTimeout(async () => {
+        console.log('⚠️ LOADING TIMEOUT: Dashboard stuck in loading - attempting recovery');
         setIsProcessingOAuthCallback(false);
-        // Don't set loading false here as it's managed by auth provider
-      }, 8000); // 8 second timeout - reduced from 10s for faster recovery
+        // If auth provider is still loading, try to force session refresh
+        if (loading) {
+          console.log('🔧 DASHBOARD RECOVERY: Auth provider still loading, forcing session refresh');
+          try {
+            const { data, error } = await supabase.auth.refreshSession();
+            if (error) {
+              console.error('❌ DASHBOARD RECOVERY: Session refresh failed:', error);
+            } else {
+              console.log('✅ DASHBOARD RECOVERY: Session refresh completed');
+            }
+          } catch (refreshError) {
+            console.error('❌ DASHBOARD RECOVERY: Exception during session refresh:', refreshError);
+          }
+        }
+      }, 10000); // 10 second timeout for dashboard loading recovery
 
       return () => clearTimeout(loadingTimeout);
     }
