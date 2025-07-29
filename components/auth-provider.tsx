@@ -176,6 +176,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setProfile(basicProfile);
         return basicProfile;
       } else {
+        // Sanitize profile token: treat OAuth tokens (gho_ prefix) as no PAT
+        if (data && data.github_token?.startsWith('gho_')) {
+          data.github_token = null;
+        }
         console.log("✅ AUTH: Profile fetched successfully:", {
           id: data.id,
           github_username: data.github_username,
@@ -377,7 +381,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                                session.user.user_metadata?.name ||
                                githubUsername,
                   avatar_url: session.user.user_metadata?.avatar_url,
-                  github_token: session.provider_token,
+                  // Do not store OAuth provider token as PAT
+github_token: null,
                   updated_at: new Date().toISOString()
                 };
 
@@ -520,7 +525,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                              session.user.user_metadata?.name ||
                              githubUsername,
                 avatar_url: session.user.user_metadata?.avatar_url,
-                github_token: session.provider_token,
+                // Do not store OAuth provider token as PAT
+github_token: null,
                 updated_at: new Date().toISOString()
               };
 
@@ -546,7 +552,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               const fallbackProfileData = {
                 id: session.user.id,
                 github_username: session.user.user_metadata?.user_name || 'user',
-                github_token: session.provider_token,
+                // Do not store OAuth provider token as PAT
+github_token: null,
                 display_name: session.user.user_metadata?.full_name || session.user.user_metadata?.user_name || 'User',
                 avatar_url: session.user.user_metadata?.avatar_url
               };
@@ -651,7 +658,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 const basicProfile = {
                   id: session.user.id,
                   github_username: `user_${session.user.id.substring(0, 8)}`,
-                  github_token: session.provider_token,
+                  // Do not store OAuth provider token as PAT
+github_token: null,
                   display_name: session.user.email || 'User',
                   avatar_url: session.user.user_metadata?.avatar_url
                 };
