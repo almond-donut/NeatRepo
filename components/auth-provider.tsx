@@ -39,20 +39,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true); // CRITICAL FIX: Start with loading true to prevent race conditions
   const [showTokenPopupState, setShowTokenPopupState] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // 👀 Track if we are currently fetching missing user data from Supabase
+  const [awaitingUserFetch, setAwaitingUserFetch] = useState(false);
 
-  // ⏰ FAIL-SAFE: Force loading to false after 8 seconds if it somehow stays true
+  // ⏰ FAIL-SAFE: Force loading to false after 8 seconds (extendable) if it somehow stays true
   useEffect(() => {
     if (!loading) return; // Already resolved
+
+    const effectiveTimeout = awaitingUserFetch ? 15000 : 8000; // 15s if awaiting user fetch
 
     const timer = setTimeout(() => {
       if (loading) {
         console.warn('⚠️ AUTH: Fallback timeout reached, forcing loading=false');
         setLoading(false);
       }
-    }, 8000); // 8-second safety net
+    }, effectiveTimeout);
 
     return () => clearTimeout(timer);
-  }, [loading]);
+  }, [loading, awaitingUserFetch]);
 
   // 🔧 REMOVED: Emergency timeout that was interfering with OAuth profile creation
   // Users must now manually sign out to end sessions, ensuring complete session cleanup
@@ -495,6 +499,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
           });
         } else if (session?.provider_token) {
+          // We might need an extra round-trip to fetch the user object
+          setAwaitingUserFetch(true);
           // 🛠️ NEW: Session has provider token but missing user object – fetch user explicitly
           console.log('🧐 AUTH: Provider token present but user missing – fetching user data');
           try {
@@ -503,6 +509,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               console.error('❌ AUTH: Failed to fetch user with provider token:', userError);
             }
             if (userData?.user) {
+              setAwaitingUserFetch(false);
               console.log('✅ AUTH: User fetched successfully via provider token:', userData.user.id);
               // Persist user & continue normal flow
               setUser(userData.user);
@@ -515,11 +522,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               });
             } else {
               console.log('❌ AUTH: No user returned from getUser despite provider token');
+              setAwaitingUserFetch(false);
               setUser(null);
               setLoading(false);
             }
           } catch (fetchErr) {
             console.error('❌ AUTH: Exception during getUser():', fetchErr);
+            setAwaitingUserFetch(false);
             setUser(null);
             setLoading(false);
           }
