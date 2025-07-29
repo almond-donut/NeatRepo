@@ -69,7 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         github_username: githubUsername,
         display_name: user.user_metadata?.full_name || user.user_metadata?.name || githubUsername,
         avatar_url: user.user_metadata?.avatar_url,
-        github_token: null, // Will be set later if needed
+         // Will be set later if needed
         updated_at: new Date().toISOString(),
       };
 
@@ -99,7 +99,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         github_username: githubUsername,
         display_name: user.user_metadata?.full_name || user.user_metadata?.name || githubUsername,
         avatar_url: user.user_metadata?.avatar_url,
-        github_token: null,
+        
         updated_at: new Date().toISOString(),
       };
 
@@ -154,7 +154,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const newProfile = {
             id: userId,
             github_username: githubUsername,
-            github_token: null, // Only null for truly new users
+             // Only null for truly new users
             display_name: user?.user_metadata?.full_name || user?.user_metadata?.name,
             avatar_url: user?.user_metadata?.avatar_url
           };
@@ -406,7 +406,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                                githubUsername,
                   avatar_url: session.user.user_metadata?.avatar_url,
                   // Do not store OAuth provider token as PAT
-github_token: null,
+
                   updated_at: new Date().toISOString()
                 };
 
@@ -554,7 +554,7 @@ github_token: null,
                              githubUsername,
                 avatar_url: session.user.user_metadata?.avatar_url,
                 // Do not store OAuth provider token as PAT
-github_token: null,
+
                 updated_at: new Date().toISOString()
               };
 
@@ -581,7 +581,7 @@ github_token: null,
                 id: session.user.id,
                 github_username: session.user.user_metadata?.user_name || 'user',
                 // Do not store OAuth provider token as PAT
-github_token: null,
+
                 display_name: session.user.user_metadata?.full_name || session.user.user_metadata?.user_name || 'User',
                 avatar_url: session.user.user_metadata?.avatar_url
               };
@@ -687,7 +687,7 @@ github_token: null,
                   id: session.user.id,
                   github_username: `user_${session.user.id.substring(0, 8)}`,
                   // Do not store OAuth provider token as PAT
-github_token: null,
+
                   display_name: session.user.email || 'User',
                   avatar_url: session.user.user_metadata?.avatar_url
                 };
