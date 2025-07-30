@@ -8,11 +8,12 @@
 version=1.0
 
 [window]
-width=1280
-height=761
-splitter_state=AAAA/wAAAAEAAAACAAAAmAAAAIIB/////wEAAAACAA==
+width=579
+height=780
+splitter_state=AAAA/wAAAAEAAAACAAAARgAAAIUB/////wEAAAACAA==
 
 [files]
+.env.local
 app\globals.css
 app\layout.tsx
 app\loading.tsx
@@ -20,12 +21,11 @@ app\page.tsx
 app\api\analyze\route.ts
 app\api\auth\callback\route.ts
 app\api\bug-report\route.ts
+app\api\chat\route.ts
 app\api\session\route.ts
 app\auth\error\page.tsx
 app\bug-report\page.tsx
 app\connect-github\page.tsx
-app\dashboard\loading.tsx
-app\dashboard\page.tsx
 app\debug\page.tsx
 app\profile\page.tsx
 app\signout\page.tsx
@@ -45,6 +45,13 @@ components\theme-provider.tsx
 components\theme-toggle.tsx
 components\token-management.tsx
 components\token-warning-badge.tsx
+components\dashboard\ai-chat-panel.tsx
+components\dashboard\error-display.tsx
+components\dashboard\index.ts
+components\dashboard\job-template-modal.tsx
+components\dashboard\repository-actions.tsx
+components\dashboard\repository-card.tsx
+components\dashboard\repository-list.tsx
 components\ui\accordion.tsx
 components\ui\alert-dialog.tsx
 components\ui\alert.tsx
@@ -110,7 +117,6 @@ context7\docs\README.tr.md
 context7\docs\README.uk.md
 context7\docs\README.zh-CN.md
 context7\docs\README.zh-TW.md
-context7\schema\context7.json
 context7\src\index.ts
 context7\src\lib\api.ts
 context7\src\lib\encryption.ts
@@ -118,6 +124,10 @@ context7\src\lib\types.ts
 context7\src\lib\utils.ts
 hooks\use-mobile.tsx
 hooks\use-toast.ts
+hooks\dashboard\index.ts
+hooks\dashboard\use-ai-chat.ts
+hooks\dashboard\use-repositories.ts
+hooks\dashboard\use-sorting-and-dnd.ts
 lib\ai-assistant.ts
 lib\gemini.ts
 lib\github-api.ts
@@ -134,18 +144,14 @@ mcp-sequential-thinking\pyproject.toml
 mcp-sequential-thinking\README.md
 mcp-sequential-thinking\run_server.py
 mcp-sequential-thinking\uv.lock
-mcp-sequential-thinking\mcp_sequential_thinking\analysis.py
-mcp-sequential-thinking\mcp_sequential_thinking\logging_conf.py
-mcp-sequential-thinking\mcp_sequential_thinking\models.py
-mcp-sequential-thinking\mcp_sequential_thinking\server.py
-mcp-sequential-thinking\mcp_sequential_thinking\storage.py
-mcp-sequential-thinking\mcp_sequential_thinking\storage_utils.py
-mcp-sequential-thinking\mcp_sequential_thinking\testing.py
-mcp-sequential-thinking\mcp_sequential_thinking\utils.py
-mcp-sequential-thinking\mcp_sequential_thinking\__init__.py
 mcp-sequential-thinking\tests\test_analysis.py
 mcp-sequential-thinking\tests\test_models.py
 mcp-sequential-thinking\tests\test_storage.py
 mcp-sequential-thinking\tests\__init__.py
-scripts\add-github-token-column.sql
+stores\chat-store.ts
+stores\error-store.ts
+stores\index.ts
+stores\repository-store.ts
+stores\types.ts
+stores\ui-store.ts
 tests\oauth-token-persistence.spec.js

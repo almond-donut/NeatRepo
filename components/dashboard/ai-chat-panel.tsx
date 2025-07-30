@@ -16,6 +16,11 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({
   repositories, 
   className = '' 
 }) => {
+
+  // Chat mode state and setter
+  const mode = useChatStore((s) => s.mode);
+  const setMode = useChatStore((s) => s.setMode);
+
   const {
     messages,
     currentMessage,
@@ -72,7 +77,17 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({
             <Sparkles className="h-4 w-4" />
             AI Assistant
           </CardTitle>
-          <div className="flex gap-1">
+          <div className="flex gap-1 items-center">
+            {/* Mode Toggle */}
+            <Button
+              size="sm"
+              variant={mode === 'critic' ? 'destructive' : 'outline'}
+              className="text-xs px-2 py-1"
+              onClick={() => setMode(mode === 'critic' ? 'nice' : 'critic')}
+              title={mode === 'critic' ? 'Switch to Nice Mode' : 'Switch to Critic Mode'}
+            >
+              {mode === 'critic' ? 'Critic' : 'Nice'}
+            </Button>
             {hasMessages && (
               <Button
                 variant="ghost"
@@ -95,7 +110,7 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({
           </div>
         </div>
       </CardHeader>
-      
+
       <CardContent className="flex-1 flex flex-col p-3 gap-3">
         {/* Quick Actions */}
         {!hasMessages && (

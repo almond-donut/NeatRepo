@@ -205,7 +205,15 @@ export class AIAssistantEngine {
   }
 
   // 🧠 PARSE USER COMMAND USING AI
-  async parseCommand(userMessage: string): Promise<AIAction> {
+  /**
+   * Parses the user's message to determine the intended action and parameters.
+   * This now includes logic for "critic mode" and "nice mode".
+   *
+   * @param userMessage The user's input string.
+   * @param mode The AI's personality mode ('critic' or 'nice').
+   * @returns An AIAction object representing the parsed command.
+   */
+  async parseCommand(userMessage: string, mode: 'critic' | 'nice' = 'nice'): Promise<AIAction> {
     // 🔍 DEBUG: Log interview state
     console.log('🔍 DEBUG Interview State:', {
       isActive: this.interviewState.isActive,
@@ -240,7 +248,15 @@ export class AIAssistantEngine {
       };
     }
 
-    const systemPrompt = `You are an AI assistant that helps developers manage their GitHub repositories.
+
+    // --- Feature Request: Critic/Nice Mode ---
+    // Dynamically set the system prompt based on the selected mode.
+    const criticPrompt = `You are a brutally honest, hyper-critical senior engineer reviewing a junior's portfolio. Do not hold back. Point out every flaw, no matter how small. Be direct and use a numbered list for what's wrong, and another for how to fix it.`;
+    const nicePrompt = `You are a friendly and encouraging mentor reviewing a developer's portfolio. Focus on the positive aspects first, then gently provide constructive feedback. Use a numbered list for suggestions.`;
+
+    const systemPrompt = `You are an AI assistant that helps developers manage their GitHub repositories. Your current personality is: ${mode === 'critic' ? 'The Critic' : 'The Mentor'}.
+
+    ${mode === 'critic' ? criticPrompt : nicePrompt}
 
     Analyze the user's message and determine what action they want to perform. Respond with a JSON object containing:
 
