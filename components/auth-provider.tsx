@@ -1342,7 +1342,7 @@ const updateToken = async (token: string) => {
     loading,
     signOut,
     showTokenPopup: () => setShowTokenPopupState(true),
-    hasToken: !!profile?.github_pat_token,
+    hasToken: !!profile?.github_pat_token || (user && typeof window !== 'undefined' && !!localStorage.getItem(`oauth_provider_token_${user.id}`)),
     getEffectiveToken,
     updateToken,
     deleteToken,

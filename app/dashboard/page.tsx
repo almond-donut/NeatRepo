@@ -1053,7 +1053,7 @@ ${successCount > 0 ? 'Your portfolio is now cleaner and more professional.' : ''
       }
       
       // Force refresh all data
-      const token = currentProfile?.github_pat_token;
+      const token = profile?.github_pat_token;
       if (token) {
         setIsLoadingRepos(true);
         await repositoryManager.fetchRepositories(token, true);
@@ -1069,7 +1069,7 @@ ${successCount > 0 ? 'Your portfolio is now cleaner and more professional.' : ''
     console.log('🔄 MEDIUM RECOVERY: Checking session and refreshing data...');
     
     try {
-      const token = currentProfile?.github_pat_token;
+      const token = profile?.github_pat_token;
       if (token) {
         // Background sync without showing loading
         await repositoryManager.backgroundSync(token);
@@ -1083,7 +1083,7 @@ ${successCount > 0 ? 'Your portfolio is now cleaner and more professional.' : ''
     console.log('🔄 SHORT RECOVERY: Light refresh...');
     
     try {
-      const token = currentProfile?.github_pat_token;
+      const token = profile?.github_pat_token;
       if (token) {
         await repositoryManager.backgroundSync(token);
       }
@@ -1095,7 +1095,7 @@ ${successCount > 0 ? 'Your portfolio is now cleaner and more professional.' : ''
   const checkSystemHealth = async () => {
     try {
       // Test GitHub API connectivity
-      const token = currentProfile?.github_pat_token;
+      const token = profile?.github_pat_token;
       if (token) {
         const response = await fetch("https://api.github.com/user", {
           headers: { Authorization: `token ${token}` },
@@ -2194,8 +2194,8 @@ These repositories best demonstrate the skills recruiters look for in ${jobTitle
       <div className="container mx-auto px-6 py-8">
         <div className="grid grid-cols-3 gap-8">
           <div className="col-span-2">
-            {/* GitHub Token Warning */}
-            {!currentProfile?.github_pat_token && (
+            {/* GitHub Token Warning - Use auth provider state */}
+            {!profile?.github_pat_token && (
               <GitHubTokenWarning onSetupToken={showTokenPopup} />
             )}
 
