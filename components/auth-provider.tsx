@@ -1029,6 +1029,7 @@ const updateToken = async (token: string) => {
   setIsSubmitting(true);
 
   try {
+    console.log('🔍 DEBUG: Entering try block for PAT save');
     // Always ensure we have a profile row BEFORE trying to update
     if (!profile) {
       console.log('ℹ️ AUTH: No profile in state – creating one first');
@@ -1103,6 +1104,9 @@ const updateToken = async (token: string) => {
     console.log('✅ AUTH: PAT saved successfully');
   } catch (error) {
     console.error('❌ AUTH: Could not save PAT:', error);
+    console.error('🔍 DEBUG: Error type:', typeof error);
+    console.error('🔍 DEBUG: Error constructor:', error?.constructor?.name);
+    console.error('🔍 DEBUG: Error stack:', error?.stack);
     alert('Failed to save token. Please check console for details and try again.');
   } finally {
     console.log('🧹 AUTH: PAT save flow complete (resetting submitting state)');
