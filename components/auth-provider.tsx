@@ -80,6 +80,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const createProfileWithUsername = async (user: any, githubUsername: string, githubId?: string) => {
     try {
       console.log('🔧 AUTH: Creating profile with username:', githubUsername);
+      console.log('🔍 DEBUG: User data for profile creation:', {
+        userId: user.id,
+        githubUsername,
+        githubId,
+        userMetadata: user.user_metadata
+      });
 
       const newProfile = {
         id: user.id,
@@ -91,21 +97,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         updated_at: new Date().toISOString(),
       };
 
-      const { error: upsertError } = await supabase
+      console.log('🔍 DEBUG: Profile object to upsert:', newProfile);
+      
+      const upsertResult = await supabase
         .from('user_profiles')
         .upsert(newProfile, { onConflict: 'id' });
 
-      if (upsertError) {
-        console.error('❌ Failed to create profile in database:', upsertError);
+      console.log('🔍 DEBUG: Upsert result:', upsertResult);
+      
+      if (upsertResult.error) {
+        console.error('❌ Failed to create profile in database:', upsertResult.error);
+        console.error('🔍 DEBUG: Full upsert error details:', {
+          code: upsertResult.error.code,
+          message: upsertResult.error.message,
+          details: upsertResult.error.details,
+          hint: upsertResult.error.hint
+        });
         // 🔧 CRITICAL FIX: Set profile state even if database operation fails
         // This prevents "No account" state while still allowing the app to function
         console.log('🔄 AUTH: Setting profile state despite database error to prevent "No account" state');
         setProfile(newProfile);
+        console.log('🔍 DEBUG: Profile state set to:', newProfile);
         return newProfile; // Don't throw error, continue with local profile state
       }
 
-      console.log('✅ Profile created successfully:', githubUsername);
+      console.log('✅ Profile created successfully in database:', githubUsername);
       setProfile(newProfile);
+      console.log('🔍 DEBUG: Profile state set successfully to:', newProfile);
       return newProfile;
     } catch (error) {
       console.error('❌ Profile creation failed:', error);
