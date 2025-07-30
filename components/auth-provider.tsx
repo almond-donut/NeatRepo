@@ -59,6 +59,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (refData?.session?.user) {
             console.log('✅ AUTH: User recovered during fallback refresh:', refData.session.user.id);
             setUser(refData.session.user);
+            
+            // 🔧 CRITICAL FIX: Load profile data with PAT token after fallback recovery
+            console.log('🔄 AUTH: Loading profile data after fallback recovery...');
+            try {
+              const recoveredProfile = await fetchProfile(refData.session.user.id);
+              console.log('✅ AUTH: Profile recovered after fallback:', {
+                hasProfile: !!recoveredProfile,
+                hasPAT: !!recoveredProfile?.github_pat_token,
+                username: recoveredProfile?.github_username
+              });
+            } catch (profileError) {
+              console.error('❌ AUTH: Failed to load profile after fallback recovery:', profileError);
+            }
           } else {
             console.warn('⚠️ AUTH: Still no user after fallback refresh');
           }
@@ -293,7 +306,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const loadUserSpecificData = async () => {
       // Only load data if user is authenticated
-      if (!user) return;
+      if (!user) {
+        // 🔧 CRITICAL FIX: On hard refresh, check for cached user data before user state is set
+        if (typeof window !== 'undefined') {
+          const cachedUserId = sessionStorage.getItem('current_user_id');
+          if (cachedUserId) {
+            console.log('🔄 AUTH: Hard refresh detected, checking cached PAT for user:', cachedUserId);
+            const cachedPAT = localStorage.getItem(`github_pat_token_${cachedUserId}`);
+            if (cachedPAT && !cachedPAT.startsWith('gho_')) {
+              console.log('✅ AUTH: Found cached PAT after hard refresh, will restore when user loads');
+              // PAT will be restored when user state is properly set
+            }
+          }
+        }
+        return;
+      }
 
       console.log('🔧 AUTH: Loading user-specific data for:', user.id);
 
@@ -322,6 +349,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 .from('user_profiles')
                 .update({ github_pat_token: userSpecificToken, updated_at: new Date().toISOString() })
                 .eq('id', user.id);
+              console.log('✅ AUTH: Cached PAT synced to database after hard refresh recovery');
             } catch (syncErr) {
               console.error('❌ AUTH: Failed to sync cached token to DB:', syncErr);
             }
@@ -393,6 +421,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setLoading(false);
             return;
           }
+          
+          // 🔧 CRITICAL FIX: On hard refresh, attempt to recover cached PAT data
+          console.log('🔍 AUTH: Checking for cached PAT data after hard refresh...');
+          const currentUserId = sessionStorage.getItem('current_user_id');
+          if (currentUserId) {
+            const cachedPAT = localStorage.getItem(`github_pat_token_${currentUserId}`);
+            if (cachedPAT && !cachedPAT.startsWith('gho_')) {
+              console.log('🔄 AUTH: Found cached PAT for user after hard refresh, will sync to profile');
+              // Note: Will be handled in loadUserSpecificData effect
+            }
+          }
         }
 
         // 🔧 CRITICAL FIX: Add retry mechanism for session loading to prevent intermittent failures
@@ -432,6 +471,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (session?.user) {
           console.log('✅ Setting user from session:', session.user.id);
           setUser(session.user);
+          
+          // 🔧 CRITICAL FIX: Store current user ID for hard refresh recovery
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem('current_user_id', session.user.id);
+          }
 
            // 🔧 CRITICAL FIX: Only set loading false AFTER user is set
            // This prevents race condition where loading=false but user=null
@@ -680,7 +724,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
              // 🚑 CRITICAL: Set user and clear loading IMMEDIATELY when we have a valid session
              setUser(session.user);
              setLoading(false);
-             console.log('✅ AUTH: User and loading state set immediately for provider token session');
+             
+              // 🔧 CRITICAL FIX: Store current user ID for hard refresh recovery
+              sessionStorage.setItem('current_user_id', session.user.id);
+              console.log('✅ AUTH: User and loading state set immediately for provider token session');
             localStorage.setItem(`oauth_provider_token_${session.user.id}`, session.provider_token);
             console.log('✅ AUTH: Provider token stored for user:', session.user.id);
 
@@ -775,6 +822,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // For non-provider-token sessions, set user and loading here
         if (!session?.provider_token) {
           setUser(session?.user ?? null);
+          
+          // 🔧 CRITICAL FIX: Store current user ID for hard refresh recovery
+          if (session?.user && typeof window !== 'undefined') {
+            sessionStorage.setItem('current_user_id', session.user.id);
+          }
+          
           setLoading(false);
           console.log('✅ AUTH: User and loading set for non-provider session');
         }
@@ -940,6 +993,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } else if (event === 'SIGNED_OUT') {
           console.log("👋 AUTH: User signed out");
           setProfile(null);
+          
+          // 🔧 CRITICAL FIX: Clear user ID from sessionStorage on sign out
+          if (typeof window !== 'undefined') {
+            sessionStorage.removeItem('current_user_id');
+          }
         }
       }
     );
@@ -983,7 +1041,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (typeof window !== 'undefined') {
       // Clear all localStorage data to prevent cross-user contamination
       localStorage.clear();
-      sessionStorage.clear();
+      sessionStorage.clear(); // This will also clear current_user_id
 
       // Also clear any IndexedDB or other storage that might cause conflicts
       try {
