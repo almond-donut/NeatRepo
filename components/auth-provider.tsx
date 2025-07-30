@@ -1081,7 +1081,14 @@ const updateToken = async (token: string) => {
     }
 
     // Update local state & storage
-    setProfile(prev => (prev ? { ...prev, github_pat_token: token } : null));
+    setProfile(prev => (
+        prev
+          ? { ...prev, github_pat_token: token }
+          : {
+              id: user.id,
+              github_pat_token: token,
+            } as any
+      ));
     if (typeof window !== 'undefined') {
       localStorage.setItem(`github_pat_token_${user.id}`, token);
       localStorage.removeItem(`token_popup_dismissed_${user.id}`);
