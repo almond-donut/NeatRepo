@@ -1055,34 +1055,28 @@ const updateToken = async (token: string) => {
       }
     }
 
-    // 1️⃣  Try updating existing row first (fast-path)
+    // 1️⃣ Fast-path update
     console.log('🔄 AUTH: Attempting to update existing profile row with PAT');
-    const { error: updateError, count } = await supabase
+    const { error: updateError } = await supabase
       .from('user_profiles')
       .update({ github_pat_token: token, updated_at: new Date().toISOString() })
-      .eq('id', user.id)
-      .select('id', { count: 'exact', head: true });
+      .eq('id', user.id);
 
     if (updateError) {
       console.error('❌ AUTH: Update error – falling back to upsert', updateError);
-    }
-
-    if (updateError || (count ?? 0) === 0) {
-      // 2️⃣  Fallback: upsert (insert or replace)
+      // Fallback upsert
       console.log('➕ AUTH: Performing upsert fallback');
       const upsertPayload: any = {
         id: user.id,
         github_pat_token: token,
         updated_at: new Date().toISOString(),
       };
-
       const { error: upsertError } = await supabase
         .from('user_profiles')
         .upsert(upsertPayload, {
           onConflict: 'id',
           returning: 'minimal',
         });
-
       if (upsertError) throw upsertError;
     }
 
