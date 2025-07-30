@@ -119,7 +119,7 @@ export const RepositoryCard: React.FC<RepositoryCardProps> = ({
                       {repository.language && (
                         <div className="flex items-center gap-1">
                           <div 
-                            className="w-2 h-2 rounded-full bg-blue-500"
+                            className="w-2 h-2 rounded-full bg-yellow-500"
                             title={repository.language}
                           />
                           <span>{repository.language}</span>
@@ -208,7 +208,7 @@ export const RepositoryCard: React.FC<RepositoryCardProps> = ({
                           href={repository.parent.html_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline"
+                          className="text-yellow-600 hover:underline dark:text-yellow-400"
                         >
                           {repository.parent.full_name}
                         </a>

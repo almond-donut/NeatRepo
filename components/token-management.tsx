@@ -119,11 +119,11 @@ export default function TokenManagement({ currentToken, onTokenUpdate, onTokenDe
           </div>
 
           {/* Help Section */}
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-            <h4 className="font-medium text-blue-800 dark:text-blue-200 mb-2">
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+            <h4 className="font-medium text-yellow-800 dark:text-yellow-200 mb-2">
               🔧 Token Issues? Common Solutions:
             </h4>
-            <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
+            <ul className="text-sm text-yellow-700 dark:text-yellow-300 space-y-1">
               <li>• <strong>Lost access after system update?</strong> Recent authentication improvements may require re-entering your PAT</li>
               <li>• <strong>Delete not working?</strong> Generate new token with all 4 scopes</li>
               <li>• <strong>Wrong scopes selected?</strong> Delete current token and create new one</li>

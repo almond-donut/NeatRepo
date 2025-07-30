@@ -41,11 +41,11 @@ export const RepositoryActions: React.FC<RepositoryActionsProps> = ({
     <div className="space-y-4">
       {/* Preview Mode Banner */}
       {isPreviewMode && (
-        <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+        <div className="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800/50 rounded-lg p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Zap className="h-4 w-4 text-blue-600" />
-              <span className="text-sm font-medium text-blue-900 dark:text-blue-100">
+              <Zap className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+              <span className="text-sm font-medium text-yellow-900 dark:text-yellow-100">
                 Preview Mode Active
               </span>
             </div>
@@ -53,7 +53,7 @@ export const RepositoryActions: React.FC<RepositoryActionsProps> = ({
               <Button
                 size="sm"
                 onClick={applyPreview}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
+                className="bg-black hover:bg-gray-800 text-white dark:bg-white dark:hover:bg-gray-200 dark:text-black"
               >
                 <CheckCircle className="h-4 w-4 mr-1" />
                 Apply
@@ -62,7 +62,7 @@ export const RepositoryActions: React.FC<RepositoryActionsProps> = ({
                 size="sm"
                 variant="outline"
                 onClick={cancelPreview}
-                className="border-blue-300 text-blue-700 hover:bg-blue-50"
+                className="border-yellow-300 text-yellow-700 hover:bg-yellow-50 dark:border-yellow-600 dark:text-yellow-300 dark:hover:bg-yellow-950/30"
               >
                 <X className="h-4 w-4 mr-1" />
                 Cancel

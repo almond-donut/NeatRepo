@@ -75,7 +75,7 @@ export default function GitHubConnectPopup({ onClose, onSkip, userEmail }: GitHu
               <span>Secure OAuth authentication</span>
             </div>
             <div className="flex items-center space-x-3 text-sm">
-              <Zap className="h-4 w-4 text-blue-500" />
+              <Zap className="h-4 w-4 text-yellow-500" />
               <span>Access your repositories</span>
             </div>
             <div className="flex items-center space-x-3 text-sm">

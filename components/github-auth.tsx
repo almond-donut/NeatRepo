@@ -91,7 +91,7 @@ export default function GitHubAuth({ onClose }: GitHubAuthProps) {
               <span>Bulk Operations</span>
             </div>
             <div className="flex items-center space-x-3">
-              <Users className="h-4 w-4 text-blue-500" />
+              <Users className="h-4 w-4 text-yellow-500" />
               <span>Repository Management</span>
             </div>
           </div>
