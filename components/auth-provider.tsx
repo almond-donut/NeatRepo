@@ -1030,6 +1030,56 @@ const updateToken = async (token: string) => {
 
   try {
     console.log('🔍 DEBUG: Entering try block for PAT save');
+    
+    // 🔐 CRITICAL FIX: Validate token with GitHub API FIRST before saving
+    console.log('🔍 AUTH: Validating token with GitHub API...');
+    try {
+      const tokenTest = await fetch("https://api.github.com/user", {
+        headers: {
+          Authorization: `token ${token}`,
+          Accept: "application/vnd.github.v3+json",
+        },
+      });
+
+      if (!tokenTest.ok) {
+        if (tokenTest.status === 401) {
+          throw new Error('Invalid GitHub token - please check your token and try again');
+        } else if (tokenTest.status === 403) {
+          throw new Error('GitHub token lacks required permissions - please ensure your token has "repo" and "delete_repo" scopes');
+        } else {
+          throw new Error(`GitHub API validation failed with status ${tokenTest.status}`);
+        }
+      }
+
+      const userData = await tokenTest.json();
+      console.log('✅ AUTH: Token validated successfully for user:', userData.login);
+      
+      // Also check token scopes
+      const scopeCheck = await fetch("https://api.github.com", {
+        method: 'HEAD',
+        headers: {
+          Authorization: `token ${token}`,
+          Accept: "application/vnd.github.v3+json",
+        },
+      });
+      
+      const scopes = scopeCheck.headers.get('x-oauth-scopes') || '';
+      console.log('🔐 AUTH: Token scopes:', scopes);
+      
+      // Check for required scopes
+      const requiredScopes = ['repo', 'delete_repo'];
+      const hasRequiredScopes = requiredScopes.some(scope => scopes.includes(scope)) || scopes.includes('repo');
+      
+      if (!hasRequiredScopes) {
+        console.warn('⚠️ AUTH: Token may lack required scopes for full functionality');
+        // Don't block saving, but warn user
+      }
+      
+    } catch (validationError) {
+      console.error('❌ AUTH: Token validation failed:', validationError);
+      throw validationError; // Re-throw to prevent saving invalid token
+    }
+
     // Always ensure we have a profile row BEFORE trying to update
     if (!profile) {
       console.log('ℹ️ AUTH: No profile in state – creating one first');
@@ -1101,13 +1151,19 @@ const updateToken = async (token: string) => {
     // Hide the PAT popup now that the token is saved (ensure this runs even in SSR)
     setShowTokenPopupState(false);
 
-    console.log('✅ AUTH: PAT saved successfully');
+    console.log('✅ AUTH: PAT saved and validated successfully');
   } catch (error) {
     console.error('❌ AUTH: Could not save PAT:', error);
     console.error('🔍 DEBUG: Error type:', typeof error);
     console.error('🔍 DEBUG: Error constructor:', error?.constructor?.name);
     console.error('🔍 DEBUG: Error stack:', error?.stack);
-    alert('Failed to save token. Please check console for details and try again.');
+    
+    // Show user-friendly error message
+    if (error instanceof Error) {
+      alert(`Failed to save token: ${error.message}`);
+    } else {
+      alert('Failed to save token. Please check console for details and try again.');
+    }
   } finally {
     console.log('🧹 AUTH: PAT save flow complete (resetting submitting state)');
     setIsSubmitting(false);

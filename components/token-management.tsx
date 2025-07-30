@@ -183,6 +183,7 @@ export default function TokenManagement({ currentToken, onTokenUpdate, onTokenDe
           onTokenSubmit={handleTokenSubmit}
           isSubmitting={isSubmitting}
           onClose={() => setShowTokenPopup(false)}
+          onSkip={() => setShowTokenPopup(false)}
         />
       )}
     </>
