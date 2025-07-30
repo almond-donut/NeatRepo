@@ -130,14 +130,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const fetchProfile = async (userId: string) => {
     try {
       console.log("🔍 AUTH: Fetching profile for user ID:", userId);
+      console.log('🔍 DEBUG: About to query user_profiles table');
+      
       const { data, error } = await supabase
         .from('user_profiles')
         .select('*')
         .eq('id', userId)
         .single();
 
+      console.log('🔍 DEBUG: Supabase query result:', { data, error });
+      
       if (error) {
         console.error('❌ AUTH: Error fetching profile:', error);
+        console.error('🔍 DEBUG: Full error details:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        });
         // If profile doesn't exist, create it
         if (error.code === 'PGRST116') {
           console.log('🔧 Profile not found, creating new profile...');
@@ -987,12 +997,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 // 🔐 SAVE GITHUB PAT (handles first-time users too)
 const updateToken = async (token: string) => {
+  console.log('🔍 DEBUG: updateToken called with token:', token ? 'PRESENT' : 'MISSING');
+  console.log('🔍 DEBUG: Current user:', user ? user.id : 'NULL');
+  console.log('🔍 DEBUG: Current profile:', profile ? profile.id : 'NULL');
+  
   if (!user) {
     console.warn('⚠️ AUTH: Tried to save PAT but user is null');
     return;
   }
 
-  console.log('💾 AUTH: Starting PAT save');
+  console.log('💾 AUTH: Starting PAT save for user:', user.id);
+  console.log('🔍 DEBUG: User metadata:', user.user_metadata);
   setIsSubmitting(true);
 
   try {
@@ -1004,7 +1019,9 @@ const updateToken = async (token: string) => {
         user.user_metadata?.preferred_username ||
         user.email?.split('@')[0] ||
         'user';
-      await supabase
+      
+      console.log('🔍 DEBUG: Creating profile with username:', fallbackUsername);
+      const insertResult = await supabase
         .from('user_profiles')
         .insert({
           id: user.id,
@@ -1013,6 +1030,11 @@ const updateToken = async (token: string) => {
           display_name: user.user_metadata?.full_name || user.user_metadata?.name || fallbackUsername,
           updated_at: new Date().toISOString(),
         }, { returning: 'minimal' });
+      
+      console.log('🔍 DEBUG: Profile insert result:', insertResult);
+      if (insertResult.error) {
+        console.error('❌ DEBUG: Profile insert failed:', insertResult.error);
+      }
     }
 
     // 1️⃣  Try updating existing row first (fast-path)
