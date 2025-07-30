@@ -280,10 +280,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           userSpecificToken = null;
         }
 
-        if (userSpecificToken && !userSpecificToken.startsWith('gho_') && profile?.github_pat_token !== userSpecificToken) {
-          console.log('✅ AUTH: Found user-specific cached token');
-          // Update profile with cached token if it matches this user
-          setProfile(prev => prev ? { ...prev, github_pat_token: userSpecificToken } : null);
+        if (userSpecificToken && !userSpecificToken.startsWith('gho_')) {
+          // If the cached token differs from the profile value, sync it locally **and** persist it to the DB
+          if (profile?.github_pat_token !== userSpecificToken) {
+            console.log('✅ AUTH: Found user-specific cached token, syncing to profile & DB');
+
+            // 1️⃣ Update local React state so UI can immediately leverage the PAT
+            setProfile(prev => (prev ? { ...prev, github_pat_token: userSpecificToken } : null));
+
+            // 2️⃣ Persist token to Supabase in the background so it survives hard refreshes
+            try {
+              await supabase
+                .from('user_profiles')
+                .update({ github_pat_token: userSpecificToken, updated_at: new Date().toISOString() })
+                .eq('id', user.id);
+            } catch (syncErr) {
+              console.error('❌ AUTH: Failed to sync cached token to DB:', syncErr);
+            }
+          }
         }
       } catch (error) {
         console.log('🔍 AUTH: No user-specific cached data found');
@@ -998,9 +1012,12 @@ if (!profile) {
     user.user_metadata?.full_name || user.user_metadata?.name || fallbackUsername;
 }
 
-const { error } = await supabase.from("user_profiles").upsert(basePayload, {
-  onConflict: "id",
-});
+const { error } = await supabase
+  .from('user_profiles')
+  .upsert(basePayload, {
+    onConflict: 'id',
+    returning: 'minimal', // Avoid waiting for the full row payload – faster & less chance of hanging
+  });
 
     if (error) throw error;
 
