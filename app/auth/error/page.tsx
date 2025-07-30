@@ -16,12 +16,17 @@ export default function AuthErrorPage() {
   }, [searchParams])
 
   const handleRetry = () => {
-    // Redirect to the homepage to re-initiate the auth flow
-    router.push('/')
+    // User must manually navigate to retry authentication
+    console.log('🔄 AUTH ERROR: User requested retry - manual navigation required')
+    // Show message to user about manual navigation
+    alert('Please manually navigate to the homepage to retry authentication.')
   }
 
   const handleGoHome = () => {
-    router.push('/')
+    // User must manually navigate to homepage
+    console.log('🏠 AUTH ERROR: User requested home - manual navigation required')
+    // Show message to user about manual navigation
+    alert('Please manually navigate to the homepage.')
   }
 
   return (
