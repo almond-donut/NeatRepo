@@ -987,57 +987,81 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 // 🔐 SAVE GITHUB PAT (handles first-time users too)
 const updateToken = async (token: string) => {
-  if (!user) return;
+  if (!user) {
+    console.warn('⚠️ AUTH: Tried to save PAT but user is null');
+    return;
+  }
+
+  console.log('💾 AUTH: Starting PAT save');
   setIsSubmitting(true);
+
   try {
-    // Build a safe payload for upsert. For first-time users we need to satisfy NOT NULL constraints (e.g. github_username)
-const basePayload: any = {
-  id: user.id,
-  github_pat_token: token,
-  updated_at: new Date().toISOString(),
-};
+    // Always ensure we have a profile row BEFORE trying to update
+    if (!profile) {
+      console.log('ℹ️ AUTH: No profile in state – creating one first');
+      const fallbackUsername =
+        user.user_metadata?.user_name ||
+        user.user_metadata?.preferred_username ||
+        user.email?.split('@')[0] ||
+        'user';
+      await supabase
+        .from('user_profiles')
+        .insert({
+          id: user.id,
+          github_username: fallbackUsername,
+          github_user_id: user.user_metadata?.user_id || null,
+          display_name: user.user_metadata?.full_name || user.user_metadata?.name || fallbackUsername,
+          updated_at: new Date().toISOString(),
+        }, { returning: 'minimal' });
+    }
 
-// If the profile hasn’t been created yet (or is missing critical fields) include sensible fallbacks
-if (!profile) {
-  const fallbackUsername =
-    user.user_metadata?.user_name ||
-    user.user_metadata?.preferred_username ||
-    user.email?.split("@")[0] ||
-    "user";
+    // 1️⃣  Try updating existing row first (fast-path)
+    console.log('🔄 AUTH: Attempting to update existing profile row with PAT');
+    const { error: updateError, count } = await supabase
+      .from('user_profiles')
+      .update({ github_pat_token: token, updated_at: new Date().toISOString() })
+      .eq('id', user.id)
+      .select('id', { count: 'exact', head: true });
 
-  basePayload.github_username = fallbackUsername;
-  // GitHub user ID might be unavailable for non-GitHub auth – use null which is accepted by our DB
-  basePayload.github_user_id = user.user_metadata?.user_id || null;
-  basePayload.display_name =
-    user.user_metadata?.full_name || user.user_metadata?.name || fallbackUsername;
-}
+    if (updateError) {
+      console.error('❌ AUTH: Update error – falling back to upsert', updateError);
+    }
 
-const { error } = await supabase
-  .from('user_profiles')
-  .upsert(basePayload, {
-    onConflict: 'id',
-    returning: 'minimal', // Avoid waiting for the full row payload – faster & less chance of hanging
-  });
+    if (updateError || (count ?? 0) === 0) {
+      // 2️⃣  Fallback: upsert (insert or replace)
+      console.log('➕ AUTH: Performing upsert fallback');
+      const upsertPayload: any = {
+        id: user.id,
+        github_pat_token: token,
+        updated_at: new Date().toISOString(),
+      };
 
-    if (error) throw error;
+      const { error: upsertError } = await supabase
+        .from('user_profiles')
+        .upsert(upsertPayload, {
+          onConflict: 'id',
+          returning: 'minimal',
+        });
 
+      if (upsertError) throw upsertError;
+    }
+
+    // Update local state & storage
     setProfile(prev => (prev ? { ...prev, github_pat_token: token } : null));
-    setShowTokenPopupState(false);
-
-    // 🔒 SECURITY: Store token with user-specific key
     if (typeof window !== 'undefined') {
       localStorage.setItem(`github_pat_token_${user.id}`, token);
       localStorage.removeItem(`token_popup_dismissed_${user.id}`);
       localStorage.removeItem(`token_popup_skipped_permanently_${user.id}`);
-      // Remove old global token key to prevent confusion
       localStorage.removeItem('github_pat_token');
-      console.log('🔑 AUTH: Token stored with user-specific key');
+      console.log('🔑 AUTH: Token stored in localStorage');
     }
+
+    console.log('✅ AUTH: PAT saved successfully');
   } catch (error) {
-    console.error('Error saving GitHub token:', error);
-    // Show error to user but don't close popup
-    alert('Failed to save token. Please try again.');
+    console.error('❌ AUTH: Could not save PAT:', error);
+    alert('Failed to save token. Please check console for details and try again.');
   } finally {
+    console.log('🧹 AUTH: PAT save flow complete (resetting submitting state)');
     setIsSubmitting(false);
   }
 };
