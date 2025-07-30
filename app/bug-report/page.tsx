@@ -303,7 +303,7 @@ export default function BugReportPage() {
                           type="file"
                           accept="image/*"
                           multiple
-                          className="hidden"
+                          className="sr-only"
                           onChange={handleScreenshotUpload}
                         />
                       </Label>
