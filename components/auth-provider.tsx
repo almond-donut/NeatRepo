@@ -1088,9 +1088,10 @@ const updateToken = async (token: string) => {
       localStorage.removeItem(`token_popup_skipped_permanently_${user.id}`);
       localStorage.removeItem('github_pat_token');
       console.log('🔑 AUTH: Token stored in localStorage');
-      // Hide the PAT popup now that the token is saved
-      setShowTokenPopupState(false);
+
     }
+    // Hide the PAT popup now that the token is saved (ensure this runs even in SSR)
+    setShowTokenPopupState(false);
 
     console.log('✅ AUTH: PAT saved successfully');
   } catch (error) {
