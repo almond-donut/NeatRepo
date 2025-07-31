@@ -25,7 +25,7 @@ export function useDashboard() {
   // Repositories hook manages all repo data and actions
   const repos = useRepositories(
     // For now, we'll handle chat messages separately
-    (message) => console.log("Chat message:", message),
+    () => {},
     modals.openModal,             // Pass modal-opening function
     modals.setRepoToDelete,       // Pass state setter
     modals.setRepoToRename        // Pass state setter
@@ -81,7 +81,6 @@ export function useDashboard() {
     
     // Placeholder for logic that would live here or in another hook
     generateTemplate: async (templateId: string) => { 
-        console.log("Generating template:", templateId); 
         chat.addChatMessage({ role: 'assistant', content: `Template generation for "${templateId}" is not fully implemented yet.` });
     },
     generateJobTemplate: async () => {

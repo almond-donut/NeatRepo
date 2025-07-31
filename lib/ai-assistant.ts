@@ -136,9 +136,9 @@ function parseIntent(message: string, context: UserContext): AIAction {
     };
   }
 
-  if (lowerMessage.includes('recommend') && lowerMessage.includes('job')) {
-    const jobTitleMatch = lowerMessage.match(/for (a|an) (.*?) position/);
-    const jobTitle = jobTitleMatch ? jobTitleMatch[2] : 'a developer role';
+  if (lowerMessage.includes('recommend') && (lowerMessage.includes('job') || lowerMessage.includes('position'))) {
+    const jobTitleMatch = lowerMessage.match(/for (?:a |an )?(.*?)(?:\s+position|$)/);
+    const jobTitle = jobTitleMatch ? jobTitleMatch[1].trim() : 'developer';
     return {
       type: 'recommend_repos_for_job',
       intent: 'User wants repository recommendations for a job application.',
@@ -156,11 +156,15 @@ function parseIntent(message: string, context: UserContext): AIAction {
     };
   }
 
-  if (lowerMessage.includes('analyze') || lowerMessage.includes('structure') || lowerMessage.includes('suggestions') || lowerMessage.includes('improve')) {
+  if (lowerMessage.includes('analyze') || lowerMessage.includes('structure') || lowerMessage.includes('suggestions') || lowerMessage.includes('improve') || lowerMessage.includes('think') || lowerMessage.includes('opinion')) {
     return {
       type: 'general_response',
       intent: 'User wants analysis or suggestions about their repositories.',
-      parameters: { originalMessage: message, analyzeRepos: true },
+      parameters: { 
+        originalMessage: message, 
+        analyzeRepos: true,
+        isCriticMode: context.preferences?.isCriticMode || false
+      },
       confidence: 0.7,
     };
   }

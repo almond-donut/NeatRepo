@@ -55,7 +55,12 @@ export function useChatAssistant(repositories: GitHubRepo[]) {
   };
 
   const processMessage = async (currentMessage: string) => {
-    // The AI assistant context is already updated via useEffect when repositories change
+    // Update the AI assistant context with critic mode
+    aiAssistant.updateUserContext({ 
+      repositories,
+      preferences: { isCriticMode }
+    });
+
     // Process the message using the AI assistant
     const response = await aiAssistant.processMessage(currentMessage);
     
