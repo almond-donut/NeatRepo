@@ -1,4 +1,4 @@
-
+// app/dashboard/components/ChatSidebar.tsx
 "use client"
 
 import React from 'react';
@@ -55,7 +55,7 @@ export function ChatSidebar({
   }
 
   return (
-    <Card className="sticky top-24 shadow-lg border-gray-700/50">
+    <Card className="shadow-lg border-gray-700/50">
       {/* --- RESTORED HEADER --- */}
       <CardHeader className="flex flex-row items-center justify-between bg-gray-800/80 backdrop-blur-sm border-b border-gray-700/50 p-2">
         <div className="flex items-center gap-2">
