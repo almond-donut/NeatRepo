@@ -134,20 +134,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const getEffectiveToken = async (): Promise<string | null> => {
-    if (profile?.github_pat_token) return profile.github_pat_token;
+    console.log("--- 🕵️‍♂️ getEffectiveToken Diagnostic ---");
 
-    if (user && typeof window !== 'undefined') {
-      const cachedPat = localStorage.getItem(`github_pat_token_${user.id}`);
-      if (cachedPat && !cachedPat.startsWith('gho_')) return cachedPat;
-
-      const oauthProviderToken = localStorage.getItem(`oauth_provider_token_${user.id}`);
-      if (oauthProviderToken) return oauthProviderToken;
+    // Priority 1: Check the live profile state from React.
+    if (profile) {
+        if (profile.github_pat_token) {
+            console.log("✅ [SUCCESS] Found PAT in the loaded profile state.");
+            console.log("--- Diagnostic END ---");
+            return profile.github_pat_token;
+        } else {
+            console.log("🟡 [INFO] Profile is loaded, but it does not contain a PAT.");
+        }
+    } else {
+        console.log("🟡 [INFO] Profile state is currently null (still loading or not found).");
     }
 
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session?.provider_token) return session.provider_token;
+    // Priority 2: Check localStorage as a fast fallback. This is crucial for hard refreshes.
+    if (user && typeof window !== 'undefined') {
+        const key = `github_pat_token_${user.id}`;
+        const cachedPat = localStorage.getItem(key);
+        
+        if (cachedPat) {
+            if (!cachedPat.startsWith('gho_')) {
+                console.log("✅ [SUCCESS] Found PAT in localStorage cache.");
+                console.log("--- Diagnostic END ---");
+                return cachedPat;
+            } else {
+                console.log("🔴 [ERROR] An OAuth token (gho_) was incorrectly saved as a PAT in localStorage. Ignoring it.");
+            }
+        } else {
+            console.log(`🟡 [INFO] No PAT found in localStorage for key: \"${key}\"`);
+        }
+    } else {
+        console.log("🟡 [INFO] Cannot check localStorage because the user object isn't available yet.");
+    }
 
-    return null;
+    console.log("🔴 [FAILURE] No valid Personal Access Token (PAT) was found.");
+    console.log("--- Diagnostic END ---");
+    return null; // Explicitly return null. DO NOT fall back to any other token.
   };
   
   const handleSkipToken = () => {
