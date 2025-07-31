@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { GitHubRepo, ChatMessage } from '../types';
 import { Github, Send, ArrowUp, Square, Code, Lightbulb, Zap, MessageCircle, Download } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
 
 // Props Interface for the component
 interface ChatSidebarProps {
@@ -85,6 +86,17 @@ export function ChatSidebar({
         </div>
       </CardHeader>
       
+      {/* Interview Progress Bar */}
+      {isInterviewMode && interviewProgress > 0 && (
+        <div className="px-4 py-2 border-b border-gray-700/50 bg-blue-500/5">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs text-blue-400 font-medium">Interview Progress</span>
+            <span className="text-xs text-blue-400">{Math.round(interviewProgress)}%</span>
+          </div>
+          <Progress value={interviewProgress} className="h-2 bg-gray-800" />
+        </div>
+      )}
+      
       <CardContent className="p-4 h-[60vh] flex flex-col">
         <ScrollArea className="flex-grow overflow-hidden pr-2">
           <div className="space-y-4">
@@ -115,11 +127,11 @@ export function ChatSidebar({
                       variant="outline"
                       size="sm"
                       className="w-full justify-start bg-blue-500/10 text-blue-400 border-blue-500/30 hover:bg-blue-500/20 text-xs h-8"
-                      onClick={() => sendDirectMessage("generate portfolio readme")}
+                      onClick={() => sendDirectMessage("generate personal readme based on quick interview")}
                       disabled={isAiThinking || repositories.length === 0 || isInterviewMode}
                     >
                       <MessageCircle className="h-3 w-3 mr-1.5" />
-                      {isInterviewMode ? 'Interview Active...' : 'Generate Portfolio README'}
+                      {isInterviewMode ? 'Interview Active...' : 'Generate Personal README Based on Quick Interview'}
                     </Button>
                   </div>
                 </div>

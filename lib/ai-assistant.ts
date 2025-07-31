@@ -147,10 +147,19 @@ function parseIntent(message: string, context: UserContext): AIAction {
     };
   }
 
+  if (lowerMessage.includes('generate') && lowerMessage.includes('personal') && lowerMessage.includes('readme')) {
+    return {
+      type: 'start_interview',
+      intent: 'User wants to generate a personal README through interview.',
+      parameters: {},
+      confidence: 0.95,
+    };
+  }
+
   if (lowerMessage.includes('generate') && lowerMessage.includes('portfolio') && lowerMessage.includes('readme')) {
     return {
-      type: 'recommend_cv_repos',
-      intent: 'User wants to generate a portfolio README.',
+      type: 'start_interview',
+      intent: 'User wants to generate a portfolio README through interview.',
       parameters: {},
       confidence: 0.9,
     };
