@@ -161,23 +161,45 @@ export function useRepositories(
     const reposToDelete = repositories.filter(repo => selectedRepos.has(repo.id));
     if (reposToDelete.length === 0) return;
     if (!window.confirm(`Are you sure you want to permanently delete ${reposToDelete.length} repositories? This action cannot be undone.`)) return;
-    
+
     setIsDeleting(true);
-    let deletedCount = 0;
-    for (const repo of reposToDelete) {
+
+    const successfullyDeletedIds = new Set<number>();
+
+    // Use Promise.all to run delete requests in parallel for speed
+    const deletePromises = reposToDelete.map(async (repo) => {
       try {
         const response = await fetch(`https://api.github.com/repos/${repo.full_name}`, {
           method: 'DELETE',
           headers: { 'Authorization': `token ${effectiveToken}`, 'Accept': 'application/vnd.github.v3+json' },
         });
-        if (response.status === 204) deletedCount++;
-        else console.error(`Failed to delete ${repo.name}: ${response.statusText}`);
+
+        if (response.status === 204) {
+          console.log(`✅ Successfully deleted ${repo.full_name}`);
+          successfullyDeletedIds.add(repo.id);
+        } else {
+          const errorData = await response.json();
+          console.error(`Failed to delete ${repo.name}:`, errorData.message);
+        }
       } catch (error) {
-        console.error(`Error deleting ${repo.name}:`, error);
+        console.error(`Error during fetch for deleting ${repo.name}:`, error);
       }
+    });
+
+    // Wait for all delete operations to complete
+    await Promise.all(deletePromises);
+
+    // ✨ THE FIX: Update the local state directly for an instant UI update.
+    // We filter out the repositories whose IDs are in our successfullyDeletedIds set.
+    if (successfullyDeletedIds.size > 0) {
+      setRepositories(prevRepos => 
+        prevRepos.filter(repo => !successfullyDeletedIds.has(repo.id))
+      );
     }
-    await handleRefresh();
-    addChatMessage({ role: "assistant", content: `🗑️ Bulk delete complete. Deleted ${deletedCount} of ${reposToDelete.length} repositories.` });
+
+    addChatMessage({ role: "assistant", content: `🗑️ Bulk delete complete. Deleted ${successfullyDeletedIds.size} of ${reposToDelete.length} repositories.` });
+
+    // Reset the UI state
     setIsDeleting(false);
     setIsDeleteMode(false);
     setSelectedRepos(new Set());
