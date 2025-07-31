@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import { AuthContext, AuthContextType, UserProfile, useAuth } from "./auth/auth-context";
-import { fetchProfileService, updateTokenService, deleteTokenService } from "@/lib/auth/profile-service";
+import { fetchProfileService, updateTokenService, deleteTokenService, validateTokenService } from "@/lib/auth/profile-service";
 import GitHubTokenPopup from "./github-token-popup";
 
 // Re-export useAuth for convenience if other files import it from here
@@ -43,8 +43,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     }
                 }
                 
+
                 const fetchedProfile = await fetchProfileService(currentUser.id, currentUser);
                 setProfile(fetchedProfile);
+
+                // ✨ NEW VALIDATION LOGIC ✨
+                // If the fetched profile contains a PAT, validate it immediately on load.
+                if (fetchedProfile?.github_pat_token) {
+                    const isTokenValid = await validateTokenService(fetchedProfile.github_pat_token);
+                    if (!isTokenValid) {
+                        setIsTokenInvalid(true);
+                    }
+                }
 
             } else {
                 setUser(null);

@@ -1,3 +1,31 @@
+/**
+ * Performs a lightweight check with the GitHub API to see if a token is valid.
+ * @param token - The GitHub PAT to validate.
+ * @returns {Promise<boolean>} - True if the token is valid, false otherwise.
+ */
+export const validateTokenService = async (token: string): Promise<boolean> => {
+  try {
+    console.log("🔍 PROFILE_SERVICE: Validating PAT with GitHub API...");
+    const response = await fetch("https://api.github.com/user", {
+      headers: {
+        Authorization: `token ${token}`,
+        Accept: "application/vnd.github.v3+json",
+      },
+    });
+
+    if (response.status === 200) {
+      console.log("✅ PROFILE_SERVICE: PAT is valid.");
+      return true;
+    }
+
+    console.warn(`⚠️ PROFILE_SERVICE: PAT is invalid. GitHub API responded with ${response.status}.`);
+    return false;
+
+  } catch (error) {
+    console.error("❌ PROFILE_SERVICE: Error during token validation network request:", error);
+    return false; // Assume invalid on any network error
+  }
+};
 
 import { supabase } from "@/lib/supabase";
 import { User } from "@supabase/supabase-js";
