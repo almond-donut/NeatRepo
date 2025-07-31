@@ -8,9 +8,9 @@
 version=1.0
 
 [window]
-width=1280
-height=729
-splitter_state=AAAA/wAAAAEAAAACAAAARgAAAIIB/////wEAAAACAA==
+width=466
+height=793
+splitter_state=AAAA/wAAAAEAAAACAAAAZgAAAIIB/////wEAAAACAA==
 
 [files]
 app\globals.css
@@ -116,4 +116,20 @@ lib\repository-manager.ts
 lib\repository-sorter.ts
 lib\supabase.ts
 lib\utils.ts
+lib\ai\types.ts
+lib\ai\actions\.keep
+lib\ai\actions\analyzeComplexity.ts
+lib\ai\actions\createFile.ts
+lib\ai\actions\createRepo.ts
+lib\ai\actions\deleteRepo.ts
+lib\ai\actions\handleGeneralResponse.ts
+lib\ai\actions\handleInterviewAnswer.ts
+lib\ai\actions\recommendCVRepos.ts
+lib\ai\actions\recommendReposForJob.ts
+lib\ai\actions\sortRepos.ts
+lib\ai\actions\startInterview.ts
+lib\ai\analysis\.keep
+lib\ai\analysis\repositoryAnalysis.ts
+lib\ai\prompts\.keep
+lib\ai\prompts\analysisPrompts.ts
 lib\auth\profile-service.ts
