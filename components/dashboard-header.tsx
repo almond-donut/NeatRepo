@@ -15,7 +15,7 @@ export default function DashboardHeader() {
   const { theme } = useTheme()
 
   // Prefer avatar from profile, fallback to metadata
-  const avatarSrc = profile?.avatar_url || user?.user_metadata?.avatar_url;
+  const avatarSrc = profile?.avatar_url || user?.user_metadata?.avatar_url || '';
 
   const handleSignOut = async () => {
     await signOut();
@@ -23,7 +23,7 @@ export default function DashboardHeader() {
   }
 
   const handleSignIn = () => {
-    window.location.href = '/'
+    router.push('/')
   }
 
   const handleProfileSettings = () => {

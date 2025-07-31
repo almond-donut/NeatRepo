@@ -1,401 +1,90 @@
+// app/dashboard/hooks/useDashboard.ts
 "use client"
 
-import { useState, useEffect, useRef, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import { DropResult } from "@hello-pangea/dnd";
+import { useState } from "react";
 import { useAuth } from "@/components/auth-provider";
-import { repositoryManager } from "@/lib/repository-manager";
-import { aiAssistant } from "@/lib/ai-assistant";
-import { geminiAI } from "@/lib/gemini";
-import { supabase } from "@/lib/supabase";
-import { GitHubRepo, ChatMessage } from "../types";
+import { useRepositories } from "./useRepositories";
+import { useChatAssistant } from "./useChatAssistant";
+import { useDashboardModals } from "./useDashboardModals";
 
 export function useDashboard() {
-  const { user, profile, loading, signOut, showTokenPopup, getEffectiveToken } = useAuth();
-  const router = useRouter();
-
-  // State Management
-  const [repositories, setRepositories] = useState<GitHubRepo[]>([]);
-  const [originalRepositories, setOriginalRepositories] = useState<GitHubRepo[]>([]);
-  const [chatMessage, setChatMessage] = useState("");
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
-
-  // Welcome text animation state
-  const WELCOME_FULL_TEXT = "Hi! I'm your AI assistant. Ask me anything about your repositories, or use the quick actions below to get started.";
-  const [welcomeText, setWelcomeText] = useState("");
-  const [isTypingWelcome, setIsTypingWelcome] = useState(true);
-
-  useEffect(() => {
-    let timeout: NodeJS.Timeout;
-    if (chatMessages.length === 0) {
-      setWelcomeText("");
-      setIsTypingWelcome(true);
-      let i = 0;
-      const type = () => {
-        setWelcomeText(WELCOME_FULL_TEXT.slice(0, i));
-        if (i < WELCOME_FULL_TEXT.length) {
-          i++;
-          timeout = setTimeout(type, 18);
-        } else {
-          setIsTypingWelcome(false);
-        }
-      };
-      type();
-    } else {
-      setWelcomeText("");
-      setIsTypingWelcome(false);
-    }
-    return () => clearTimeout(timeout);
-  }, [chatMessages.length]);
-  const [selectedRepos, setSelectedRepos] = useState<Set<number>>(new Set());
-  const [isDeleteMode, setIsDeleteMode] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [repoToDelete, setRepoToDelete] = useState<GitHubRepo | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [dateSortOrder, setDateSortOrder] = useState<'newest' | 'oldest' | 'default'>('default');
-  const [showJobTemplateModal, setShowJobTemplateModal] = useState(false);
-  const [jobTitle, setJobTitle] = useState('');
-  const [isGeneratingTemplate, setIsGeneratingTemplate] = useState(false);
-  const [templateResults, setTemplateResults] = useState<GitHubRepo[]>([]);
-  const [showAddRepoModal, setShowAddRepoModal] = useState(false);
-  const [newRepoName, setNewRepoName] = useState("");
-  const [newRepoDescription, setNewRepoDescription] = useState("");
-  const [isCreatingRepo, setIsCreatingRepo] = useState(false);
-  const [showRenameModal, setShowRenameModal] = useState(false);
-  const [repoToRename, setRepoToRename] = useState<GitHubRepo | null>(null);
-  const [newRepoNameForRename, setNewRepoNameForRename] = useState("");
-  const [isRenamingRepo, setIsRenamingRepo] = useState(false);
-  const [hasChanges, setHasChanges] = useState(false);
+  const { user, profile, loading, signOut, showTokenPopup } = useAuth();
+  
+  // --- State for features not belonging to other hooks ---
   const [isChatMinimized, setIsChatMinimized] = useState(false);
-  const [isAiThinking, setIsAiThinking] = useState(false);
-  const [isCriticMode, setIsCriticMode] = useState(false);
-  const [isInterviewMode, setIsInterviewMode] = useState(false);
-  const [interviewProgress, setInterviewProgress] = useState(0);
-  const [generatedReadme, setGeneratedReadme] = useState<string | null>(null);
-  const [isLoadingRepos, setIsLoadingRepos] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [isInitialized, setIsInitialized] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState("");
+  // Note: generateTemplate logic would be here or in its own hook
+
+  // --- Instantiate Child Hooks ---
+
+  // Modals hook must be initialized first to provide control functions
+  const modals = useDashboardModals();
+
+  // Chat hook needs a way to add messages, which it provides itself
+  const chat = useChatAssistant(
+    // It needs the list of repositories for context
+    [] // This will be updated via a useEffect later
+  );
+
+  // Repositories hook manages all repo data and actions
+  const repos = useRepositories(
+    chat.addChatMessage,          // Pass chat function to repo hook
+    modals.openModal,             // Pass modal-opening function
+    modals.setRepoToDelete,       // Pass state setter
+    modals.setRepoToRename        // Pass state setter
+  );
   
-  const chatEndRef = useRef<HTMLDivElement>(null);
-
-  // --- Helper Functions ---
-
-  // --- NEW REFRESH HANDLER ---
-  const handleRefresh = async () => {
-    if (!user) return;
-    const effectiveToken = await getEffectiveToken();
-    if (effectiveToken) {
-      setIsLoadingRepos(true);
-      setError(null);
-      try {
-        await repositoryManager.fetchRepositories(effectiveToken, true, user.id);
-      } catch (e: any) {
-        setError(e.message || "Failed to refresh repositories.");
-      } finally {
-        setIsLoadingRepos(false);
-      }
-    } else {
-      setError("GitHub token not found. Cannot refresh.");
-    }
-  };
-  const addChatMessage = (message: Omit<ChatMessage, 'timestamp'>) => {
-    setChatMessages(prev => [...prev, { ...message, timestamp: new Date() }]);
-  };
-
-  const saveAndDownloadContent = async (content: string, filename: string, contentType: string = 'text/markdown') => {
-    // ... (copy the entire saveAndDownloadContent function from the original page.tsx here)
-  };
+  // --- Connect Hooks ---
   
-  // --- Logic Functions ---
-
-  const createRepository = async () => {
-    if (!newRepoName.trim()) return;
-    if (!profile?.github_pat_token) {
-      addChatMessage({
-        id: Date.now().toString(),
-        role: "assistant",
-        content: `To create repositories, please set up your GitHub Personal Access Token first. Click the 'Setup GitHub Token' button above.`,
-      });
-      showTokenPopup(); // Automatically show the token setup popup
-      return;
-    }
-
-    setIsCreatingRepo(true);
-    try {
-      const response = await fetch('https://api.github.com/user/repos', {
-        method: 'POST',
-        headers: {
-          'Authorization': `token ${profile.github_pat_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: newRepoName.trim(),
-          description: newRepoDescription.trim() || undefined,
-          private: false,
-          auto_init: true,
-        }),
-      });
-
-      if (response.ok) {
-        const newRepo = await response.json();
-        setRepositories(prev => [newRepo, ...prev]);
-        setNewRepoName("");
-        setNewRepoDescription("");
-        setShowAddRepoModal(false);
-        addChatMessage({
-          id: Date.now().toString(),
-          role: "assistant",
-          content: `🎉 Repository "${newRepo.name}" created successfully!`,
-        });
-      } else {
-        throw new Error('Failed to create repository');
-      }
-    } catch (error) {
-      console.error('Error creating repository:', error);
-      addChatMessage({
-        id: Date.now().toString(),
-        role: "assistant",
-        content: `Failed to create repository. Please check your GitHub token permissions and try again.`,
-      });
-    } finally {
-      setIsCreatingRepo(false);
-    }
-  };
-
-  const renameRepository = async () => {
-    if (!repoToRename || !newRepoNameForRename.trim()) return;
-    if (!profile?.github_pat_token) {
-      addChatMessage({
-        id: Date.now().toString(),
-        role: "assistant",
-        content: `To rename repositories, please set up your GitHub Personal Access Token first.`,
-      });
-      showTokenPopup();
-      return;
-    }
-
-    setIsRenamingRepo(true);
-    try {
-      const response = await fetch(`https://api.github.com/repos/${repoToRename.full_name}`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `token ${profile.github_pat_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: newRepoNameForRename.trim(),
-        }),
-      });
-
-      if (response.ok) {
-        const updatedRepo = await response.json();
-        setRepositories(prev => prev.map(repo =>
-          repo.id === repoToRename.id
-            ? { ...repo, name: updatedRepo.name, full_name: updatedRepo.full_name }
-            : repo
-        ));
-        setNewRepoNameForRename("");
-        setRepoToRename(null);
-        setShowRenameModal(false);
-        addChatMessage({
-          id: Date.now().toString(),
-          role: "assistant",
-          content: `🎉 Repository renamed to "${updatedRepo.name}" successfully!`,
-        });
-      } else {
-        throw new Error('Failed to rename repository');
-      }
-    } catch (error) {
-      console.error('Error renaming repository:', error);
-      addChatMessage({
-        id: Date.now().toString(),
-        role: "assistant",
-        content: `Failed to rename repository. Please check your GitHub token permissions.`,
-      });
-    } finally {
-      setIsRenamingRepo(false);
-    }
-  };
+  // Update chat context when repositories change
+  // This is a placeholder; a more robust solution might use a shared context
+  // or pass the repositories state directly into the chat hook. For now,
+  // we rely on aiAssistant.updateContext being called inside processMessage.
   
-  const handleDeleteRepo = (repo: GitHubRepo) => {
-    setRepoToDelete(repo);
-    setShowDeleteConfirm(true);
-  };
-
-  const confirmDeleteRepo = async () => {
-    // ... (copy the entire confirmDeleteRepo function here)
-  };
-
-  const handleBulkDelete = async () => {
-    // ... (copy the entire handleBulkDelete function here)
-  };
-  
-  const toggleRepoSelection = (repoId: number) => {
-    setSelectedRepos(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(repoId)) {
-        newSet.delete(repoId);
-      } else {
-        newSet.add(repoId);
-      }
-      return newSet;
-    });
-  };
-
-  const toggleDeleteMode = () => {
-    setIsDeleteMode(!isDeleteMode);
-    setSelectedRepos(new Set());
-  };
-
-  const sortRepositoriesByDate = (repos: GitHubRepo[], order: 'newest' | 'oldest' | 'default'): GitHubRepo[] => {
-    if (order === 'default') {
-      return [...originalRepositories]; // Return to original fetched order
-    }
-    return [...repos].sort((a, b) => {
-      const dateA = new Date(a.updated_at).getTime();
-      const dateB = new Date(b.updated_at).getTime();
-      return order === 'newest' ? dateB - dateA : dateA - dateB;
-    });
-  };
-
-  const handleDateSort = (order: 'newest' | 'oldest' | 'default') => {
-    setDateSortOrder(order);
-    const sortedRepos = sortRepositoriesByDate(repositories, order);
-    setRepositories(sortedRepos);
-    setHasChanges(order !== 'default');
-  };
-
-  const onDragEnd = (result: DropResult) => {
-    const { source, destination } = result;
-    if (!destination) return;
-
-    const newRepos = Array.from(repositories);
-    const [reorderedItem] = newRepos.splice(source.index, 1);
-    newRepos.splice(destination.index, 0, reorderedItem);
-
-    setRepositories(newRepos);
-    setHasChanges(true);
-  };
-  
-  const processMessage = async (currentMessage: string) => {
-    // ... (copy the entire processMessage logic from the original page.tsx here)
-  };
-
-  const sendDirectMessage = async (message: string) => {
-    if (!message.trim()) return;
-    const newMessage: ChatMessage = {
-      id: Date.now().toString(),
-      role: "user",
-      content: message,
-      timestamp: new Date(),
-    };
-    setChatMessages((prev) => [...prev, newMessage]);
-    setIsAiThinking(true);
-    await processMessage(message);
-  };
-  
-  const handleSendMessage = async () => {
-    if (!chatMessage.trim()) return;
-    const currentMessage = chatMessage;
-    setChatMessage("");
-    await sendDirectMessage(currentMessage);
-  };
-  
-  const applyChanges = async () => {
-    // ... (copy the entire applyChanges function from the original page.tsx here)
-  };
-  
-  const generateJobTemplate = async () => {
-    // ... (copy the entire generateJobTemplate function from the original page.tsx here)
-  };
-  
-  const handleResetChat = () => {
-    // ... (copy the entire handleResetChat function from the original page.tsx here)
-  };
-  
-  const downloadPortfolioReadme = () => {
-    // ... (copy the entire downloadPortfolioReadme function from the original page.tsx here)
-  };
-  
-  const generateTemplate = async (templateId: string) => {
-    // ... (copy the entire generateTemplate function here)
-  };
-
-  const generateReadme = async (repo: GitHubRepo) => {
-    // ... (copy the entire generateReadme function here)
-  };
-
-  // --- Effects ---
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [chatMessages]);
-  
-  useEffect(() => {
-    const unsubscribe = repositoryManager.subscribe((repos) => {
-      console.log(`⚡ Subscribed: Received ${repos.length} repositories`);
-      setRepositories(repos);
-      if (originalRepositories.length === 0) {
-        setOriginalRepositories(repos);
-      }
-      setIsLoadingRepos(false);
-    });
-    return () => unsubscribe();
-  }, [originalRepositories.length]);
-  
-  const fetchInitialData = useCallback(async () => {
-    if (!user || isInitialized) return;
-    
-    const effectiveToken = await getEffectiveToken();
-    if (effectiveToken) {
-      setIsLoadingRepos(true);
-      try {
-        await repositoryManager.fetchRepositories(effectiveToken, true, user.id);
-        setError(null);
-      } catch (e: any) {
-        setError(e.message || "Failed to load repositories.");
-      } finally {
-        setIsLoadingRepos(false);
-        setIsInitialized(true);
-      }
-    } else if (!loading) {
-      setError("GitHub token not found. Please set it in your profile.");
-      setIsLoadingRepos(false);
-      setIsInitialized(true);
-    }
-  }, [user, isInitialized, getEffectiveToken, loading]);
-
-  useEffect(() => {
-    fetchInitialData();
-  }, [fetchInitialData]);
+  // --- Combine and Expose State and Functions ---
 
   return {
-    // Data & State
-    user, profile, loading, error, isLoadingRepos, repositories, selectedRepos, repoToDelete, repoToRename,
-    templateResults, hasChanges,
-    // UI State & Toggles
-    isDeleteMode, showDeleteConfirm, showJobTemplateModal, showAddRepoModal, showRenameModal, isChatMinimized,
-    isAiThinking, isCriticMode, isInterviewMode, interviewProgress, generatedReadme,
-    // Form State
-    jobTitle, newRepoName, newRepoDescription, newRepoNameForRename, chatMessage, dateSortOrder, selectedTemplate,
-    // State Setters
-    setRepositories, setChatMessage, setShowDeleteConfirm, setShowJobTemplateModal, setShowAddRepoModal,
-    setShowRenameModal, setIsChatMinimized, setIsCriticMode, setJobTitle, setNewRepoName, setNewRepoDescription,
-    setNewRepoNameForRename, setRepoToRename, setTemplateResults, setSelectedTemplate,
-    // Handlers and Logic
-    signOut, showTokenPopup, toggleDeleteMode, toggleRepoSelection, handleDeleteRepo, confirmDeleteRepo,
-    handleBulkDelete, handleDateSort, onDragEnd, handleSendMessage, sendDirectMessage, applyChanges,
-    generateJobTemplate, handleResetChat, downloadPortfolioReadme, createRepository, renameRepository,
-    generateTemplate, generateReadme,
-    // Loading States
-    isDeleting, isGeneratingTemplate, isCreatingRepo, isRenamingRepo,
-    // Refs
-    chatEndRef,
-    // NEW: Export handleRefresh and chatMessages
-    handleRefresh,
-    chatMessages,
-    // Add these two properties for ChatSidebar
-    welcomeText,
-    isTypingWelcome,
+    // Auth context data
+    user,
+    profile,
+    loading,
+    signOut,
+    showTokenPopup,
+
+    // From useRepositories
+    ...repos,
+    
+    // From useChatAssistant
+    ...chat,
+
+    // From useDashboardModals
+    ...modals,
+    
+    // Functions to connect repository actions with modals
+    onConfirmDelete: () => repos.confirmDeleteRepo(modals.repoToDelete!),
+    onCreateRepo: () => {
+        repos.createRepository(modals.newRepoName, modals.newRepoDescription)
+        .then(() => modals.closeModal('add'));
+    },
+    onRenameRepo: () => {
+        repos.renameRepository(modals.repoToRename!, modals.newRepoNameForRename)
+        .then(() => modals.closeModal('rename'));
+    },
+
+    // UI state from the main hook
+    isChatMinimized,
+    setIsChatMinimized,
+    selectedTemplate,
+    setSelectedTemplate,
+    
+    // Placeholder for logic that would live here or in another hook
+    generateTemplate: async (templateId: string) => { 
+        console.log("Generating template:", templateId); 
+        chat.addChatMessage({ role: 'assistant', content: `Template generation for "${templateId}" is not fully implemented yet.` });
+    },
+    generateJobTemplate: async () => {
+        console.log("Generating job template for:", modals.jobTitle);
+        chat.addChatMessage({ role: 'assistant', content: `Job template generation for "${modals.jobTitle}" is not fully implemented yet.` });
+    }
   };
 }

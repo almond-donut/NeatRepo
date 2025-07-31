@@ -1,6 +1,5 @@
-'use client'
+"use client"
 
-// Force dynamic rendering to avoid static generation issues with auth
 export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
@@ -10,26 +9,27 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Github, ArrowRight, Shield, Zap, Trash2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { useRouter } from 'next/navigation'
 
 export default function ConnectGitHubPage() {
   const { user, loading } = useAuth()
   const [isConnecting, setIsConnecting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
 
   // Redirect if not authenticated
   useEffect(() => {
     if (!loading && !user) {
-      window.location.href = '/'
+      router.push('/')
     }
-  }, [user, loading])
-
+  }, [user, loading, router])
   // Check if user already has GitHub connection
   useEffect(() => {
     if (user) {
       // Check if user signed up with GitHub
       const provider = user.app_metadata?.provider
       if (provider === 'github') {
-        // Already connected via GitHub OAuth, redirect to dashboard
+      router.push('/') // Use router for navigation
         window.location.href = '/dashboard'
       }
     }
@@ -38,7 +38,7 @@ export default function ConnectGitHubPage() {
   const handleConnectGitHub = async () => {
     setIsConnecting(true)
     setError(null)
-
+        router.push('/dashboard') // Use router for navigation
     try {
       const { error } = await supabase.auth.linkIdentity({
         provider: 'github',

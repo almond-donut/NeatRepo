@@ -10,7 +10,7 @@ version=1.0
 [window]
 width=1280
 height=729
-splitter_state=AAAA/wAAAAEAAAACAAAAZgAAAIIB/////wEAAAACAA==
+splitter_state=AAAA/wAAAAEAAAACAAAAggAAAIIB/////wEAAAACAA==
 
 [files]
 app\globals.css
@@ -24,8 +24,15 @@ app\api\session\route.ts
 app\auth\error\page.tsx
 app\bug-report\page.tsx
 app\connect-github\page.tsx
-app\dashboard\loading.tsx
 app\dashboard\page.tsx
+app\dashboard\components\ActionButtons.tsx
+app\dashboard\components\ChatSidebar.tsx
+app\dashboard\components\DashboardMetrics.tsx
+app\dashboard\components\Modals.tsx
+app\dashboard\components\RepoItem.tsx
+app\dashboard\components\RepositoryList.tsx
+app\dashboard\hooks\useDashboard.ts
+app\dashboard\types\index.ts
 app\debug\page.tsx
 app\profile\page.tsx
 app\signout\page.tsx
