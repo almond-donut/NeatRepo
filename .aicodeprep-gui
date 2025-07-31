@@ -9,8 +9,8 @@ version=1.0
 
 [window]
 width=1280
-height=729
-splitter_state=AAAA/wAAAAEAAAACAAAAggAAAIIB/////wEAAAACAA==
+height=793
+splitter_state=AAAA/wAAAAEAAAACAAAARgAAAIIB/////wEAAAACAA==
 
 [files]
 app\globals.css
@@ -31,7 +31,10 @@ app\dashboard\components\DashboardMetrics.tsx
 app\dashboard\components\Modals.tsx
 app\dashboard\components\RepoItem.tsx
 app\dashboard\components\RepositoryList.tsx
+app\dashboard\hooks\useChatAssistant.ts
 app\dashboard\hooks\useDashboard.ts
+app\dashboard\hooks\useDashboardModals.ts
+app\dashboard\hooks\useRepositories.ts
 app\dashboard\types\index.ts
 app\debug\page.tsx
 app\profile\page.tsx
