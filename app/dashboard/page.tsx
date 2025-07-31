@@ -19,6 +19,7 @@ import { useAuth } from "@/components/auth-provider";
 import TokenWarningBadge from "@/components/token-warning-badge";
 import GitHubTokenWarning from "@/components/github-token-warning";
 import DashboardHeader from "@/components/dashboard-header";
+import CreateRepoModal from "@/components/create-repo-modal";
 import { supabase } from "@/lib/supabase";
 import { repositoryManager } from "@/lib/repository-manager";
 import { aiAssistant } from "@/lib/ai-assistant";
@@ -3341,73 +3342,17 @@ These repositories best demonstrate the skills recruiters look for in ${jobTitle
         )}
 
         {/* ➕ ADD REPOSITORY MODAL */}
-        {showAddRepoModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-background border border-border rounded-lg p-6 w-full max-w-md mx-4">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold flex items-center gap-2">
-                  <Plus className="h-5 w-5" />
-                  Create New Repository
-                </h2>
-                <button
-                  onClick={() => setShowAddRepoModal(false)}
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
+        <CreateRepoModal
+          show={showAddRepoModal}
+          onClose={() => setShowAddRepoModal(false)}
+          newRepoName={newRepoName}
+          setNewRepoName={setNewRepoName}
+          newRepoDescription={newRepoDescription}
+          setNewRepoDescription={setNewRepoDescription}
+          isCreating={isCreatingRepo}
+          onCreate={createRepository}
+        />
 
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium">Repository Name</label>
-                  <Input
-                    value={newRepoName}
-                    onChange={(e) => setNewRepoName(e.target.value)}
-                    placeholder="my-awesome-project"
-                    className="mt-1"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium">Description (Optional)</label>
-                  <Input
-                    value={newRepoDescription}
-                    onChange={(e) => setNewRepoDescription(e.target.value)}
-                    placeholder="A brief description of your project"
-                    className="mt-1"
-                  />
-                </div>
-
-                <div className="flex gap-2 pt-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowAddRepoModal(false)}
-                    className="flex-1"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={createRepository}
-                    disabled={!newRepoName.trim() || isCreatingRepo}
-                    className="flex-1"
-                  >
-                    {isCreatingRepo ? (
-                      <>
-                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                        Creating...
-                      </>
-                    ) : (
-                      <>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Create Repository
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* ✏️ RENAME REPOSITORY MODAL */}
         {showRenameModal && repoToRename && (
