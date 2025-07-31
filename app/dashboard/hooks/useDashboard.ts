@@ -19,6 +19,34 @@ export function useDashboard() {
   const [originalRepositories, setOriginalRepositories] = useState<GitHubRepo[]>([]);
   const [chatMessage, setChatMessage] = useState("");
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+
+  // Welcome text animation state
+  const WELCOME_FULL_TEXT = "Hi! I'm your AI assistant. Ask me anything about your repositories, or use the quick actions below to get started.";
+  const [welcomeText, setWelcomeText] = useState("");
+  const [isTypingWelcome, setIsTypingWelcome] = useState(true);
+
+  useEffect(() => {
+    let timeout: NodeJS.Timeout;
+    if (chatMessages.length === 0) {
+      setWelcomeText("");
+      setIsTypingWelcome(true);
+      let i = 0;
+      const type = () => {
+        setWelcomeText(WELCOME_FULL_TEXT.slice(0, i));
+        if (i < WELCOME_FULL_TEXT.length) {
+          i++;
+          timeout = setTimeout(type, 18);
+        } else {
+          setIsTypingWelcome(false);
+        }
+      };
+      type();
+    } else {
+      setWelcomeText("");
+      setIsTypingWelcome(false);
+    }
+    return () => clearTimeout(timeout);
+  }, [chatMessages.length]);
   const [selectedRepos, setSelectedRepos] = useState<Set<number>>(new Set());
   const [isDeleteMode, setIsDeleteMode] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -366,5 +394,8 @@ export function useDashboard() {
     // NEW: Export handleRefresh and chatMessages
     handleRefresh,
     chatMessages,
+    // Add these two properties for ChatSidebar
+    welcomeText,
+    isTypingWelcome,
   };
 }

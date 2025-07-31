@@ -101,17 +101,29 @@ export default function DashboardPage() {
           <div className="lg:col-span-1">
             <ChatSidebar
               isMinimized={dashboard.isChatMinimized}
+              isCriticMode={dashboard.isCriticMode}
+              isInterviewMode={dashboard.isInterviewMode}
+              interviewProgress={dashboard.interviewProgress}
+              generatedReadme={dashboard.generatedReadme}
               chatMessages={dashboard.chatMessages}
               chatMessage={dashboard.chatMessage}
               isAiThinking={dashboard.isAiThinking}
+              welcomeText={dashboard.welcomeText}
+              isTypingWelcome={dashboard.isTypingWelcome}
+              repositories={dashboard.repositories}
               chatEndRef={dashboard.chatEndRef}
               setIsMinimized={dashboard.setIsChatMinimized}
+              setIsCriticMode={dashboard.setIsCriticMode}
               setChatMessage={dashboard.setChatMessage}
               handleSendMessage={dashboard.handleSendMessage}
               handleResetChat={dashboard.handleResetChat}
+              downloadPortfolioReadme={dashboard.downloadPortfolioReadme}
+              sendDirectMessage={dashboard.sendDirectMessage}
+              generateReadme={dashboard.generateReadme}
             />
           </div>
         </div>
+        
         <Modals
             showDeleteConfirm={dashboard.showDeleteConfirm}
             repoToDelete={dashboard.repoToDelete}
