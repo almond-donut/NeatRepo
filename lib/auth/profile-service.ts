@@ -4,7 +4,7 @@ import { UserProfile } from "@/components/auth/auth-context";
 
 /**
  * Fetches a user's profile from the database. If it doesn't exist,
- * it creates a basic one.
+ * it creates a basic one. Now with resilient error handling.
  * @param userId - The ID of the user to fetch the profile for.
  * @param user - The full Supabase user object, used for creating a profile if needed.
  * @returns The user's profile.
@@ -47,20 +47,34 @@ export const fetchProfileService = async (userId: string, user: User): Promise<U
 
     if (insertError) {
       console.error("❌ PROFILE_SERVICE: Error creating profile:", insertError);
-      // Return the basic profile object anyway so the app doesn't break
-      return newProfile;
+      return newProfile; // Return the basic profile object anyway so the app doesn't break
     }
     
     console.log("✅ PROFILE_SERVICE: New basic profile created successfully.");
     return newProfile;
 
   } catch (err) {
-    console.error('❌ PROFILE_SERVICE: Profile fetch/create failed with exception:', err);
-    // Return a fallback profile to prevent the app from crashing.
-    return {
+    console.error('❌ PROFILE_SERVICE: Profile fetch failed. Building resilient fallback profile.', err);
+
+    // ✨ THE FIX IS HERE ✨
+    // Construct a fallback profile but ATTEMPT TO RECOVER THE PAT from localStorage.
+    // This prevents a temporary network error from wiping the user's session state.
+    const fallbackProfile: UserProfile = {
       id: userId,
       github_username: user?.user_metadata?.user_name || 'user',
+      avatar_url: user?.user_metadata?.avatar_url,
+      display_name: user?.user_metadata?.full_name || user?.user_metadata?.name,
     };
+
+    if (typeof window !== 'undefined') {
+        const cachedPat = localStorage.getItem(`github_pat_token_${userId}`);
+        if (cachedPat && !cachedPat.startsWith('gho_')) {
+            console.log('🔄 PROFILE_SERVICE: Recovering PAT from localStorage for fallback profile.');
+            fallbackProfile.github_pat_token = cachedPat;
+        }
+    }
+
+    return fallbackProfile;
   }
 };
 
