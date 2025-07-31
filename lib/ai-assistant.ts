@@ -156,16 +156,27 @@ function parseIntent(message: string, context: UserContext): AIAction {
 }
 
 export class AIAssistant {
+  private static instance: AIAssistant;
   private userContext: UserContext;
+  private conversationHistory: ConversationEntry[] = [];
 
-  constructor(initialContext: Partial<UserContext> = {}) {
+  private constructor() {
     this.userContext = {
       repositories: [],
+      githubUsername: undefined,
+      githubAccessToken: undefined,
       conversationHistory: [],
+      interviewState: undefined,
       preferences: {},
       userProfile: null,
-      ...initialContext,
     };
+  }
+
+  public static getInstance(): AIAssistant {
+    if (!AIAssistant.instance) {
+      AIAssistant.instance = new AIAssistant();
+    }
+    return AIAssistant.instance;
   }
 
   public updateUserContext(updates: Partial<UserContext>) {
@@ -227,4 +238,4 @@ export class AIAssistant {
 }
 
 // Singleton instance of the AI assistant, initialized with empty context.
-export const aiAssistant = new AIAssistant();
+export const aiAssistant = AIAssistant.getInstance();
