@@ -9,7 +9,7 @@ version=1.0
 
 [window]
 width=1280
-height=793
+height=729
 splitter_state=AAAA/wAAAAEAAAACAAAARgAAAIIB/////wEAAAACAA==
 
 [files]
@@ -21,6 +21,7 @@ app\api\analyze\route.ts
 app\api\auth\callback\route.ts
 app\api\bug-report\route.ts
 app\api\session\route.ts
+app\api\user\profile\route.ts
 app\auth\error\page.tsx
 app\bug-report\page.tsx
 app\connect-github\page.tsx
@@ -55,6 +56,7 @@ components\theme-provider.tsx
 components\theme-toggle.tsx
 components\token-management.tsx
 components\token-warning-badge.tsx
+components\auth\auth-context.tsx
 components\ui\accordion.tsx
 components\ui\alert-dialog.tsx
 components\ui\alert.tsx
@@ -114,3 +116,4 @@ lib\repository-manager.ts
 lib\repository-sorter.ts
 lib\supabase.ts
 lib\utils.ts
+lib\auth\profile-service.ts

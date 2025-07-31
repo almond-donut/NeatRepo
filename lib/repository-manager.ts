@@ -115,7 +115,7 @@ class RepositoryManager {
   }
 
   async fetchRepositories(token: string, forceRefresh = false, userId?: string): Promise<void> {
-    // 🚨 CRITICAL DEBUG: Log token information (safely)
+    // CRITICAL DEBUG: Log token information (safely)
     console.log('🔑 SINGLETON: Starting fetch with token:', {
       hasToken: !!token,
       tokenLength: token?.length,
@@ -282,6 +282,30 @@ class RepositoryManager {
 
   getLastFetchTime(): number {
     return this.lastFetch;
+  }
+
+  async deleteRepository(token: string, owner: string, repoName: string): Promise<boolean> {
+    try {
+      const response = await fetch(`https://api.github.com/repos/${owner}/${repoName}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `token ${token}`,
+          'Accept': 'application/vnd.github.v3+json'
+        },
+      });
+
+      if (response.status === 204) {
+        console.log(`RepositoryManager: Successfully deleted ${owner}/${repoName}`);
+        return true;
+      } else {
+        const errorData = await response.json();
+        console.error(`RepositoryManager: Failed to delete ${owner}/${repoName}:`, errorData.message);
+        return false;
+      }
+    } catch (error) {
+      console.error(`RepositoryManager: Error during fetch for deleting ${owner}/${repoName}:`, error);
+      return false;
+    }
   }
 
   // 🎯 YOUTUBE-STYLE: Enhanced background sync with long-term resilience

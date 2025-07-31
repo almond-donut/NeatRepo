@@ -111,8 +111,15 @@ export function ChatSidebar({
                     <Lightbulb className="h-3 w-3 mr-1.5" /> Get Suggestions
                   </Button>
                   <div className="border-t border-border pt-2 mt-2">
-                    <Button variant="outline" size="sm" className="w-full justify-start bg-blue-500/10 text-blue-400 border-blue-500/30 hover:bg-blue-500/20 text-xs h-8" onClick={() => sendDirectMessage("start interview for personalized portfolio README")} disabled={isAiThinking || repositories.length === 0 || isInterviewMode}>
-                      <MessageCircle className="h-3 w-3 mr-1.5" /> {isInterviewMode ? 'Interview Active...' : 'Generate Portfolio README'}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full justify-start bg-blue-500/10 text-blue-400 border-blue-500/30 hover:bg-blue-500/20 text-xs h-8"
+                      onClick={() => sendDirectMessage("generate portfolio readme")}
+                      disabled={isAiThinking || repositories.length === 0 || isInterviewMode}
+                    >
+                      <MessageCircle className="h-3 w-3 mr-1.5" />
+                      {isInterviewMode ? 'Interview Active...' : 'Generate Portfolio README'}
                     </Button>
                   </div>
                 </div>

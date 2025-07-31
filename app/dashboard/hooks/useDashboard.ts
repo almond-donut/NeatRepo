@@ -5,7 +5,9 @@ import { useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { useRepositories } from "./useRepositories";
 import { useChatAssistant } from "./useChatAssistant";
+
 import { useDashboardModals } from "./useDashboardModals";
+import { aiAssistant } from "../../../lib/ai-assistant";
 
 export function useDashboard() {
   const { user, profile, loading, signOut, showTokenPopup } = useAuth();
@@ -83,8 +85,19 @@ export function useDashboard() {
         chat.addChatMessage({ role: 'assistant', content: `Template generation for "${templateId}" is not fully implemented yet.` });
     },
     generateJobTemplate: async () => {
-        console.log("Generating job template for:", modals.jobTitle);
-        chat.addChatMessage({ role: 'assistant', content: `Job template generation for "${modals.jobTitle}" is not fully implemented yet.` });
+      if (!modals.jobTitle.trim()) return;
+      modals.setIsGeneratingTemplate(true);
+      const response = await aiAssistant.executeAction({
+        type: 'recommend_repos_for_job',
+        intent: 'Recommend repositories for a job title',
+        parameters: { jobTitle: modals.jobTitle },
+        confidence: 1.0,
+      });
+      chat.addChatMessage({ role: 'assistant', content: response.message });
+      if (response.success && response.data?.recommendedRepos) {
+        modals.setTemplateResults(response.data.recommendedRepos);
+      }
+      modals.setIsGeneratingTemplate(false);
     }
   };
 }

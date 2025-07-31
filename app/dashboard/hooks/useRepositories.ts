@@ -154,55 +154,53 @@ export function useRepositories(
   const handleBulkDelete = async () => {
     const effectiveToken = await getEffectiveToken();
     if (!effectiveToken) {
-      addChatMessage({ role: "assistant", content: `Bulk delete requires a GitHub PAT with 'delete_repo' permissions.` });
+      addChatMessage({ role: "assistant", content: "To delete repositories, please set up your GitHub Personal Access Token." });
       showTokenPopup();
       return;
     }
-    const reposToDelete = repositories.filter(repo => selectedRepos.has(repo.id));
-    if (reposToDelete.length === 0) return;
-    if (!window.confirm(`Are you sure you want to permanently delete ${reposToDelete.length} repositories? This action cannot be undone.`)) return;
 
-    setIsDeleting(true);
-
-    const successfullyDeletedIds = new Set<number>();
-
-    // Use Promise.all to run delete requests in parallel for speed
-    const deletePromises = reposToDelete.map(async (repo) => {
-      try {
-        const response = await fetch(`https://api.github.com/repos/${repo.full_name}`, {
-          method: 'DELETE',
-          headers: { 'Authorization': `token ${effectiveToken}`, 'Accept': 'application/vnd.github.v3+json' },
-        });
-
-        if (response.status === 204) {
-          console.log(`✅ Successfully deleted ${repo.full_name}`);
-          successfullyDeletedIds.add(repo.id);
-        } else {
-          const errorData = await response.json();
-          console.error(`Failed to delete ${repo.name}:`, errorData.message);
-        }
-      } catch (error) {
-        console.error(`Error during fetch for deleting ${repo.name}:`, error);
-      }
-    });
-
-    // Wait for all delete operations to complete
-    await Promise.all(deletePromises);
-
-    // ✨ THE FIX: Update the local state directly for an instant UI update.
-    // We filter out the repositories whose IDs are in our successfullyDeletedIds set.
-    if (successfullyDeletedIds.size > 0) {
-      setRepositories(prevRepos => 
-        prevRepos.filter(repo => !successfullyDeletedIds.has(repo.id))
-      );
+    if (!profile) {
+      addChatMessage({ role: "assistant", content: 'Error: User profile not found. Cannot proceed with deletion.' });
+      return;
     }
 
-    addChatMessage({ role: "assistant", content: `🗑️ Bulk delete complete. Deleted ${successfullyDeletedIds.size} of ${reposToDelete.length} repositories.` });
+    const originalRepos = [...repositories];
+    const reposToDelete = originalRepos.filter((r: GitHubRepo) => selectedRepos.has(r.id));
 
-    // Reset the UI state
-    setIsDeleting(false);
-    setIsDeleteMode(false);
-    setSelectedRepos(new Set());
+    if (reposToDelete.length === 0) return;
+
+    // 1. Optimistic UI Update
+    setRepositories(prevRepos => prevRepos.filter((r: GitHubRepo) => !selectedRepos.has(r.id)));
+    setIsDeleting(true);
+    addChatMessage({ role: "assistant", content: `Deleting ${reposToDelete.length} repositories...` });
+
+    // 2. Perform Deletions
+    const deletePromises = reposToDelete.map((repo: GitHubRepo) =>
+      repositoryManager.deleteRepository(effectiveToken, profile.login, repo.name)
+    );
+
+    // 3. Handle Results
+    Promise.allSettled(deletePromises).then(results => {
+      const failedDeletes = results.filter(res => res.status === 'rejected' || (res.status === 'fulfilled' && !res.value));
+
+      if (failedDeletes.length > 0) {
+        // Revert UI on failure and show error
+        setRepositories(originalRepos);
+        addChatMessage({
+          role: "assistant",
+          content: `Error: Failed to delete ${failedDeletes.length} repositories. Your view has been restored.`,
+        });
+      } else {
+        addChatMessage({ role: "assistant", content: `🗑️ Successfully deleted ${reposToDelete.length} repositories.` });
+        // On success, update the 'originalRepositories' to prevent reverted state on next sort
+        setOriginalRepositories(currentRepos => currentRepos.filter((r: GitHubRepo) => !selectedRepos.has(r.id)));
+      }
+
+      // 4. Reset State
+      setSelectedRepos(new Set());
+      setIsDeleting(false);
+      setIsDeleteMode(false);
+    });
   };
 
   // --- UI State and Interaction Handlers ---
