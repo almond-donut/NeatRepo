@@ -131,7 +131,7 @@ export function ChatSidebar({
                       disabled={isAiThinking || repositories.length === 0 || isInterviewMode}
                     >
                       <MessageCircle className="h-3 w-3 mr-1.5" />
-                      {isInterviewMode ? 'Interview Active...' : 'Generate Personal README Based on Quick Interview'}
+                      {isInterviewMode ? 'Interview Active...' : 'Personal README Interview'}
                     </Button>
                   </div>
                 </div>
