@@ -87,12 +87,13 @@ export function useDashboard() {
     generateJobTemplate: async () => {
       if (!modals.jobTitle.trim()) return;
       modals.setIsGeneratingTemplate(true);
-      const response = await aiAssistant.executeAction({
-        type: 'recommend_repos_for_job',
-        intent: 'Recommend repositories for a job title',
-        parameters: { jobTitle: modals.jobTitle },
-        confidence: 1.0,
-      });
+      
+      // Update AI assistant context with current repositories
+      aiAssistant.updateUserContext({ repositories: repos.repositories });
+      
+      // Process the job recommendation request
+      const response = await aiAssistant.processMessage(`recommend repositories for ${modals.jobTitle} position`);
+      
       chat.addChatMessage({ role: 'assistant', content: response.message });
       if (response.success && response.data?.recommendedRepos) {
         modals.setTemplateResults(response.data.recommendedRepos);

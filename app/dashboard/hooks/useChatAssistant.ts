@@ -50,13 +50,12 @@ export function useChatAssistant(repositories: GitHubRepo[]) {
   };
 
   const processMessage = async (currentMessage: string) => {
-    aiAssistant.updateContext(repositories);
-    aiAssistant.addToHistory("user", currentMessage);
+    // Update the AI assistant with current repositories context
+    aiAssistant.updateUserContext({ repositories });
 
-    const action = await aiAssistant.parseCommand(currentMessage);
-    const response = await aiAssistant.executeAction(action);
+    // Process the message using the AI assistant
+    const response = await aiAssistant.processMessage(currentMessage);
     
-    aiAssistant.addToHistory("assistant", response.message);
     addChatMessage({ role: "assistant", content: response.message });
 
     if (response.data?.portfolioReadme) {
