@@ -1,26 +1,24 @@
 import React, { useState } from 'react';
-import { Settings, Trash2, Plus, AlertTriangle, CheckCircle, ExternalLink } from 'lucide-react';
+import { Settings, Trash2, Plus, AlertTriangle, CheckCircle, ExternalLink, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import GitHubTokenPopup from './github-token-popup';
+import { useAuth } from './auth-provider';
 
-interface TokenManagementProps {
-  currentToken?: string;
-  onTokenUpdate: (token: string) => void;
-  onTokenDelete: () => void;
-}
-
-export default function TokenManagement({ currentToken, onTokenUpdate, onTokenDelete }: TokenManagementProps) {
+export default function TokenManagement() {
+  const { profile, updateToken, deleteToken, isTokenInvalid } = useAuth();
   const [showTokenPopup, setShowTokenPopup] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const currentToken = profile?.github_pat_token;
+
   const handleDeleteToken = async () => {
     setIsDeleting(true);
     try {
-      await onTokenDelete();
+      await deleteToken();
       setShowDeleteConfirm(false);
     } catch (error) {
       console.error('Error deleting token:', error);
@@ -32,7 +30,7 @@ export default function TokenManagement({ currentToken, onTokenUpdate, onTokenDe
   const handleTokenSubmit = async (token: string) => {
     setIsSubmitting(true);
     try {
-      await onTokenUpdate(token);
+      await updateToken(token);
       setShowTokenPopup(false);
     } catch (error) {
       console.error('Error updating token:', error);
@@ -59,17 +57,26 @@ export default function TokenManagement({ currentToken, onTokenUpdate, onTokenDe
           {/* Current Token Status */}
           <div className="space-y-3">
             <h3 className="font-medium">Current Token Status</h3>
+            {/* ✨ NEW DYNAMIC STATUS ALERT ✨ */}
+            {isTokenInvalid && currentToken && (
+              <Alert variant="destructive">
+                <ShieldAlert className="h-4 w-4" />
+                <AlertDescription>
+                  Your saved token is invalid or has expired. Please delete it and generate a new one.
+                </AlertDescription>
+              </Alert>
+            )}
             <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
               <div className="flex items-center gap-3">
-                {currentToken ? (
+                {currentToken && !isTokenInvalid ? (
                   <CheckCircle className="h-5 w-5 text-green-500" />
                 ) : (
-                  <AlertTriangle className="h-5 w-5 text-yellow-500" />
+                  <AlertTriangle className={`h-5 w-5 ${isTokenInvalid ? 'text-red-500' : 'text-yellow-500'}`} />
                 )}
                 <div>
                   <p className="font-mono text-sm">{maskedToken}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {currentToken ? 'Token is active' : 'No token configured'}
+                  <p className={`text-xs ${isTokenInvalid ? 'text-red-500' : 'text-muted-foreground'}`}>
+                    {isTokenInvalid ? 'Token is invalid' : currentToken ? 'Token is active' : 'No token configured'}
                   </p>
                 </div>
               </div>

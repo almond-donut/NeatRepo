@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { DropResult } from "@hello-pangea/dnd";
 import { useAuth } from "@/components/auth-provider";
-import { repositoryManager } from "@/lib/repository-manager";
+import { repositoryManager, InvalidTokenError } from "@/lib/repository-manager";
 import { GitHubRepo } from "../types";
 
 export function useRepositories(
@@ -13,7 +13,7 @@ export function useRepositories(
   setRepoToDelete: (repo: GitHubRepo | null) => void,
   setRepoToRename: (repo: GitHubRepo | null) => void
 ) {
-  const { user, profile, loading: authLoading, getEffectiveToken, showTokenPopup } = useAuth();
+  const { user, profile, loading: authLoading, getEffectiveToken, showTokenPopup, markTokenAsInvalid } = useAuth();
   const [repositories, setRepositories] = useState<GitHubRepo[]>([]);
   const [originalRepositories, setOriginalRepositories] = useState<GitHubRepo[]>([]);
   const [isLoadingRepos, setIsLoadingRepos] = useState(true);
@@ -41,14 +41,20 @@ export function useRepositories(
         // Force refresh from API
         await repositoryManager.fetchRepositories(effectiveToken, true, user.id);
       } catch (e: any) {
-        setError(e.message || "Failed to refresh repositories.");
+        if (e instanceof InvalidTokenError) {
+          console.error("Caught invalid token error on refresh. Updating auth state.");
+          markTokenAsInvalid();
+          setError("Your GitHub token is invalid or has expired. Please update it.");
+        } else {
+          setError(e.message || "Failed to refresh repositories.");
+        }
       } finally {
         setIsLoadingRepos(false);
       }
     } else {
       setError("GitHub token not found. Cannot refresh.");
     }
-  }, [user, getEffectiveToken]);
+  }, [user, getEffectiveToken, markTokenAsInvalid]);
 
   const createRepository = async (newRepoName: string, newRepoDescription: string) => {
     if (!newRepoName.trim()) return;

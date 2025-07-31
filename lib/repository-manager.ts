@@ -1,4 +1,12 @@
 // ULTRA-FAST repository manager - TARGET: 1-3 SECOND LOADING 🚀
+
+// Custom error for invalid GitHub tokens
+export class InvalidTokenError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'InvalidTokenError';
+  }
+}
 class RepositoryManager {
   private static instance: RepositoryManager;
   private repositories: any[] = [];
@@ -188,6 +196,12 @@ class RepositoryManager {
         })
       ]);
 
+      // ✨ MODIFICATION: Check for 401 Unauthorized on userRepos
+      if (userRepos.status === 'fulfilled' && userRepos.value.status === 401) {
+        // If the token is invalid, throw our specific error
+        throw new InvalidTokenError('The provided GitHub PAT is invalid, expired, or lacks repo scope.');
+      }
+
       console.log('🌐 SINGLETON: API requests completed:', {
         userReposStatus: userRepos.status,
         starredReposStatus: starredRepos.status
@@ -240,7 +254,7 @@ class RepositoryManager {
       }
 
       // Check if it's a token-related error
-      if (error.message?.includes('401') || error.message?.includes('Unauthorized')) {
+      if (error instanceof InvalidTokenError) {
         console.error('🔑 SINGLETON: Token appears to be invalid or expired');
         // Clear cached data for invalid tokens
         this.clearCache();

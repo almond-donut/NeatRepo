@@ -16,6 +16,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [showTokenPopupState, setShowTokenPopupState] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Track if the token is invalid
+  const [isTokenInvalid, setIsTokenInvalid] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -103,6 +105,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await updateTokenService(user.id, token);
       setProfile(prev => (prev ? { ...prev, github_pat_token: token } : null));
+      setIsTokenInvalid(false); // Reset invalid status on update
       if (typeof window !== 'undefined') {
         localStorage.setItem(`github_pat_token_${user.id}`, token);
         localStorage.removeItem(`token_popup_skipped_permanently_${user.id}`);
@@ -190,6 +193,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     getEffectiveToken,
     updateToken,
     deleteToken,
+    isTokenInvalid,
+    markTokenAsInvalid: () => setIsTokenInvalid(true),
   };
 
   return (

@@ -22,6 +22,8 @@ export interface AuthContextType {
   getEffectiveToken: () => Promise<string | null>;
   updateToken: (token: string) => Promise<void>;
   deleteToken: () => Promise<void>;
+  isTokenInvalid: boolean;
+  markTokenAsInvalid: () => void;
 }
 
 // Create the context with an undefined default value
