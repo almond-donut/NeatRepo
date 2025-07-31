@@ -12,20 +12,20 @@ export class GeminiAI {
   private model: any
 
   constructor() {
-    this.apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY || "AIzaSyAkgwl43yl9TlceXNeifbGztVLEYe83nPw"
+    this.apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY || ""
     if (!this.apiKey) {
       throw new Error("NEXT_PUBLIC_GEMINI_API_KEY environment variable is required")
     }
 
     this.genAI = new GoogleGenerativeAI(this.apiKey)
-    // Using Gemini 2.5 Pro model for enhanced capabilities
+    // Using configurable Gemini model with environment-based settings
     this.model = this.genAI.getGenerativeModel({
-      model: "gemini-2.5-pro",
+      model: process.env.GEMINI_MODEL || "gemini-2.5-pro",
       generationConfig: {
-        temperature: 0.7,
-        topP: 0.8,
-        topK: 40,
-        maxOutputTokens: 8192,
+        temperature: parseFloat(process.env.GEMINI_TEMPERATURE || "0.7"),
+        topP: parseFloat(process.env.GEMINI_TOP_P || "0.8"),
+        topK: parseInt(process.env.GEMINI_TOP_K || "40"),
+        maxOutputTokens: parseInt(process.env.GEMINI_MAX_TOKENS || "8192"),
       },
     })
   }
