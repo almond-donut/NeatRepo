@@ -23,7 +23,6 @@ export function useChatAssistant(repositories: GitHubRepo[]) {
 
   // Update AI assistant context whenever repositories change
   useEffect(() => {
-    console.log("Updating AI assistant context with repositories:", repositories.length, repositories.map(r => r.name));
     aiAssistant.updateUserContext({ repositories });
   }, [repositories]);
 

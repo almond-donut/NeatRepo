@@ -147,6 +147,24 @@ function parseIntent(message: string, context: UserContext): AIAction {
     };
   }
 
+  if (lowerMessage.includes('generate') && lowerMessage.includes('portfolio') && lowerMessage.includes('readme')) {
+    return {
+      type: 'recommend_cv_repos',
+      intent: 'User wants to generate a portfolio README.',
+      parameters: {},
+      confidence: 0.9,
+    };
+  }
+
+  if (lowerMessage.includes('analyze') || lowerMessage.includes('structure') || lowerMessage.includes('suggestions') || lowerMessage.includes('improve')) {
+    return {
+      type: 'general_response',
+      intent: 'User wants analysis or suggestions about their repositories.',
+      parameters: { originalMessage: message, analyzeRepos: true },
+      confidence: 0.7,
+    };
+  }
+
   return {
     type: 'general_response',
     intent: 'General query or fallback.',
