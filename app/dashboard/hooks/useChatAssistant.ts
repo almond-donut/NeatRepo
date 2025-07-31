@@ -21,6 +21,12 @@ export function useChatAssistant(repositories: GitHubRepo[]) {
 
   const WELCOME_FULL_TEXT = "Hi! I'm your AI assistant. Ask me anything about your repositories, or use the quick actions below to get started.";
 
+  // Update AI assistant context whenever repositories change
+  useEffect(() => {
+    console.log("Updating AI assistant context with repositories:", repositories.length, repositories.map(r => r.name));
+    aiAssistant.updateUserContext({ repositories });
+  }, [repositories]);
+
   useEffect(() => {
     let timeout: NodeJS.Timeout;
     if (chatMessages.length === 0) {
@@ -50,9 +56,7 @@ export function useChatAssistant(repositories: GitHubRepo[]) {
   };
 
   const processMessage = async (currentMessage: string) => {
-    // Update the AI assistant with current repositories context
-    aiAssistant.updateUserContext({ repositories });
-
+    // The AI assistant context is already updated via useEffect when repositories change
     // Process the message using the AI assistant
     const response = await aiAssistant.processMessage(currentMessage);
     

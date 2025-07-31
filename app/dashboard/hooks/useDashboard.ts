@@ -1,7 +1,7 @@
 // app/dashboard/hooks/useDashboard.ts
 "use client"
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { useRepositories } from "./useRepositories";
 import { useChatAssistant } from "./useChatAssistant";
@@ -22,18 +22,18 @@ export function useDashboard() {
   // Modals hook must be initialized first to provide control functions
   const modals = useDashboardModals();
 
-  // Chat hook needs a way to add messages, which it provides itself
-  const chat = useChatAssistant(
-    // It needs the list of repositories for context
-    [] // This will be updated via a useEffect later
-  );
-
   // Repositories hook manages all repo data and actions
   const repos = useRepositories(
-    chat.addChatMessage,          // Pass chat function to repo hook
+    // For now, we'll handle chat messages separately
+    (message) => console.log("Chat message:", message),
     modals.openModal,             // Pass modal-opening function
     modals.setRepoToDelete,       // Pass state setter
     modals.setRepoToRename        // Pass state setter
+  );
+
+  // Chat hook needs the actual repositories for context
+  const chat = useChatAssistant(
+    repos.repositories // Pass the actual repositories
   );
   
   // --- Connect Hooks ---
