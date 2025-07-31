@@ -1,40 +1,37 @@
+
 import { supabase } from "@/lib/supabase";
 import { User } from "@supabase/supabase-js";
 import { UserProfile } from "@/components/auth/auth-context";
 
+
 /**
- * Fetches a user's profile from the database. If it doesn't exist,
- * it creates a basic one. Now with resilient error handling.
- * @param userId - The ID of the user to fetch the profile for.
- * @param user - The full Supabase user object, used for creating a profile if needed.
+ * Fetches a user's profile by calling our secure, server-side API route.
+ * @param userId - The ID of the user.
+ * @param user - The full Supabase user object.
  * @returns The user's profile.
  */
 export const fetchProfileService = async (userId: string, user: User): Promise<UserProfile> => {
   try {
-    console.log("🔍 PROFILE_SERVICE: Fetching profile for user ID:", userId);
+    console.log("🔍 PROFILE_SERVICE: Fetching profile via API route for user:", userId);
     
-    const { data, error } = await supabase
-      .from('user_profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
+    const response = await fetch('/api/user/profile', { cache: 'no-store' }); // Ensure it's not cached
 
-    if (error && error.code !== 'PGRST116') {
-      // PGRST116 means no rows found, which is not a critical error here.
-      throw error;
+    if (!response.ok) {
+      throw new Error(`API call failed with status: ${response.status}`);
     }
-    
+
+    const data: UserProfile | null = await response.json();
+
     if (data) {
-      console.log("✅ PROFILE_SERVICE: Profile fetched successfully.");
-      // Sanitize token: treat OAuth tokens (gho_ prefix) as no PAT
+      console.log("✅ PROFILE_SERVICE: Profile fetched successfully via API.");
       if (data.github_pat_token?.startsWith('gho_')) {
         data.github_pat_token = undefined;
       }
       return data;
     }
 
-    // Profile not found, let's create a basic one.
-    console.log('🔧 PROFILE_SERVICE: Profile not found, creating a new basic profile...');
+    // API returned null, meaning profile doesn't exist yet. Create it.
+    console.log('🔧 PROFILE_SERVICE: Profile not found via API, creating a new one...');
     const githubUsername = user.user_metadata?.user_name || user.email?.split('@')[0] || `user_${userId.substring(0, 8)}`;
     const newProfile: UserProfile = {
       id: userId,
@@ -44,26 +41,21 @@ export const fetchProfileService = async (userId: string, user: User): Promise<U
     };
 
     const { error: insertError } = await supabase.from('user_profiles').insert(newProfile);
-
     if (insertError) {
-      console.error("❌ PROFILE_SERVICE: Error creating profile:", insertError);
-      return newProfile; // Return the basic profile object anyway so the app doesn't break
+      console.error("❌ PROFILE_SERVICE: Error creating profile after API check:", insertError);
+    } else {
+      console.log("✅ PROFILE_SERVICE: New basic profile created successfully.");
     }
-    
-    console.log("✅ PROFILE_SERVICE: New basic profile created successfully.");
     return newProfile;
 
   } catch (err) {
-    console.error('❌ PROFILE_SERVICE: Profile fetch failed. Building resilient fallback profile.', err);
+    console.error('❌ PROFILE_SERVICE: Fetch/create failed. Building fallback profile.', err);
 
-    // ✨ THE FIX IS HERE ✨
-    // Construct a fallback profile but ATTEMPT TO RECOVER THE PAT from localStorage.
-    // This prevents a temporary network error from wiping the user's session state.
     const fallbackProfile: UserProfile = {
       id: userId,
-      github_username: user?.user_metadata?.user_name || 'user',
-      avatar_url: user?.user_metadata?.avatar_url,
-      display_name: user?.user_metadata?.full_name || user?.user_metadata?.name,
+      github_username: user.user_metadata?.user_name || 'user',
+      avatar_url: user.user_metadata?.avatar_url,
+      display_name: user.user_metadata?.full_name || user.user_metadata?.name,
     };
 
     if (typeof window !== 'undefined') {
@@ -73,7 +65,6 @@ export const fetchProfileService = async (userId: string, user: User): Promise<U
             fallbackProfile.github_pat_token = cachedPat;
         }
     }
-
     return fallbackProfile;
   }
 };
