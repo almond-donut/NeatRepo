@@ -1,4 +1,4 @@
-Can you help me debug this code? i think the ai chatbot still using hardcoded even though i already setup the env on vercel, i didnt saw the ai 'thinking . . " but it shows a rapid generic when i said like "what do you think about my repo's?" and also the job template is failing, i want it to response and giving 4 most relevan repo project based on the form filling
+Please analyze this code for: Error handling, Edge cases, Performance optimization, Best practices, Please do not unnecessarily remove any comments or code. Generate the code with clear comments explaining the logic.
 
 app\api\analyze\route.ts:
 <code>
@@ -1134,6 +1134,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { GitHubRepo, ChatMessage } from '../types';
 import { Github, Send, ArrowUp, Square, Code, Lightbulb, Zap, MessageCircle, Download } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
 
 // Props Interface for the component
 interface ChatSidebarProps {
@@ -1211,6 +1212,17 @@ export function ChatSidebar({
         </div>
       </CardHeader>
       
+      {/* Interview Progress Bar */}
+      {isInterviewMode && interviewProgress > 0 && (
+        <div className="px-4 py-2 border-b border-gray-700/50 bg-blue-500/5">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs text-blue-400 font-medium">Interview Progress</span>
+            <span className="text-xs text-blue-400">{Math.round(interviewProgress)}%</span>
+          </div>
+          <Progress value={interviewProgress} className="h-2 bg-gray-800" />
+        </div>
+      )}
+      
       <CardContent className="p-4 h-[60vh] flex flex-col">
         <ScrollArea className="flex-grow overflow-hidden pr-2">
           <div className="space-y-4">
@@ -1241,11 +1253,11 @@ export function ChatSidebar({
                       variant="outline"
                       size="sm"
                       className="w-full justify-start bg-blue-500/10 text-blue-400 border-blue-500/30 hover:bg-blue-500/20 text-xs h-8"
-                      onClick={() => sendDirectMessage("generate portfolio readme")}
+                      onClick={() => sendDirectMessage("generate personal readme based on quick interview")}
                       disabled={isAiThinking || repositories.length === 0 || isInterviewMode}
                     >
                       <MessageCircle className="h-3 w-3 mr-1.5" />
-                      {isInterviewMode ? 'Interview Active...' : 'Generate Portfolio README'}
+                      {isInterviewMode ? 'Interview Active...' : 'Personal README Interview'}
                     </Button>
                   </div>
                 </div>
@@ -12542,125 +12554,58 @@ export async function handleDeleteRepo(
 lib\ai\actions\handleGeneralResponse.ts:
 <code>
 // lib/ai/actions/handleGeneralResponse.ts
-
 import { AIResponse, UserContext } from '../types';
+import { geminiAI } from '@/lib/gemini';
 
 export const handleGeneralResponse = async (context: UserContext, params: any): Promise<AIResponse> => {
-  const { repositories } = context;
-  const { originalMessage, analyzeRepos, isCriticMode } = params;
+    const { repositories } = context;
+    const { analyzeRepos, isCriticMode } = params;
 
-  // If user wants analysis and we have repositories, provide personalized response
-  if (analyzeRepos && repositories && repositories.length > 0) {
-    const originalRepos = repositories.filter(repo => !repo.fork);
-    const forkedCount = repositories.filter(repo => repo.fork).length;
-    const totalRepos = repositories.length;
-    const languages = [...new Set(repositories.map(repo => repo.language).filter(Boolean))];
-    const totalStars = repositories.reduce((sum, repo) => sum + (repo.stargazers_count || 0), 0);
-    const reposWithDescription = repositories.filter(repo => repo.description && repo.description.trim().length > 0).length;
-
-    let analysisMessage = '';
-
-    if (isCriticMode) {
-      // Brutal critic mode
-      analysisMessage = `**🔥 BRUTAL REPOSITORY REVIEW 🔥**\n\n`;
-      
-      if (totalStars === 0) {
-        analysisMessage += `**OUCH!** Your repos have **0 stars total**. That's like a digital graveyard! 💀\n\n`;
-      } else if (totalStars < 10) {
-        analysisMessage += `**${totalStars} stars total?** That's... not great. Your repos are lonelier than a JavaScript developer at a Python conference.\n\n`;
-      }
-
-      if (originalRepos.length === 0) {
-        analysisMessage += `**SERIOUSLY?** All ${totalRepos} repos are FORKS? Where's your originality? Copy-paste isn't a programming skill!\n\n`;
-      } else if (originalRepos.length < 3) {
-        analysisMessage += `Only **${originalRepos.length} original repos?** Come on, even my pet goldfish has more creativity!\n\n`;
-      }
-
-      if (reposWithDescription < totalRepos * 0.5) {
-        analysisMessage += `**${totalRepos - reposWithDescription} repos without descriptions?** How are people supposed to know what your code does, telepathy?!\n\n`;
-      }
-
-      analysisMessage += `**YOUR REPOS:**\n`;
-      repositories.slice(0, 8).forEach(repo => {
-        analysisMessage += `• **${repo.name}** ${repo.language ? `(${repo.language})` : '(??)'} `;
-        analysisMessage += `${repo.stargazers_count || 0}⭐ ${repo.fork ? '(FORK)' : ''}`;
-        if (!repo.description) analysisMessage += ` 📝❌`;
-        analysisMessage += `\n`;
-      });
-
-      analysisMessage += `\n**WHAT YOU NEED TO DO (NO EXCUSES):**\n`;
-      analysisMessage += `1. **Create original projects** - Stop forking everything!\n`;
-      analysisMessage += `2. **Write proper README files** - Explain what your code does!\n`;
-      analysisMessage += `3. **Add descriptions** - One sentence isn't hard!\n`;
-      analysisMessage += `4. **Pick better project names** - Make them meaningful!\n`;
-      if (languages.length < 2) {
-        analysisMessage += `5. **Learn more languages** - Diversity matters!\n`;
-      }
-      analysisMessage += `6. **Deploy your projects** - Show them working live!\n`;
-      analysisMessage += `\n💀 **Bottom line:** Your portfolio needs SERIOUS work!`;
-
-    } else {
-      // Nice mode
-      analysisMessage = `**✨ Repository Analysis ✨**\n\n`;
-      analysisMessage += `Great to see your **${totalRepos} repositories**! Here's what I found:\n\n`;
-      
-      if (originalRepos.length > 0) {
-        analysisMessage += `🎯 **${originalRepos.length} original projects** - Nice work creating your own content!\n`;
-      }
-      if (forkedCount > 0) {
-        analysisMessage += `🍴 **${forkedCount} forked repositories** - Good way to learn from others!\n`;
-      }
-      if (totalStars > 0) {
-        analysisMessage += `⭐ **${totalStars} total stars** - People are noticing your work!\n`;
-      }
-      if (languages.length > 0) {
-        analysisMessage += `💻 **Languages:** ${languages.slice(0, 5).join(', ')}${languages.length > 5 ? '...' : ''}\n`;
-      }
-
-      analysisMessage += `\n**Your repositories:**\n`;
-      repositories.slice(0, 8).forEach(repo => {
-        analysisMessage += `• **${repo.name}** ${repo.language ? `(${repo.language})` : ''} `;
-        if (repo.stargazers_count > 0) analysisMessage += `${repo.stargazers_count}⭐ `;
-        analysisMessage += `${repo.fork ? '(forked)' : ''}\n`;
-      });
-
-      if (repositories.length > 8) {
-        analysisMessage += `• ...and ${repositories.length - 8} more repositories\n`;
-      }
-
-      analysisMessage += `\n**💡 Suggestions to enhance your portfolio:**\n`;
-      let suggestionCount = 1;
-      
-      if (reposWithDescription < totalRepos * 0.8) {
-        analysisMessage += `${suggestionCount}. Add descriptions to more repositories for better discoverability\n`;
-        suggestionCount++;
-      }
-      if (originalRepos.length < 5) {
-        analysisMessage += `${suggestionCount}. Consider creating more original projects to demonstrate your skills\n`;
-        suggestionCount++;
-      }
-      if (languages.length < 3) {
-        analysisMessage += `${suggestionCount}. Explore different programming languages to show versatility\n`;
-        suggestionCount++;
-      }
-      analysisMessage += `${suggestionCount}. Pin your best repositories to your GitHub profile\n`;
-      suggestionCount++;
-      analysisMessage += `${suggestionCount}. Consider adding live demos or deployment links\n`;
+    // Guard clause: if not analyzing or no repos, return a helpful message.
+    if (!analyzeRepos || !repositories || repositories.length === 0) {
+        const helpMessage = `I can help with various repository tasks. For example, you can ask me to "analyze my repositories," "generate a portfolio README," or "recommend projects for a frontend developer job." What would you like to do?`;
+        return { message: helpMessage, success: true };
     }
 
-    return {
-      message: analysisMessage,
-      success: true,
-    };
-  }
+    try {
+        const repoSummaries = repositories
+            .filter(repo => !repo.fork) // Focus on original work
+            .slice(0, 20) // Limit to a reasonable number to avoid huge prompts
+            .map(r => `- ${r.name}: ${r.description || 'No description.'} (Lang: ${r.language || 'N/A'}, Stars: ${r.stargazers_count})`)
+            .join('\n');
 
-  // Default helpful message when no repositories or not asking for analysis
-  const helpMessage = `**AI Assistant Ready**\n\nI'm your GitHub repository assistant! I can help you with:\n\n**Repository Management:**\n• "Create a new repo named [name]"\n• "Sort my repos by complexity"\n\n**Analysis & Optimization:**\n• "Analyze my repository structure"\n• "Give me suggestions to improve my repositories"\n• "Generate a portfolio README"\n\n**Example:** Try saying "what do you think about my repos?" or "analyze my repository structure"`
+        const criticPrompt = isCriticMode
+            ? "Your tone should be brutally honest, direct, and witty, like a senior engineer who has seen it all. Don't hold back on constructive criticism. Point out weaknesses bluntly."
+            : "Your tone should be encouraging, professional, and helpful, like a friendly mentor. Focus on positive aspects and frame suggestions constructively.";
 
-  return {
-    message: helpMessage,
-    success: true,
-  };
+        const prompt = `
+            As a senior engineering manager reviewing a developer's GitHub portfolio, provide a high-level analysis of the following repositories.
+            ${criticPrompt}
+
+            Based on this list of repositories:
+            ${repoSummaries}
+
+            Please provide:
+            1.  **Overall Impression:** A brief, one-paragraph summary of the portfolio's strengths and weaknesses.
+            2.  **Key Strengths:** 2-3 bullet points highlighting what this portfolio does well (e.g., language diversity, project complexity, clear focus).
+            3.  **Top Areas for Improvement:** 2-3 actionable bullet points on what to improve next (e.g., add project descriptions, create more complex projects, add live demos).
+
+            Keep the entire response concise and easy to read in a chat window.
+        `;
+
+        const analysisMessage = await geminiAI.generateResponse(prompt);
+
+        return {
+            message: analysisMessage,
+            success: true,
+        };
+    } catch (error: any) {
+        console.error("Error in handleGeneralResponse calling Gemini:", error);
+        return {
+            message: "I had some trouble analyzing your repositories right now. Please check if the AI integration is configured correctly and try again.",
+            success: false,
+        };
+    }
 };
 
 </code>
@@ -12672,28 +12617,80 @@ lib\ai\actions\handleInterviewAnswer.ts:
 import { AIResponse, UserContext, InterviewState } from '../types';
 
 /**
- * Generates a portfolio README from the interview answers.
+ * Generates a personalized README from the interview answers.
  */
-function generatePortfolioReadme(answers: Record<string, string>): string {
-  let readme = `# My Developer Story\n\n`;
+function generatePersonalReadme(answers: Record<string, string>, repositories: any[]): string {
+  let readme = `# Hello, I'm `;
   
-  if (answers.passion) {
-    readme += `## 🔥 My Passion\n\n${answers.passion}\n\n`;
+  // Extract name from the first answer
+  const nameMatch = answers.name_and_passion?.match(/(?:I'm|I am|My name is|Call me)\s+([A-Za-z]+)/i);
+  const name = nameMatch ? nameMatch[1] : 'a Developer';
+  
+  readme += `${name}! 👋\n\n`;
+  
+  // Add a dynamic intro based on their passion
+  if (answers.name_and_passion) {
+    const passionText = answers.name_and_passion.replace(/(?:I'm|I am|My name is|Call me)\s+[A-Za-z]+[,.]?\s*/i, '');
+    readme += `## � What Drives Me\n\n${passionText}\n\n`;
   }
-  if (answers.journey) {
-    readme += `## 🚀 My Journey\n\n${answers.journey}\n\n`;
+  
+  // Add hobbies section
+  if (answers.hobbies_and_interests) {
+    readme += `## 🎯 Beyond the Code\n\nWhen I'm not crafting solutions in code, you'll find me ${answers.hobbies_and_interests.toLowerCase()}. I believe these experiences make me a more creative and well-rounded developer!\n\n`;
   }
-  if (answers.proudest_project) {
-    readme += `## 🏆 My Proudest Project\n\n${answers.proudest_project}\n\n`;
-  }
-  if (answers.biggest_challenge) {
-    readme += `## 💪 My Biggest Challenge\n\n${answers.biggest_challenge}\n\n`;
-  }
-  if (answers.future_goals) {
-    readme += `## ✨ My Future Goals\n\n${answers.future_goals}\n\n`;
+  
+  // Add coding journey
+  if (answers.coding_journey) {
+    readme += `## 🚀 My Coding Journey\n\n${answers.coding_journey}\n\n`;
   }
 
-  readme += `*This README was auto-generated by NeatRepo AI based on my portfolio interview.*`;
+  // Add tech stack
+  if (answers.tech_stack_and_preferences) {
+    readme += `## 🛠️ My Tech Arsenal\n\n${answers.tech_stack_and_preferences}\n\n`;
+  }
+
+  // Add featured project
+  if (answers.proudest_achievement) {
+    readme += `## 🏆 Project I'm Most Proud Of\n\n${answers.proudest_achievement}\n\n`;
+  }
+
+  // Add problem solving approach
+  if (answers.problem_solving_approach) {
+    readme += `## 🧠 How I Tackle Challenges\n\n${answers.problem_solving_approach}\n\n`;
+  }
+
+  // Add collaboration style
+  if (answers.collaboration_style) {
+    readme += `## 🤝 Working Together\n\n${answers.collaboration_style}\n\n`;
+  }
+
+  // Add repository showcase
+  if (repositories && repositories.length > 0) {
+    readme += `## 📈 Featured Repositories\n\n`;
+    const topRepos = repositories.slice(0, 6);
+    topRepos.forEach(repo => {
+      const stars = repo.stargazers_count > 0 ? ` ⭐ ${repo.stargazers_count}` : '';
+      readme += `- **[${repo.name}](${repo.html_url})**${stars} - ${repo.description || 'A showcase of my development skills'}\n`;
+    });
+    readme += `\n`;
+  }
+
+  // Add future aspirations
+  if (answers.future_dreams) {
+    readme += `## 🌟 Future Aspirations\n\n${answers.future_dreams}\n\n`;
+  }
+
+  // Add contact footer
+  readme += `## 📬 Let's Connect!\n\n`;
+  readme += `I'm always excited to collaborate on interesting projects or discuss new opportunities. Feel free to reach out!\n\n`;
+  
+  // Add GitHub stats
+  readme += `---\n\n`;
+  readme += `### 📊 GitHub Stats\n\n`;
+  readme += `![GitHub Stats](https://github-readme-stats.vercel.app/api?username=YOUR_USERNAME&show_icons=true&theme=radical)\n\n`;
+  readme += `![Top Languages](https://github-readme-stats.vercel.app/api/top-langs/?username=YOUR_USERNAME&layout=compact&theme=radical)\n\n`;
+  
+  readme += `*This personalized README was crafted through an AI-powered interview with NeatRepo - showcasing not just my code, but who I am as a developer and person.* ✨`;
 
   return readme;
 }
@@ -12729,22 +12726,54 @@ export async function handleInterviewAnswer(
   // Check if the interview is complete
   if (newInterviewState.currentQuestion >= newInterviewState.questions.length) {
     newInterviewState.isActive = false;
-    const portfolioReadme = generatePortfolioReadme(newInterviewState.answers);
+    const personalReadme = generatePersonalReadme(newInterviewState.answers, context.repositories);
     
     return {
-      message: `🎉 Interview Complete! I've generated a portfolio README based on your answers:\n\n---\n\n${portfolioReadme}`,
+      message: `🎉 Interview Complete! I've generated your personalized README based on our conversation:
+
+---
+
+${personalReadme}`,
       success: true,
-      data: { interviewState: newInterviewState },
+      data: { 
+        interviewState: newInterviewState,
+        portfolioReadme: personalReadme,
+        interviewActive: false,
+        progress: 100
+      },
     };
   }
 
   // Ask the next question
   const nextQuestion = newInterviewState.questions[newInterviewState.currentQuestion];
+  const progress = ((newInterviewState.currentQuestion + 1) / newInterviewState.questions.length) * 100;
+  const questionNumber = newInterviewState.currentQuestion + 1;
+  const totalQuestions = newInterviewState.questions.length;
+  
+  // Generate encouraging transition messages
+  const encouragements = [
+    "Thanks for sharing that! 😊",
+    "Great insight! 🌟", 
+    "Love hearing about that! 💫",
+    "Awesome response! 🚀",
+    "Fantastic! 🎯",
+    "Really appreciate that perspective! ✨",
+    "That's so interesting! 🤔"
+  ];
+  
+  const randomEncouragement = encouragements[Math.floor(Math.random() * encouragements.length)];
   
   return {
-    message: `Great, thanks for sharing! Here's the next question:\n\n${nextQuestion.question}`,
+    message: `${randomEncouragement}
+
+**Question ${questionNumber} of ${totalQuestions}:**
+${nextQuestion.question}`,
     success: true,
-    data: { interviewState: newInterviewState },
+    data: { 
+      interviewState: newInterviewState,
+      interviewActive: true,
+      progress: progress
+    },
   };
 }
 
@@ -12809,93 +12838,103 @@ export async function handleRecommendCVRepos(
 lib\ai\actions\recommendReposForJob.ts:
 <code>
 // lib/ai/actions/recommendReposForJob.ts
-
 import { AIResponse, UserContext } from '../types';
 import { geminiAI } from '@/lib/gemini';
+import { GitHubRepo } from '@/app/dashboard/types';
 
 export const recommendReposForJob = async (context: UserContext, params: { jobTitle: string }): Promise<AIResponse> => {
-  const { jobTitle } = params;
-  const { repositories } = context;
+    const { jobTitle } = params;
+    const { repositories } = context;
 
-  if (!jobTitle) {
-    return { message: "Please provide a job title so I can recommend the best repositories.", success: false };
-  }
-  if (!repositories || repositories.length === 0) {
-    return { message: "I need your repositories to be loaded to make a recommendation.", success: false };
-  }
-
-  // Filter to only original repositories (not forks) for recommendation
-  const originalRepos = repositories.filter(repo => !repo.fork);
-  
-  if (originalRepos.length === 0) {
-    return { message: "You don't have any original repositories yet. Consider creating some projects relevant to the job position!", success: false };
-  }
-
-  const repoList = originalRepos.map(r => 
-    `- ${r.name}: ${r.description || 'No description.'} (Language: ${r.language || 'Unknown'}, Stars: ${r.stargazers_count || 0})`
-  ).join('\n');
-
-  const prompt = `I am applying for a "${jobTitle}" position. From the following list of my GitHub repositories, select the TOP 4 most relevant repositories that would best showcase my skills for this role. 
-
-Consider:
-- Technical relevance to the job
-- Programming languages used
-- Project complexity and quality indicators (stars, description)
-- Diversity of skills demonstrated
-
-Return ONLY the repository names, separated by commas, no other text.
-
-Repositories:
-${repoList}`;
-
-  try {
-    const response = await geminiAI.generateResponse(prompt);
-    const recommendedRepoNames = response.split(',').map(name => name.trim()).filter(name => name.length > 0);
-
-    const recommendedRepos = originalRepos.filter(repo => 
-      recommendedRepoNames.some(name => repo.name.toLowerCase().includes(name.toLowerCase()) || name.toLowerCase().includes(repo.name.toLowerCase()))
-    );
-
-    // If AI didn't return good matches, fall back to selecting by stars and relevance
-    if (recommendedRepos.length < 2) {
-      const sortedRepos = originalRepos.sort((a, b) => (b.stargazers_count || 0) - (a.stargazers_count || 0));
-      recommendedRepos.push(...sortedRepos.slice(0, 4 - recommendedRepos.length));
+    if (!jobTitle) {
+        return { message: "Please provide a job title so I can recommend the best repositories.", success: false };
+    }
+    if (!repositories || repositories.length === 0) {
+        return { message: "I need your repositories to be loaded to make a recommendation.", success: false };
     }
 
-    // Ensure we have exactly 4 or fewer
-    const finalRepos = recommendedRepos.slice(0, 4);
+    const originalRepos = repositories.filter(repo => !repo.fork);
 
-    if (finalRepos.length === 0) {
-      return { 
-        message: `I couldn't find any repositories that match the "${jobTitle}" role. Consider creating projects that demonstrate relevant skills!`, 
-        success: true, 
-        data: { recommendedRepos: [] } 
-      };
+    if (originalRepos.length === 0) {
+        return { message: "You don't have any original repositories. I can't make a recommendation without them.", success: true, data: { recommendedRepos: [] } };
     }
 
-    let message = `### 🎯 Job Template for: **${jobTitle}**\n\nHere are the **${finalRepos.length} most relevant repositories** to showcase for this position:\n\n`;
-    
-    finalRepos.forEach((repo, index) => {
-      message += `**${index + 1}. ${repo.name}**\n`;
-      message += `   • Language: ${repo.language || 'Multiple'}\n`;
-      message += `   • Stars: ${repo.stargazers_count || 0}\n`;
-      message += `   • ${repo.description || 'No description available'}\n\n`;
-    });
-    
-    message += `💡 **Pro tip**: Update the README files of these repositories to highlight features most relevant to ${jobTitle} roles!`;
+    const repoList = originalRepos.map(r =>
+        `- Name: ${r.name}, Description: ${r.description || 'N/A'}, Language: ${r.language || 'N/A'}, Stars: ${r.stargazers_count}`
+    ).join('\n');
 
-    return {
-      message,
-      success: true,
-      data: { recommendedRepos: finalRepos },
-    };
-  } catch (error) {
-    console.error("Failed to get job recommendation:", error);
-    return { 
-      message: "I had trouble analyzing your repositories for that job title. Please try again later.", 
-      success: false 
-    };
-  }
+    // More robust prompt asking for a specific format (JSON)
+    const prompt = `
+        Analyze the following list of GitHub repositories and select the top 4 most relevant projects for a person applying to a "${jobTitle}" position.
+
+        Consider technical relevance (frameworks, languages), project complexity, and overall appeal to a recruiter for this specific role.
+
+        Repositories:
+        ${repoList}
+
+        Respond ONLY with a JSON array of strings containing the exact names of the 4 recommended repositories. For example: ["repo-one", "project-x", "another-repo", "final-choice"]. Do not include any other text, explanation, or markdown formatting.
+    `;
+
+    try {
+        const rawResponse = await geminiAI.generateResponse(prompt);
+        let recommendedRepoNames: string[] = [];
+
+        // More robust parsing logic to find and parse the JSON array
+        try {
+            const jsonMatch = rawResponse.match(/\[[\s\S]*?\]/);
+            if (jsonMatch) {
+                recommendedRepoNames = JSON.parse(jsonMatch[0]);
+            } else {
+                console.warn("AI response was not valid JSON, falling back to comma-separated parsing.");
+                recommendedRepoNames = rawResponse.split(',').map(name => name.trim().replace(/["']/g, ''));
+            }
+        } catch (parseError) {
+            console.error("Failed to parse AI response, falling back to simple split:", parseError);
+            recommendedRepoNames = rawResponse.split(',').map(name => name.trim().replace(/["']/g, ''));
+        }
+        
+        // Filter the original repo list to find the full objects using a precise match
+        const recommendedRepos = recommendedRepoNames
+            .map(name => originalRepos.find(repo => repo.name.toLowerCase() === name.toLowerCase()))
+            .filter((repo): repo is GitHubRepo => repo !== undefined); // Type guard to filter out any undefined matches
+
+        const finalRepos = recommendedRepos.slice(0, 4);
+        
+        if (finalRepos.length === 0) {
+            return {
+                message: `I couldn't confidently select relevant repositories for a "${jobTitle}" role. Here are your top repositories by stars instead:`,
+                success: true,
+                data: { 
+                    recommendedRepos: originalRepos
+                        .sort((a, b) => (b.stargazers_count || 0) - (a.stargazers_count || 0))
+                        .slice(0, 4)
+                }
+            };
+        }
+
+        let message = `### 🎯 Job Template for: **${jobTitle}**\n\nHere are the **${finalRepos.length} most relevant repositories** to showcase for this position:\n\n`;
+        
+        finalRepos.forEach((repo, index) => {
+            message += `**${index + 1}. ${repo.name}**\n`;
+            message += `   • Language: ${repo.language || 'Multiple'}\n`;
+            message += `   • Stars: ${repo.stargazers_count || 0}\n`;
+            message += `   • ${repo.description || 'No description available'}\n\n`;
+        });
+        
+        message += `💡 **Pro tip**: Update the README files of these repositories to highlight features most relevant to ${jobTitle} roles!`;
+
+        return {
+            message,
+            success: true,
+            data: { recommendedRepos: finalRepos },
+        };
+    } catch (error: any) {
+        console.error("Error in recommendReposForJob calling Gemini:", error);
+        return {
+            message: "I had trouble analyzing your repositories for that job title. Please check if the AI integration is configured correctly and try again.",
+            success: false,
+        };
+    }
 };
 </code>
 
@@ -12970,24 +13009,36 @@ import { AIResponse, UserContext, InterviewQuestion } from '../types';
 
 const interviewQuestions: InterviewQuestion[] = [
   {
-    id: 'passion',
-    question: 'To start, what are you most passionate about in technology? What gets you excited to build things?'
+    id: 'name_and_passion',
+    question: 'Hi there! 👋 Let\'s start with the basics - what\'s your name, and what do you love most about coding? What makes you jump out of bed excited to write code?'
   },
   {
-    id: 'journey',
-    question: 'Tell me a bit about your journey. What first got you into coding and development?'
+    id: 'hobbies_and_interests',
+    question: 'Great! Now tell me, what do you do when you\'re not coding? Any hobbies, interests, or activities that fuel your creativity? I\'m curious about the person behind the programmer! 🎨'
   },
   {
-    id: 'proudest_project',
-    question: 'Looking at your repositories, which project are you most proud of and why? Tell me the story behind it.'
+    id: 'coding_journey',
+    question: 'Love hearing about that! 🌟 Now, let\'s dive into your coding story - what sparked your journey into programming? Was there a particular moment or project that made you think "This is it, this is what I want to do"?'
   },
   {
-    id: 'biggest_challenge',
-    question: 'What has been the biggest challenge you\'ve faced on a project, and how did you overcome it?'
+    id: 'tech_stack_and_preferences',
+    question: 'Fantastic journey! 🚀 What technologies or programming languages make you feel most at home? Are there any tools or frameworks you\'re particularly excited about or want to master?'
   },
   {
-    id: 'future_goals',
-    question: 'Finally, what are your future goals? What kind of impact do you hope to make as a developer?'
+    id: 'proudest_achievement',
+    question: 'Awesome choices! 💪 Looking at your repositories, which project makes you proudest? Tell me the story - what challenges did you overcome, what did you learn, and why does it mean so much to you?'
+  },
+  {
+    id: 'problem_solving_approach',
+    question: 'That\'s impressive! 🧠 Everyone has their unique approach to tackling tough problems. How do you usually approach a challenging bug or a complex feature? What\'s your problem-solving superpower?'
+  },
+  {
+    id: 'collaboration_style',
+    question: 'Smart approach! 🤝 Tell me about your collaboration style - do you prefer pair programming, code reviews, leading teams, or working solo? What brings out your best work in a team environment?'
+  },
+  {
+    id: 'future_dreams',
+    question: 'Perfect! 🌈 Finally, let\'s talk dreams and aspirations - where do you see yourself in the next few years? What kind of impact do you hope to make through your code? Any wild ideas or projects you\'d love to tackle?'
   }
 ];
 
@@ -13008,11 +13059,23 @@ export async function handleStartInterview(
   };
 
   const firstQuestion = interviewQuestions[0];
+  const progress = (1 / interviewQuestions.length) * 100;
 
   return {
-    message: `Let's begin your portfolio interview! Here is your first question:\n\n${firstQuestion.question}`,
+    message: `🎉 Welcome to your Personal README Interview! 
+
+This quick interview will help me create a personalized README that showcases not just your code, but YOU as a developer and person.
+
+We'll go through ${interviewQuestions.length} fun questions that should take about 5-10 minutes. Ready? Let's dive in!
+
+**Question 1 of ${interviewQuestions.length}:**
+${firstQuestion.question}`,
     success: true,
-    data: { interviewState: newInterviewState }, // Return the new state so the UI can update
+    data: { 
+      interviewState: newInterviewState,
+      interviewActive: true,
+      progress: progress
+    },
   };
 }
 
@@ -13530,10 +13593,19 @@ function parseIntent(message: string, context: UserContext): AIAction {
     };
   }
 
+  if (lowerMessage.includes('generate') && lowerMessage.includes('personal') && lowerMessage.includes('readme')) {
+    return {
+      type: 'start_interview',
+      intent: 'User wants to generate a personal README through interview.',
+      parameters: {},
+      confidence: 0.95,
+    };
+  }
+
   if (lowerMessage.includes('generate') && lowerMessage.includes('portfolio') && lowerMessage.includes('readme')) {
     return {
-      type: 'recommend_cv_repos',
-      intent: 'User wants to generate a portfolio README.',
+      type: 'start_interview',
+      intent: 'User wants to generate a portfolio README through interview.',
       parameters: {},
       confidence: 0.9,
     };
@@ -15307,4 +15379,4 @@ export function cn(...inputs: ClassValue[]) {
 
 
 
-Can you help me debug this code? i think the ai chatbot still using hardcoded even though i already setup the env on vercel, i didnt saw the ai 'thinking . . " but it shows a rapid generic when i said like "what do you think about my repo's?" and also the job template is failing, i want it to response and giving 4 most relevan repo project based on the form filling
+Please analyze this code for: Error handling, Edge cases, Performance optimization, Best practices, Please do not unnecessarily remove any comments or code. Generate the code with clear comments explaining the logic.

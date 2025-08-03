@@ -1,4 +1,4 @@
-// Gemini AI integration using Gemini 2.0 Flash
+// Gemini AI integration using Gemini 2.5 Flash
 import { GoogleGenerativeAI } from "@google/generative-ai"
 
 interface ChatMessage {
@@ -20,7 +20,7 @@ export class GeminiAI {
     this.genAI = new GoogleGenerativeAI(this.apiKey)
     // Using configurable Gemini model with environment-based settings
     this.model = this.genAI.getGenerativeModel({
-      model: process.env.GEMINI_MODEL || "gemini-2.5-pro",
+      model: process.env.GEMINI_MODEL || "gemini-2.5-flash",
       generationConfig: {
         temperature: parseFloat(process.env.GEMINI_TEMPERATURE || "0.7"),
         topP: parseFloat(process.env.GEMINI_TOP_P || "0.8"),
