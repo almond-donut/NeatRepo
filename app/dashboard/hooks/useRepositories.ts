@@ -26,7 +26,6 @@ export function useRepositories(
   const [isCreatingRepo, setIsCreatingRepo] = useState(false);
   const [isRenamingRepo, setIsRenamingRepo] = useState(false);
   const [dateSortOrder, setDateSortOrder] = useState<'newest' | 'oldest' | 'default'>('default');
-  const [hasChanges, setHasChanges] = useState(false);
 
   // --- Core Repository Actions ---
 
@@ -250,7 +249,6 @@ export function useRepositories(
   const handleDateSort = (order: 'newest' | 'oldest' | 'default') => {
     setDateSortOrder(order);
     setRepositories(prev => sortRepositoriesByDate(prev, order));
-    setHasChanges(order !== 'default');
   };
 
   const onDragEnd = (result: DropResult) => {
@@ -262,7 +260,6 @@ export function useRepositories(
     newRepos.splice(destination.index, 0, reorderedItem);
 
     setRepositories(newRepos);
-    setHasChanges(true);
   };
   
   // --- Data Fetching and Initialization ---
@@ -319,8 +316,6 @@ export function useRepositories(
     dateSortOrder,
     handleDateSort,
     onDragEnd,
-    hasChanges,
-    setHasChanges,
     // Creation & Renaming
     isCreatingRepo,
     isRenamingRepo,

@@ -71,13 +71,6 @@ export default function DashboardPage() {
               }}
             />
 
-            {dashboard.hasChanges && (
-              <div className="mt-4 p-3 bg-muted/30 rounded-lg border border-border/50">
-                <Button onClick={() => dashboard.setHasChanges(false)} className="w-full">
-                  <><CheckCircle className="w-4 h-4 mr-2" />Apply Changes</>
-                </Button>
-              </div>
-            )}
 
             {forkedRepos.length > 0 && (
               <div className="mt-6">
