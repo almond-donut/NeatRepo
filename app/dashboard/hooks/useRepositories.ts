@@ -59,7 +59,7 @@ export function useRepositories(
     if (!newRepoName.trim()) return;
     const effectiveToken = await getEffectiveToken();
     if (!effectiveToken) {
-      console.log("To create repositories, please set up your GitHub Personal Access Token.");
+      alert("To create repositories, please set up your GitHub Personal Access Token in your profile.");
       showTokenPopup();
       return;
     }
@@ -93,7 +93,7 @@ export function useRepositories(
     if (!repoToRename || !newRepoNameForRename.trim()) return;
     const effectiveToken = await getEffectiveToken();
     if (!effectiveToken) {
-      console.log("To rename repositories, please set up your GitHub Personal Access Token.");
+      alert("To rename repositories, please set up your GitHub Personal Access Token.");
       showTokenPopup();
       return;
     }
@@ -126,7 +126,7 @@ export function useRepositories(
   const confirmDeleteRepo = async (repoToDelete: GitHubRepo) => {
       const effectiveToken = await getEffectiveToken();
       if (!effectiveToken) {
-        console.log("To delete repositories, please set up a GitHub PAT with 'delete_repo' permissions.");
+        alert("To delete repositories, please set up a GitHub PAT with 'delete_repo' permissions.");
         showTokenPopup();
         return;
       }
@@ -144,7 +144,8 @@ export function useRepositories(
           throw new Error(errorData.message || `Failed to delete repository. Status: ${response.status}`);
         }
       } catch (error: any) {
-        console.error(`❌ Failed to delete repository: ${error.message}`);
+        console.error(`Failed to delete repository: ${error.message}`);
+        alert(`Failed to delete repository: ${error.message}`);
       } finally {
         setIsDeleting(false);
       }
@@ -153,13 +154,14 @@ export function useRepositories(
   const handleBulkDelete = async () => {
     const effectiveToken = await getEffectiveToken();
     if (!effectiveToken) {
-      console.log("To delete repositories, please set up your GitHub Personal Access Token.");
+      alert("To delete repositories, please set up your GitHub Personal Access Token.");
       showTokenPopup();
       return;
     }
 
-    if (!profile) {
-      console.error('Error: User profile not found. Cannot proceed with deletion.');
+    if (!profile || !profile.github_username) {
+      console.error('Error: User profile or GitHub username not found. Cannot proceed with deletion.');
+      alert('Error: Could not find your GitHub username. Please try refreshing the page.');
       return;
     }
 
@@ -175,7 +177,7 @@ export function useRepositories(
 
     // 2. Perform Deletions
     const deletePromises = reposToDelete.map((repo: GitHubRepo) =>
-      repositoryManager.deleteRepository(effectiveToken, profile.login, repo.name)
+      repositoryManager.deleteRepository(effectiveToken, profile.github_username, repo.name)
     );
 
     // 3. Handle Results
@@ -185,7 +187,9 @@ export function useRepositories(
       if (failedDeletes.length > 0) {
         // Revert UI on failure and show error
         setRepositories(originalRepos);
-        console.error(`Error: Failed to delete ${failedDeletes.length} repositories. Your view has been restored.`);
+        const errorMessage = `Error: Failed to delete ${failedDeletes.length} repositories. Your view has been restored.`;
+        console.error(errorMessage);
+        alert(errorMessage);
       } else {
         console.log(`🗑️ Successfully deleted ${reposToDelete.length} repositories.`);
         // On success, update the 'originalRepositories' to prevent reverted state on next sort
