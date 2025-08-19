@@ -36,7 +36,7 @@ export default function DashboardPage() {
       <DashboardHeader />
       <div className="container mx-auto px-6 py-8">
         <div className="grid grid-cols-1 gap-8">
-          <div className="w-full">
+          <div className="w-full max-w-6xl mx-auto">
             {!dashboard.profile?.github_pat_token && <GitHubTokenWarning onSetupToken={dashboard.showTokenPopup} />}
             {dashboard.error && <div className="bg-destructive/20 text-destructive p-3 rounded-md mb-4">{dashboard.error}</div>}
 
