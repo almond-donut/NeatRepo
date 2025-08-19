@@ -1,0 +1,28 @@
+0000000000000000000000000000000000000000 de580ce5dfaf646c29987af02c433bf60f7f758a almond-donut <prada.abdul.08@gmail.com> 1753899943 +0700	clone: from https://github.com/almond-donut/NeatRepo
+de580ce5dfaf646c29987af02c433bf60f7f758a abefc49e32ba319887e9bd0c75c5413d2c42d0a5 almond-donut <prada.abdul.08@gmail.com> 1753927412 +0700	commit: Fix: TypeScript errors in dashboard components, update useDashboard hook, and clean up page usage
+abefc49e32ba319887e9bd0c75c5413d2c42d0a5 d99394931af4599e010dd919db76821be4aa47fd almond-donut <prada.abdul.08@gmail.com> 1753927429 +0700	pull --rebase origin master (start): checkout d99394931af4599e010dd919db76821be4aa47fd
+d99394931af4599e010dd919db76821be4aa47fd a6235e1edeb3d89d897955609f56a8f289980e1e almond-donut <prada.abdul.08@gmail.com> 1753927965 +0700	commit: Refactor dashboard into modular components and fix TypeScript errors
+a6235e1edeb3d89d897955609f56a8f289980e1e a6235e1edeb3d89d897955609f56a8f289980e1e almond-donut <prada.abdul.08@gmail.com> 1753928041 +0700	rebase (finish): returning to refs/heads/master
+a6235e1edeb3d89d897955609f56a8f289980e1e 1ad487a68883d1605eb03d9f70cf88c1979c47a8 almond-donut <prada.abdul.08@gmail.com> 1753929145 +0700	commit: chatbot restoration design
+1ad487a68883d1605eb03d9f70cf88c1979c47a8 3879c356906d2d64a619180e7b613172b37a7128 almond-donut <prada.abdul.08@gmail.com> 1753935165 +0700	commit: The auth error page uses proper router navigation and improved ux
+3879c356906d2d64a619180e7b613172b37a7128 44ad91cdd1e4e4033eefd802301131afbeeb5abd almond-donut <prada.abdul.08@gmail.com> 1753935747 +0700	commit: fix oauth
+44ad91cdd1e4e4033eefd802301131afbeeb5abd ebecd65b2628706fcf1f839a078211e0ac6ede8f almond-donut <prada.abdul.08@gmail.com> 1753936192 +0700	commit: fix css bug layout
+ebecd65b2628706fcf1f839a078211e0ac6ede8f 6af009d9b455e50b7720a602f5bb24c44bb712a6 almond-donut <prada.abdul.08@gmail.com> 1753937410 +0700	commit: fix Hard Refresh Wipes State
+6af009d9b455e50b7720a602f5bb24c44bb712a6 282d8520895181ece24437457dfde0f275050fa5 almond-donut <prada.abdul.08@gmail.com> 1753938242 +0700	commit: refactor auth
+282d8520895181ece24437457dfde0f275050fa5 58632e5d9a40856b21eb4addc17845da5a7bcfb8 almond-donut <prada.abdul.08@gmail.com> 1753938717 +0700	commit: race condition bug
+58632e5d9a40856b21eb4addc17845da5a7bcfb8 572f745116dbda29b4b08b4e6e138befc8a65607 almond-donut <prada.abdul.08@gmail.com> 1753940517 +0700	commit: fetching fix
+572f745116dbda29b4b08b4e6e138befc8a65607 fd0a3feb684d5ac985a92d0e33f045912cd6e565 almond-donut <prada.abdul.08@gmail.com> 1753941030 +0700	commit: strict rule prevent race condition
+fd0a3feb684d5ac985a92d0e33f045912cd6e565 f56aef32d449c7f636fb87b966963e83e6dcbc2b almond-donut <prada.abdul.08@gmail.com> 1753941610 +0700	commit: smart detection token expired
+f56aef32d449c7f636fb87b966963e83e6dcbc2b 1b4dc39be70d755e220566328d31332a2267aa51 almond-donut <prada.abdul.08@gmail.com> 1753942076 +0700	commit: enchance smart detecton invalid token pat
+1b4dc39be70d755e220566328d31332a2267aa51 910f38d5247fc45b60f8cba326150491566d42e8 almond-donut <prada.abdul.08@gmail.com> 1753942715 +0700	commit: reflect deleted repo ui fix
+910f38d5247fc45b60f8cba326150491566d42e8 e09ad5cde4c6a3188db26f322664768467f3bd71 almond-donut <prada.abdul.08@gmail.com> 1753951354 +0700	commit: refactor ai chatbot system
+e09ad5cde4c6a3188db26f322664768467f3bd71 dfc51cb6ca6af13c7ca1fd354d5fc9f4f2d3d46e almond-donut <prada.abdul.08@gmail.com> 1753951815 +0700	commit: fix ai chatbot bug
+dfc51cb6ca6af13c7ca1fd354d5fc9f4f2d3d46e dcd8a912d836112d2dd2db831bba1d9e939348ec almond-donut <prada.abdul.08@gmail.com> 1753953004 +0700	commit: Fix AI chatbot error - replace non-existent methods with correct aiAssistant.processMessage() calls
+dcd8a912d836112d2dd2db831bba1d9e939348ec 74a8b4dd535bdb20e747c0abe50afc918459e7c2 almond-donut <prada.abdul.08@gmail.com> 1753953791 +0700	commit: Fix AI chatbot context - ensure repositories are passed to AI assistant for proper analysis
+74a8b4dd535bdb20e747c0abe50afc918459e7c2 1bf36d981aa4de42d3c9c6112a3400dc8b3fa0cd almond-donut <prada.abdul.08@gmail.com> 1753958292 +0700	commit: Major AI chatbot improvements: personalized repository analysis, better intent matching, and actual context usage
+1bf36d981aa4de42d3c9c6112a3400dc8b3fa0cd f81eacd6b094f79f39edd3540cb7f0116a432268 almond-donut <prada.abdul.08@gmail.com> 1753959247 +0700	commit: Complete AI chatbot overhaul: working job templates (4 repos), nice/critic modes, proper analysis, removed debug code
+f81eacd6b094f79f39edd3540cb7f0116a432268 b7da425dc322b1df4b0abf0e53bdcc0c392f4630 almond-donut <prada.abdul.08@gmail.com> 1753961242 +0700	commit: fix ai chatbot api
+b7da425dc322b1df4b0abf0e53bdcc0c392f4630 35c96e5881a25329956a50affea8391afb089a0d almond-donut <prada.abdul.08@gmail.com> 1753963368 +0700	commit: hardcoded fix chatbot
+35c96e5881a25329956a50affea8391afb089a0d c0eb4e747f9702194708cb28c3964e99b85152d5 almond-donut <prada.abdul.08@gmail.com> 1753964609 +0700	commit: Enhanced Personal README Interview Feature
+c0eb4e747f9702194708cb28c3964e99b85152d5 82535e3a803c286bed67b65420a80c4ac7d05cd0 almond-donut <prada.abdul.08@gmail.com> 1753964979 +0700	commit: fix: shorten button text
+82535e3a803c286bed67b65420a80c4ac7d05cd0 0c909c0aad308036c8d1a57b4d209eefde86a84e almond-donut <prada.abdul.08@gmail.com> 1754214028 +0700	commit: chatbot api update

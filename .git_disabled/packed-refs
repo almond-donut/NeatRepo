@@ -1,0 +1,3 @@
+# pack-refs with: peeled fully-peeled sorted 
+de580ce5dfaf646c29987af02c433bf60f7f758a refs/remotes/origin/master
+04dd95241f9aed9c1517b153eb8a538bc69e6049 refs/remotes/origin/refactor-ai-assistant-engine-and-update-authentication-state-management
