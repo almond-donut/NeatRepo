@@ -1,4 +1,4 @@
-// ULTRA-FAST repository manager - TARGET: 1-3 SECOND LOADING 🚀
+// ULTRA-FAST repository manager - TARGET: 1-3 SECOND LOADING
 
 // Custom error for invalid GitHub tokens
 export class InvalidTokenError extends Error {
@@ -42,20 +42,20 @@ class RepositoryManager {
 
       if (cached && cacheTime) {
         const timeSinceCache = Date.now() - parseInt(cacheTime);
-        // 🚀 IMPROVED UX: Only use cache if very recent (5 minutes) for better freshness
+        // IMPROVED UX: Only use cache if very recent (5 minutes) for better freshness
         if (timeSinceCache < 300000) { // 5 minutes instead of 1 hour
           this.repositories = JSON.parse(cached);
           this.lastFetch = parseInt(cacheTime);
           this.isInitialized = true;
-          console.log(`⚡ SINGLETON: Loaded ${this.repositories.length} repositories from ${userId ? 'user-specific' : 'global'} cache (${Math.round(timeSinceCache/1000)}s old)`);
+          console.log(`SINGLETON: Loaded ${this.repositories.length} repositories from ${userId ? 'user-specific' : 'global'} cache (${Math.round(timeSinceCache/1000)}s old)`);
           this.notifyListeners();
           return true;
         } else {
-          console.log(`🔄 SINGLETON: Cache is stale (${Math.round(timeSinceCache/60000)} minutes old), will fetch fresh data`);
+          console.log(`SINGLETON: Cache is stale (${Math.round(timeSinceCache/60000)} minutes old), will fetch fresh data`);
         }
       }
     } catch (error) {
-      console.log('📁 SINGLETON: Cache load failed:', error);
+      console.log('SINGLETON: Cache load failed:', error);
     }
     return false;
   }
@@ -72,9 +72,9 @@ class RepositoryManager {
       localStorage.setItem(cacheKey, JSON.stringify(this.repositories));
       localStorage.setItem(timeKey, Date.now().toString());
       this.lastFetch = Date.now();
-      console.log(`💾 SINGLETON: Repositories cached to ${userId ? 'user-specific' : 'global'} storage`);
+      console.log(`SINGLETON: Repositories cached to ${userId ? 'user-specific' : 'global'} storage`);
     } catch (error) {
-      console.log('📁 SINGLETON: Cache save failed:', error);
+      console.log('SINGLETON: Cache save failed:', error);
     }
   }
 
@@ -109,14 +109,14 @@ class RepositoryManager {
       try {
         listener(repo);
       } catch (error) {
-        console.error('🚨 SINGLETON: Streaming listener error:', error);
+        console.error('SINGLETON: Streaming listener error:', error);
       }
     });
   }
 
   async fetchRepositories(token: string, forceRefresh = false, userId?: string): Promise<void> {
     // CRITICAL DEBUG: Log token information (safely)
-    console.log('🔑 SINGLETON: Starting fetch with token:', {
+    console.log('SINGLETON: Starting fetch with token:', {
       hasToken: !!token,
       tokenLength: token?.length,
       tokenPrefix: token?.substring(0, 7) + '...',
@@ -160,10 +160,10 @@ class RepositoryManager {
       const timeSinceLastFetch = Date.now() - this.lastFetch;
       if (timeSinceLastFetch < 300000) { // 5 minutes
         console.log(' SINGLETON: Using recent data, INSTANT LOAD!');
-        console.log('⚡ SINGLETON: Using recent data, INSTANT LOAD!');
+        console.log('SINGLETON: Using recent data, INSTANT LOAD!');
         return;
       } else {
-        console.log('🔄 SINGLETON: Data is stale, fetching fresh repositories...');
+        console.log('SINGLETON: Data is stale, fetching fresh repositories...');
       }
     }
 
@@ -177,10 +177,10 @@ class RepositoryManager {
     this.loadingStartTime = Date.now();
 
     try {
-      console.log('🚀 SINGLETON: ULTRA-FAST FETCH STARTING...');
+      console.log('SINGLETON: ULTRA-FAST FETCH STARTING...');
 
       // PARALLEL REQUESTS for maximum speed
-      console.log('🌐 SINGLETON: Making parallel GitHub API requests...');
+      console.log('SINGLETON: Making parallel GitHub API requests...');
       const [userRepos, starredRepos] = await Promise.allSettled([
         fetch("https://api.github.com/user/repos?sort=updated&per_page=50", {
           headers: {
@@ -196,13 +196,13 @@ class RepositoryManager {
         })
       ]);
 
-      // ✨ MODIFICATION: Check for 401 Unauthorized on userRepos
+      // MODIFICATION: Check for 401 Unauthorized on userRepos
       if (userRepos.status === 'fulfilled' && userRepos.value.status === 401) {
         // If the token is invalid, throw our specific error
         throw new InvalidTokenError('The provided GitHub PAT is invalid, expired, or lacks repo scope.');
       }
 
-      console.log('🌐 SINGLETON: API requests completed:', {
+      console.log('SINGLETON: API requests completed:', {
         userReposStatus: userRepos.status,
         starredReposStatus: starredRepos.status
       });
@@ -224,15 +224,15 @@ class RepositoryManager {
 
       const fetchTime = Date.now() - this.loadingStartTime;
 
-      console.log(`🚀 ULTRA-FAST: Loaded ${repos.length} repositories in ${fetchTime}ms`);
+      console.log(`ULTRA-FAST: Loaded ${repos.length} repositories in ${fetchTime}ms`);
 
       // PERFORMANCE METRICS
       if (fetchTime < 1000) {
-        console.log('🏆 PERFORMANCE: SUB-1-SECOND LOADING ACHIEVED!');
+        console.log('PERFORMANCE: SUB-1-SECOND LOADING ACHIEVED!');
       } else if (fetchTime < 2000) {
-        console.log('⚡ PERFORMANCE: SUB-2-SECOND LOADING!');
+        console.log('PERFORMANCE: SUB-2-SECOND LOADING!');
       } else if (fetchTime < 3000) {
-        console.log('✅ PERFORMANCE: SUB-3-SECOND LOADING!');
+        console.log('PERFORMANCE: SUB-3-SECOND LOADING!');
       }
 
       this.repositories = repos;
@@ -242,11 +242,11 @@ class RepositoryManager {
       this.notifyListeners();
 
     } catch (error) {
-      console.error('❌ SINGLETON: Fetch error:', error);
+      console.error('SINGLETON: Fetch error:', error);
 
-      // 🚨 CRITICAL DEBUG: Log detailed error information
+      // CRITICAL DEBUG: Log detailed error information
       if (error instanceof Error) {
-        console.error('❌ SINGLETON: Error details:', {
+        console.error('SINGLETON: Error details:', {
           message: error.message,
           name: error.name,
           stack: error.stack
@@ -255,24 +255,24 @@ class RepositoryManager {
 
       // Check if it's a token-related error
       if (error instanceof InvalidTokenError) {
-        console.error('🔑 SINGLETON: Token appears to be invalid or expired');
+        console.error('SINGLETON: Token appears to be invalid or expired');
         // Clear cached data for invalid tokens
         this.clearCache();
       }
 
       // Fallback to cached data if available
       if (this.repositories.length > 0) {
-        console.log('🔄 SINGLETON: Using cached data as fallback');
+        console.log('SINGLETON: Using cached data as fallback');
         this.notifyListeners();
       } else {
         // If no cached data, ensure listeners are still notified with empty array
-        console.log('🔄 SINGLETON: No cached data available, notifying with empty state');
+        console.log('SINGLETON: No cached data available, notifying with empty state');
         this.notifyListeners();
       }
       throw error;
     } finally {
       this.isFetching = false;
-      console.log('🔄 SINGLETON: Fetch operation completed, isFetching reset to false');
+      console.log('SINGLETON: Fetch operation completed, isFetching reset to false');
     }
   }
 
@@ -308,9 +308,9 @@ class RepositoryManager {
     }
   }
 
-  // 🎯 YOUTUBE-STYLE: Enhanced background sync with long-term resilience
+  // YOUTUBE-STYLE: Enhanced background sync with long-term resilience
   async backgroundSync(token: string): Promise<void> {
-    console.log('🔄 SINGLETON: Background sync starting...');
+    console.log('SINGLETON: Background sync starting...');
     
     try {
       // Test token validity first before attempting sync
@@ -323,7 +323,7 @@ class RepositoryManager {
 
       if (!tokenTest.ok) {
         if (tokenTest.status === 401) {
-          console.error('🔑 SINGLETON: GitHub token expired or invalid');
+          console.error('SINGLETON: GitHub token expired or invalid');
           // Clear cached data if token is invalid
           this.clearCache();
           throw new Error('GitHub token expired');
@@ -336,17 +336,17 @@ class RepositoryManager {
       const forceRefresh = timeSinceLastFetch > 3600000; // 1 hour
       
       if (forceRefresh) {
-        console.log('🔄 SINGLETON: Data is very stale (>1h), forcing refresh...');
+        console.log('SINGLETON: Data is very stale (>1h), forcing refresh...');
       }
 
       await this.fetchRepositories(token, forceRefresh);
-      console.log('✅ SINGLETON: Background sync completed successfully');
+      console.log('SINGLETON: Background sync completed successfully');
     } catch (error) {
-      console.error('❌ SINGLETON: Background sync failed:', error);
+      console.error('SINGLETON: Background sync failed:', error);
       
       // If sync fails but we have cached data, keep using it
       if (this.repositories.length > 0) {
-        console.log('🔄 SINGLETON: Using cached data due to sync failure');
+        console.log('SINGLETON: Using cached data due to sync failure');
         this.notifyListeners();
       }
     }
@@ -358,11 +358,11 @@ class RepositoryManager {
       if (userId) {
         localStorage.removeItem(`github_repositories_${userId}`);
         localStorage.removeItem(`github_repositories_time_${userId}`);
-        console.log(`🗑️ SINGLETON: User-specific cache cleared for ${userId}`);
+        console.log(`SINGLETON: User-specific cache cleared for ${userId}`);
       } else {
         localStorage.removeItem('github_repositories');
         localStorage.removeItem('github_repositories_time');
-        console.log('🗑️ SINGLETON: Global cache cleared due to token issues');
+        console.log('SINGLETON: Global cache cleared due to token issues');
       }
     }
   }

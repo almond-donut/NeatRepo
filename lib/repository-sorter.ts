@@ -154,7 +154,7 @@ export class RepositorySorter {
     };
   }
 
-  // 📊 SORT BY COMPLEXITY
+  // SORT BY COMPLEXITY
   static sortByComplexity(repositories: Repository[], order: 'asc' | 'desc' = 'asc'): Repository[] {
     return repositories.sort((a, b) => {
       const complexityA = a.complexity || this.calculateComplexity(a);
@@ -167,7 +167,7 @@ export class RepositorySorter {
     });
   }
 
-  // 💼 SORT FOR CV OPTIMIZATION
+  // SORT FOR CV OPTIMIZATION
   static sortForCV(repositories: Repository[]): Repository[] {
     return repositories.sort((a, b) => {
       const complexityA = a.complexity || this.calculateComplexity(a);
@@ -190,7 +190,7 @@ export class RepositorySorter {
     });
   }
 
-  // 🎯 GENERATE CV RECOMMENDATIONS
+  // GENERATE CV RECOMMENDATIONS
   static generateCVRecommendations(repositories: Repository[]): CVRecommendation[] {
     const recommendations: CVRecommendation[] = [];
 
@@ -226,7 +226,7 @@ export class RepositorySorter {
 
     if (recentProjects.length > 0) {
       recommendations.push({
-        title: '🚀 Recent Work (Show current activity)',
+        title: 'Recent Work (Show current activity)',
         description: 'Recently updated projects that show you\'re actively coding.',
         repositories: recentProjects,
         priority: 2,
@@ -241,7 +241,7 @@ export class RepositorySorter {
 
     if (documentedProjects.length > 0) {
       recommendations.push({
-        title: '📚 Well-Documented Projects',
+        title: 'Well-Documented Projects',
         description: 'Projects with good documentation that show your communication skills.',
         repositories: documentedProjects,
         priority: 3,

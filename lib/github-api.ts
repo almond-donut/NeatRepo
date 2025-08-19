@@ -48,15 +48,15 @@ export class GitHubAPIService {
     this.username = username;
   }
 
-  // 🚀 CREATE NEW REPOSITORY
+  // CREATE NEW REPOSITORY
   async createRepository(params: CreateRepoParams) {
     try {
-      console.log(`🚀 Creating repository: ${params.name}`);
+      console.log(`Creating repository: ${params.name}`);
 
       // Test if octokit is properly initialized
-      console.log('🔍 Testing Octokit instance:', typeof this.octokit);
-      console.log('🔍 Testing rest property:', typeof this.octokit.rest);
-      console.log('🔍 Testing repos property:', typeof this.octokit.rest?.repos);
+      console.log('Testing Octokit instance:', typeof this.octokit);
+      console.log('Testing rest property:', typeof this.octokit.rest);
+      console.log('Testing repos property:', typeof this.octokit.rest?.repos);
 
       const response = await this.octokit.request('POST /user/repos', {
         name: params.name,
@@ -67,14 +67,14 @@ export class GitHubAPIService {
         license_template: params.license_template,
       });
 
-      console.log(`✅ Repository created: ${response.data.html_url}`);
+      console.log(`Repository created: ${response.data.html_url}`);
       return {
         success: true,
         repository: response.data,
         url: response.data.html_url,
       };
     } catch (error: any) {
-      console.error('❌ Failed to create repository:', error);
+      console.error('Failed to create repository:', error);
       return {
         success: false,
         error: error.message || 'Failed to create repository',
@@ -82,10 +82,10 @@ export class GitHubAPIService {
     }
   }
 
-  // 📄 CREATE FILE IN REPOSITORY
+  // CREATE FILE IN REPOSITORY
   async createFile(params: CreateFileParams) {
     try {
-      console.log(`📄 Creating file: ${params.path} in ${params.owner}/${params.repo}`);
+      console.log(`Creating file: ${params.path} in ${params.owner}/${params.repo}`);
       
       const content = Buffer.from(params.content).toString('base64');
       
@@ -98,14 +98,14 @@ export class GitHubAPIService {
         branch: params.branch || 'main',
       });
 
-      console.log(`✅ File created: ${response.data.content?.html_url}`);
+      console.log(`File created: ${response.data.content?.html_url}`);
       return {
         success: true,
         file: response.data,
         url: response.data.content?.html_url,
       };
     } catch (error: any) {
-      console.error('❌ Failed to create file:', error);
+      console.error('Failed to create file:', error);
       return {
         success: false,
         error: error.message || 'Failed to create file',
@@ -113,23 +113,23 @@ export class GitHubAPIService {
     }
   }
 
-  // 🗑️ DELETE REPOSITORY
+  // DELETE REPOSITORY
   async deleteRepository(params: DeleteRepoParams) {
     try {
-      console.log(`🗑️ Deleting repository: ${params.owner}/${params.name}`);
+      console.log(`Deleting repository: ${params.owner}/${params.name}`);
 
       const response = await this.octokit.request('DELETE /repos/{owner}/{repo}', {
         owner: params.owner,
         repo: params.name,
       });
 
-      console.log(`✅ Repository deleted: ${params.owner}/${params.name}`);
+      console.log(`Repository deleted: ${params.owner}/${params.name}`);
       return {
         success: true,
         message: `Repository ${params.name} has been permanently deleted`,
       };
     } catch (error: any) {
-      console.error('❌ Failed to delete repository:', error);
+      console.error('Failed to delete repository:', error);
       return {
         success: false,
         error: error.message || 'Failed to delete repository',
@@ -208,7 +208,7 @@ export class GitHubAPIService {
         reasoning = 'Highly complex project with extensive dependencies and advanced patterns';
       }
 
-      console.log(`✅ Complexity analysis complete: ${level} (${totalScore})`);
+      console.log(`Complexity analysis complete: ${level} (${totalScore})`);
 
       return {
         score: totalScore,
@@ -217,7 +217,7 @@ export class GitHubAPIService {
         reasoning,
       };
     } catch (error: any) {
-      console.error('❌ Failed to analyze repository complexity:', error);
+      console.error('Failed to analyze repository complexity:', error);
       return {
         score: 0,
         factors: {
@@ -233,10 +233,10 @@ export class GitHubAPIService {
     }
   }
 
-  // 📊 GET USER REPOSITORIES WITH COMPLEXITY
+  // GET USER REPOSITORIES WITH COMPLEXITY
   async getRepositoriesWithComplexity() {
     try {
-      console.log(`📊 Fetching repositories with complexity analysis...`);
+      console.log(`Fetching repositories with complexity analysis...`);
       
       const repos = await this.octokit.rest.repos.listForAuthenticatedUser({
         sort: 'updated',
@@ -253,16 +253,16 @@ export class GitHubAPIService {
         })
       );
 
-      console.log(`✅ Analyzed ${repositoriesWithComplexity.length} repositories`);
+      console.log(`Analyzed ${repositoriesWithComplexity.length} repositories`);
       return repositoriesWithComplexity;
     } catch (error: any) {
-      console.error('❌ Failed to fetch repositories with complexity:', error);
+      console.error('Failed to fetch repositories with complexity:', error);
       throw new Error('Failed to analyze repositories');
     }
   }
 }
 
-// 🎯 REPOSITORY SORTING UTILITIES
+// REPOSITORY SORTING UTILITIES
 export class RepositorySorter {
   static sortByComplexity(repositories: any[], order: 'asc' | 'desc' = 'asc') {
     return repositories.sort((a, b) => {
@@ -306,7 +306,7 @@ export class RepositorySorter {
     
     recommendations.push({
       type: 'cv_order',
-      title: '🎯 Recommended CV Order',
+      title: 'Recommended CV Order',
       description: 'These repositories should be featured prominently on your CV',
       repositories: topRepos.map((repo, index) => ({
         position: index + 1,
@@ -349,7 +349,7 @@ export class RepositorySorter {
     if (noReadme.length > 0) {
       suggestions.push({
         type: 'improvement',
-        title: '📝 Add Documentation',
+        title: 'Add Documentation',
         description: 'These repositories would benefit from README files',
         repositories: noReadme.slice(0, 3).map(repo => ({
           name: repo.name,

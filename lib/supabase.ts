@@ -8,7 +8,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing required Supabase environment variables. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY')
 }
 
-// 🔧 CRITICAL FIX: Use createBrowserClient for proper session persistence in Next.js
+// CRITICAL FIX: Use createBrowserClient for proper session persistence in Next.js
 export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey)
 
 // Database types based on our schema

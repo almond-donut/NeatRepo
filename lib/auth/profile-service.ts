@@ -5,7 +5,7 @@
  */
 export const validateTokenService = async (token: string): Promise<boolean> => {
   try {
-    console.log("🔍 PROFILE_SERVICE: Validating PAT with GitHub API...");
+    console.log("PROFILE_SERVICE: Validating PAT with GitHub API...");
     const response = await fetch("https://api.github.com/user", {
       headers: {
         Authorization: `token ${token}`,
@@ -14,15 +14,15 @@ export const validateTokenService = async (token: string): Promise<boolean> => {
     });
 
     if (response.status === 200) {
-      console.log("✅ PROFILE_SERVICE: PAT is valid.");
+      console.log("PROFILE_SERVICE: PAT is valid.");
       return true;
     }
 
-    console.warn(`⚠️ PROFILE_SERVICE: PAT is invalid. GitHub API responded with ${response.status}.`);
+    console.warn(`PROFILE_SERVICE: PAT is invalid. GitHub API responded with ${response.status}.`);
     return false;
 
   } catch (error) {
-    console.error("❌ PROFILE_SERVICE: Error during token validation network request:", error);
+    console.error("PROFILE_SERVICE: Error during token validation network request:", error);
     return false; // Assume invalid on any network error
   }
 };
@@ -40,7 +40,7 @@ import { UserProfile } from "@/components/auth/auth-context";
  */
 export const fetchProfileService = async (userId: string, user: User): Promise<UserProfile> => {
   try {
-    console.log("🔍 PROFILE_SERVICE: Fetching profile via API route for user:", userId);
+    console.log("PROFILE_SERVICE: Fetching profile via API route for user:", userId);
     
     const response = await fetch('/api/user/profile', { cache: 'no-store' }); // Ensure it's not cached
 
@@ -51,7 +51,7 @@ export const fetchProfileService = async (userId: string, user: User): Promise<U
     const data: UserProfile | null = await response.json();
 
     if (data) {
-      console.log("✅ PROFILE_SERVICE: Profile fetched successfully via API.");
+      console.log("PROFILE_SERVICE: Profile fetched successfully via API.");
       if (data.github_pat_token?.startsWith('gho_')) {
         data.github_pat_token = undefined;
       }
@@ -59,7 +59,7 @@ export const fetchProfileService = async (userId: string, user: User): Promise<U
     }
 
     // API returned null, meaning profile doesn't exist yet. Create it.
-    console.log('🔧 PROFILE_SERVICE: Profile not found via API, creating a new one...');
+    console.log('PROFILE_SERVICE: Profile not found via API, creating a new one...');
     const githubUsername = user.user_metadata?.user_name || user.email?.split('@')[0] || `user_${userId.substring(0, 8)}`;
     const newProfile: UserProfile = {
       id: userId,
@@ -70,14 +70,14 @@ export const fetchProfileService = async (userId: string, user: User): Promise<U
 
     const { error: insertError } = await supabase.from('user_profiles').insert(newProfile);
     if (insertError) {
-      console.error("❌ PROFILE_SERVICE: Error creating profile after API check:", insertError);
+      console.error("PROFILE_SERVICE: Error creating profile after API check:", insertError);
     } else {
-      console.log("✅ PROFILE_SERVICE: New basic profile created successfully.");
+      console.log("PROFILE_SERVICE: New basic profile created successfully.");
     }
     return newProfile;
 
   } catch (err) {
-    console.error('❌ PROFILE_SERVICE: Fetch/create failed. Building fallback profile.', err);
+    console.error('PROFILE_SERVICE: Fetch/create failed. Building fallback profile.', err);
 
     const fallbackProfile: UserProfile = {
       id: userId,
@@ -89,7 +89,7 @@ export const fetchProfileService = async (userId: string, user: User): Promise<U
     if (typeof window !== 'undefined') {
         const cachedPat = localStorage.getItem(`github_pat_token_${userId}`);
         if (cachedPat && !cachedPat.startsWith('gho_')) {
-            console.log('🔄 PROFILE_SERVICE: Recovering PAT from localStorage for fallback profile.');
+            console.log('PROFILE_SERVICE: Recovering PAT from localStorage for fallback profile.');
             fallbackProfile.github_pat_token = cachedPat;
         }
     }
@@ -103,7 +103,7 @@ export const fetchProfileService = async (userId: string, user: User): Promise<U
  * @param token - The GitHub PAT to save.
  */
 export const updateTokenService = async (userId: string, token: string): Promise<void> => {
-  console.log('💾 PROFILE_SERVICE: Saving PAT for user:', userId);
+  console.log('PROFILE_SERVICE: Saving PAT for user:', userId);
 
   const { error } = await supabase
     .from('user_profiles')
@@ -111,11 +111,11 @@ export const updateTokenService = async (userId: string, token: string): Promise
     .eq('id', userId);
 
   if (error) {
-    console.error('❌ PROFILE_SERVICE: Error updating token:', error);
+    console.error('PROFILE_SERVICE: Error updating token:', error);
     throw error;
   }
   
-  console.log('✅ PROFILE_SERVICE: PAT saved to database successfully.');
+  console.log('PROFILE_SERVICE: PAT saved to database successfully.');
 };
 
 /**
@@ -123,7 +123,7 @@ export const updateTokenService = async (userId: string, token: string): Promise
  * @param userId - The ID of the user.
  */
 export const deleteTokenService = async (userId: string): Promise<void> => {
-  console.log('🗑️ PROFILE_SERVICE: Deleting PAT for user:', userId);
+  console.log('PROFILE_SERVICE: Deleting PAT for user:', userId);
 
   const { error } = await supabase
     .from('user_profiles')
@@ -131,9 +131,9 @@ export const deleteTokenService = async (userId: string): Promise<void> => {
     .eq('id', userId);
 
   if (error) {
-    console.error('❌ PROFILE_SERVICE: Error deleting token:', error);
+    console.error('PROFILE_SERVICE: Error deleting token:', error);
     throw error;
   }
   
-  console.log('✅ PROFILE_SERVICE: PAT deleted from database successfully.');
+  console.log('PROFILE_SERVICE: PAT deleted from database successfully.');
 };
