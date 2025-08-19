@@ -1,19 +1,25 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { GitHubRepo } from '../types';
-import { Trash2, Plus, Edit, RefreshCw } from 'lucide-react';
+import { Trash2, Plus, Edit, RefreshCw, AlertTriangle } from 'lucide-react';
 
 interface ModalsProps {
+    // Single repo delete
     showDeleteConfirm: boolean;
     repoToDelete: GitHubRepo | null;
     isDeleting: boolean;
     onConfirmDelete: () => void;
     onCancelDelete: () => void;
 
+    // ✨ NEW: Props for Bulk Delete Confirmation ✨
+    showBulkDeleteConfirm: boolean;
+    selectedReposCount: number;
+    onConfirmBulkDelete: () => void;
+    onCancelBulkDelete: () => void;
 
-
+    // Add repo
     showAddRepoModal: boolean;
     newRepoName: string;
     newRepoDescription: string;
@@ -23,6 +29,7 @@ interface ModalsProps {
     onCreateRepo: () => void;
     onCloseAddRepo: () => void;
     
+    // Rename repo
     showRenameModal: boolean;
     repoToRename: GitHubRepo | null;
     newRepoNameForRename: string;
@@ -34,13 +41,14 @@ interface ModalsProps {
 
 export function Modals({
     showDeleteConfirm, repoToDelete, isDeleting, onConfirmDelete, onCancelDelete,
+    showBulkDeleteConfirm, selectedReposCount, onConfirmBulkDelete, onCancelBulkDelete,
     showAddRepoModal, newRepoName, newRepoDescription, isCreatingRepo, onNewRepoNameChange, onNewRepoDescriptionChange, onCreateRepo, onCloseAddRepo,
     showRenameModal, repoToRename, newRepoNameForRename, isRenamingRepo, onNewRepoNameForRenameChange, onRenameRepo, onCloseRenameRepo
 }: ModalsProps) {
 
   return (
     <>
-      {/* Delete Confirmation Modal */}
+      {/* Single Delete Confirmation Modal */}
       {showDeleteConfirm && repoToDelete && (
         <Dialog open={showDeleteConfirm} onOpenChange={onCancelDelete}>
           <DialogContent>
@@ -58,7 +66,33 @@ export function Modals({
         </Dialog>
       )}
 
-
+      {/* ✨ NEW: Bulk Delete Confirmation Modal ✨ */}
+      {showBulkDeleteConfirm && (
+        <Dialog open={showBulkDeleteConfirm} onOpenChange={onCancelBulkDelete}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <AlertTriangle className="text-destructive" />
+                Confirm Bulk Deletion
+              </DialogTitle>
+              <DialogDescription>
+                This action is irreversible and will permanently remove the selected repositories from your GitHub account.
+              </DialogDescription>
+            </DialogHeader>
+            <p>
+              Are you sure you want to permanently delete <strong>{selectedReposCount} selected repositories</strong>?
+            </p>
+            <DialogFooter>
+              <Button variant="outline" onClick={onCancelBulkDelete} disabled={isDeleting}>
+                Cancel
+              </Button>
+              <Button variant="destructive" onClick={onConfirmBulkDelete} disabled={isDeleting}>
+                {isDeleting ? <><RefreshCw className="animate-spin mr-2" /> Deleting...</> : `Delete ${selectedReposCount} Repositories`}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Add Repository Modal */}
       {showAddRepoModal && (

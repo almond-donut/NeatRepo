@@ -8,7 +8,7 @@ import { repositoryManager, InvalidTokenError } from "@/lib/repository-manager";
 import { GitHubRepo } from "../types";
 
 export function useRepositories(
-  openModal: (modal: 'delete' | 'rename' | 'add') => void,
+  openModal: (modal: 'delete' | 'rename' | 'add' | 'bulkDelete') => void,
   setRepoToDelete: (repo: GitHubRepo | null) => void,
   setRepoToRename: (repo: GitHubRepo | null) => void
 ) {
@@ -160,43 +160,53 @@ export function useRepositories(
     }
 
     if (!profile || !profile.github_username) {
-      console.error('Error: User profile or GitHub username not found. Cannot proceed with deletion.');
-      alert('Error: Could not find your GitHub username. Please try refreshing the page.');
+      console.error('Error: User profile or GitHub username not found.');
+      alert('Error: Could not find your GitHub username. Please refresh the page.');
       return;
     }
 
-    const originalRepos = [...repositories];
-    const reposToDelete = originalRepos.filter((r: GitHubRepo) => selectedRepos.has(r.id));
-
+    const reposToDelete = repositories.filter((r: GitHubRepo) => selectedRepos.has(r.id));
     if (reposToDelete.length === 0) return;
-
-    // 1. Optimistic UI Update
-    setRepositories(prevRepos => prevRepos.filter((r: GitHubRepo) => !selectedRepos.has(r.id)));
+    
     setIsDeleting(true);
     console.log(`Deleting ${reposToDelete.length} repositories...`);
 
-    // 2. Perform Deletions
+    //
+    // ✨ FIX: Keep a copy of the original state for potential rollback.
+    // This is crucial for reverting the UI if any of the API calls fail.
+    const originalReposForRollback = [...repositories];
+    const originalOriginalsForRollback = [...originalRepositories];
+
+    //
+    // ✨ FIX: Perform optimistic UI update on BOTH state arrays.
+    // This immediately removes the deleted items from the view and ensures that
+    // sorting or other actions don't bring them back from the `originalRepositories` array.
+    const updatedRepos = repositories.filter((r: GitHubRepo) => !selectedRepos.has(r.id));
+    setRepositories(updatedRepos);
+    setOriginalRepositories(originalRepositories.filter((r: GitHubRepo) => !selectedRepos.has(r.id)));
+
     const deletePromises = reposToDelete.map((repo: GitHubRepo) =>
-      repositoryManager.deleteRepository(effectiveToken, profile.github_username, repo.name)
+      repositoryManager.deleteRepository(effectiveToken!, profile.github_username!, repo.name)
     );
 
-    // 3. Handle Results
     Promise.allSettled(deletePromises).then(results => {
       const failedDeletes = results.filter(res => res.status === 'rejected' || (res.status === 'fulfilled' && !res.value));
 
       if (failedDeletes.length > 0) {
-        // Revert UI on failure and show error
-        setRepositories(originalRepos);
+        //
+        // ✨ FIX: On failure, revert BOTH state arrays to their original state.
+        setRepositories(originalReposForRollback);
+        setOriginalRepositories(originalOriginalsForRollback);
         const errorMessage = `Error: Failed to delete ${failedDeletes.length} repositories. Your view has been restored.`;
         console.error(errorMessage);
         alert(errorMessage);
       } else {
-        console.log(`🗑️ Successfully deleted ${reposToDelete.length} repositories.`);
-        // On success, update the 'originalRepositories' to prevent reverted state on next sort
-        setOriginalRepositories(currentRepos => currentRepos.filter((r: GitHubRepo) => !selectedRepos.has(r.id)));
+        // Success: The optimistic update is now the source of truth. No further state change is needed.
+        console.log(`Successfully deleted ${reposToDelete.length} repositories.`);
       }
 
-      // 4. Reset State
+      //
+      // Best Practice: Reset all related states after the operation completes.
       setSelectedRepos(new Set());
       setIsDeleting(false);
       setIsDeleteMode(false);

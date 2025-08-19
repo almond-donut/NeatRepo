@@ -18,16 +18,21 @@ export function useDashboardModals() {
   const [showRenameModal, setShowRenameModal] = useState(false);
   const [repoToRename, setRepoToRename] = useState<GitHubRepo | null>(null);
   const [newRepoNameForRename, setNewRepoNameForRename] = useState("");
-
-
   
-  const openModal = (modal: 'delete' | 'rename' | 'add') => {
+  // ✨ NEW: State for Bulk Delete Confirmation Modal ✨
+  // This state will control the visibility of our new confirmation dialog.
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+  
+  const openModal = (modal: 'delete' | 'rename' | 'add' | 'bulkDelete') => {
     if (modal === 'delete') setShowDeleteConfirm(true);
     if (modal === 'rename') setShowRenameModal(true);
     if (modal === 'add') setShowAddRepoModal(true);
+    //
+    // ✨ NEW: Show the bulk delete confirmation modal.
+    if (modal === 'bulkDelete') setShowBulkDeleteConfirm(true);
   };
 
-  const closeModal = (modal: 'delete' | 'rename' | 'add') => {
+  const closeModal = (modal: 'delete' | 'rename' | 'add' | 'bulkDelete') => {
     if (modal === 'delete') {
       setShowDeleteConfirm(false);
       setRepoToDelete(null);
@@ -41,6 +46,11 @@ export function useDashboardModals() {
       setShowAddRepoModal(false);
       setNewRepoName("");
       setNewRepoDescription("");
+    }
+    //
+    // ✨ NEW: Hide the bulk delete confirmation modal.
+    if (modal === 'bulkDelete') {
+        setShowBulkDeleteConfirm(false);
     }
   };
 
@@ -61,6 +71,9 @@ export function useDashboardModals() {
     setRepoToRename,
     newRepoNameForRename,
     setNewRepoNameForRename,
+    //
+    // ✨ NEW: Expose bulk delete state and control functions.
+    showBulkDeleteConfirm,
     // Control functions
     openModal,
     closeModal,

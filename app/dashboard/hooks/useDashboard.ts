@@ -48,6 +48,11 @@ export function useDashboard() {
     onRenameRepo: () => {
         repos.renameRepository(modals.repoToRename!, modals.newRepoNameForRename)
         .then(() => modals.closeModal('rename'));
+    },
+    // ✨ NEW: Function to handle bulk delete confirmation
+    onConfirmBulkDelete: () => {
+        repos.handleBulkDelete()
+        .then(() => modals.closeModal('bulkDelete'));
     }
   };
 }

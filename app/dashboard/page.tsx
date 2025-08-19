@@ -53,7 +53,8 @@ export default function DashboardPage() {
               onDateSort={dashboard.handleDateSort}
               onAddRepo={() => dashboard.openModal('add')}
               onToggleDeleteMode={dashboard.toggleDeleteMode}
-              onBulkDelete={dashboard.handleBulkDelete}
+              // ✨ FIX: The button now opens the new confirmation modal
+              onBulkDelete={() => dashboard.openModal('bulkDelete')}
             />
 
             <RepositoryList
@@ -88,11 +89,20 @@ export default function DashboardPage() {
         </div>
         
         <Modals
+          // Single Delete Props
           showDeleteConfirm={dashboard.showDeleteConfirm}
           repoToDelete={dashboard.repoToDelete}
           isDeleting={dashboard.isDeleting}
           onConfirmDelete={dashboard.onConfirmDelete}
           onCancelDelete={() => dashboard.closeModal('delete')}
+          
+          // ✨ NEW: Bulk Delete Modal Props ✨
+          showBulkDeleteConfirm={dashboard.showBulkDeleteConfirm}
+          selectedReposCount={dashboard.selectedRepos.size}
+          onConfirmBulkDelete={dashboard.handleBulkDelete}
+          onCancelBulkDelete={() => dashboard.closeModal('bulkDelete')}
+
+          // Add/Rename Repo Props
           showAddRepoModal={dashboard.showAddRepoModal}
           newRepoName={dashboard.newRepoName}
           newRepoDescription={dashboard.newRepoDescription}
